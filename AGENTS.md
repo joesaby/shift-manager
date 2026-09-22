@@ -62,6 +62,16 @@ UI pattern: screens return HTML strings; clicks use `data-act="…"`; inputs use
 - Print layout is **person × day** (`layout: "person-day"`); spares get editable notes before print.
 - One workspace folder per unit.
 
+## Skills (feature workflow)
+
+Project skills live in `.cursor/skills/`:
+
+1. **architect** — map work to PRD H-ids + docs; design brief or fit review  
+2. **tdd** — failing check first for domain rules (`model` / `generator` / migrations)  
+3. **verify** — `npm run build` (+ `npm test` if present), PRD/security acceptance before commit  
+
+Typical order for non-trivial behaviour: architect → tdd → implement → verify.
+
 ## Out of scope (for now)
 
 RDMS leave import, shift swaps/overtime/pay, multi-user concurrent edit, cloud sync API, in-app audit file viewer.

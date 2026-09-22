@@ -38,6 +38,14 @@ Bias toward caution over speed; for trivial typos, use judgment.
 - Print/log: `src/js/snapshot.js`
 - Build: `build.mjs` → `dist/shift-manager.html` + zips
 
+## Feature workflow
+
+For non-trivial behaviour changes, use project skills in order:
+
+1. **architect** (`.cursor/skills/architect/SKILL.md`) — PRD H-ids, constraints, doc sync  
+2. **tdd** (`.cursor/skills/tdd/SKILL.md`) — failing test mapped to H-ids, then implement  
+3. **verify** (`.cursor/skills/verify/SKILL.md`) — build + PRD/security acceptance  
+
 ## Do not
 
 - Add telemetry, CDNs, or server backends

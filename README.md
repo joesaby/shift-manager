@@ -59,6 +59,7 @@ Every push to `main` publishes a patch release and keeps only the **latest 3** G
 | Doc | Contents |
 | --- | --- |
 | [`AGENTS.md`](AGENTS.md) / [`CLAUDE.md`](CLAUDE.md) | Guidance for coding agents |
+| [`.cursor/skills/`](.cursor/skills/) | architect / tdd / verify skills (PRD-grounded) |
 | [`SECURITY.md`](SECURITY.md) | Offline posture, data stores, deployment |
 | [`TERMS.md`](TERMS.md) | Plain-language use terms; MIT / no warranty |
 | [`docs/THIRD_PARTY.md`](docs/THIRD_PARTY.md) | Tailwind, DaisyUI, esbuild |
