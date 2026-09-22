@@ -113,12 +113,10 @@ Writes `dist/shift-manager.html`, `../shift-manager.html` (local only), `dist/sh
 
 ### Release
 
-Push a semver tag to publish a GitHub Release with the offline zip:
+Every push to `main` cuts a patch release (`v1.0.0` → `v1.0.1`) and publishes the offline zip.
 
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
+- Put `#minor` or `#major` in the commit message to bump those instead.
+- Put `[skip release]` in the commit message to skip publishing.
 
 ---
 
