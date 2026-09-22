@@ -19,6 +19,19 @@ html,body{font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helve
 .printScroll{max-height:70vh;overflow:auto}
 .rota-freeze thead th{position:sticky;top:0;z-index:3}
 
+/* Roster / historic-roster grids: fixed, equal-width role columns so a long role
+   name wraps onto a second line instead of stretching its column wider than the
+   rest (min-w-28 / w-24 / table-fixed are not in the vendored tailwind.css, so
+   those utility classes silently do nothing — plain CSS is used here instead). */
+.rostergrid{table-layout:fixed}
+.rostergrid .personcol{width:10rem}
+.rostergrid .rolecol{width:6.5rem}
+.rostergrid .rolecol .rolename{white-space:normal;overflow-wrap:anywhere}
+
+/* Compact spare-note box on the print screen (input-xs is not in the vendored
+   tailwind.css, so it would otherwise render at default input height). */
+.spareinput{height:1.6rem;min-height:0;font-size:.75rem;padding:0 .4rem}
+
 /* Home screen layout — uses prebuilt Tailwind only where available */
 .home-stack{display:flex;flex-direction:column;gap:1.5rem}
 .home-status{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:1rem}

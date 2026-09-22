@@ -44,10 +44,10 @@ export function vRos() {
 
   const head = roles.map((r) => {
     const filled = !!dayAssign.assign[r.id];
-    return `<th class="text-center min-w-28 align-bottom px-1">
+    return `<th class="text-center rolecol align-bottom px-1">
       <div class="flex flex-col items-center gap-1">
         <span class="grpdot" style="background:${groupById(r.groupId).color};border:1px solid #9ca3af"></span>
-        <span class="font-semibold text-xs leading-tight">${esc(r.name)}</span>
+        <span class="rolename font-semibold text-xs leading-tight">${esc(r.name)}</span>
         ${!filled ? '<span class="badge badge-error badge-xs">Unfilled</span>' : ""}
       </div>
     </th>`;
@@ -91,8 +91,8 @@ export function vRos() {
    ${isStale() ? `<div role="alert" class="alert alert-warning"><span>Attendance or setup changed since this roster was generated. Generate again, or check the flagged cells.</span></div>` : ""}
    ${unf.length ? `<div role="alert" class="alert alert-error"><span>Unfilled on this day: ${esc(unf.join("; "))}.</span></div>` : ""}
    ${bad.length ? `<div role="alert" class="alert alert-warning"><span>Check: ${bad.join("; ")}.</span></div>` : ""}
-   <div class="card bg-base-100 shadow-sm border border-base-300"><div class="overflow-x-auto"><table class="table table-sm">
-     <thead><tr><th class="stickycol">Person</th>${head}</tr></thead>
+   <div class="card bg-base-100 shadow-sm border border-base-300"><div class="overflow-x-auto"><table class="table table-sm rostergrid">
+     <thead><tr><th class="stickycol personcol">Person</th>${head}</tr></thead>
      <tbody>${rows}</tbody>
    </table></div></div>`;
 }

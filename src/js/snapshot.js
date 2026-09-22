@@ -70,7 +70,7 @@ function rotaHTMLPersonDay(snap, editable) {
   const rows = snap.people.map((p, pi) => {
     const cells = snap.cells[pi].map((c, d) => {
       if (c.kind === "spare" && editable) {
-        return `<td class="p-1 text-center" style="background:#ffffff"><input type="text" class="input input-bordered input-xs w-full text-center" placeholder="HVB" value="${esc(c.text)}" data-ch="spareNote" data-p="${p.id}" data-d="${d}" aria-label="${esc(p.name)} spare note, ${esc(snap.days[d].label)}"></td>`;
+        return `<td class="p-1 text-center" style="background:#ffffff"><input type="text" class="input input-bordered spareinput w-full text-center" placeholder="HVB" value="${esc(c.text)}" data-ch="spareNote" data-p="${p.id}" data-d="${d}" aria-label="${esc(p.name)} spare note, ${esc(snap.days[d].label)}"></td>`;
       }
       const style = `background:${c.color};color:#1f2937`;
       return `<td class="p-2 text-center text-sm font-medium" style="${style}">${esc(c.text)}</td>`;
