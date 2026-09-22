@@ -139,3 +139,9 @@ If you believe you have found a vulnerability in Shift Manager, **do not** open 
 Contact the maintainer via the GitHub repository security advisory flow or the repository owner account (**joesaby**), and allow time for a fixed release before public disclosure.
 
 For operational ICT incidents involving unit data on a workstation or share, follow An Garda Síochána internal incident procedures first.
+
+---
+
+## Terms
+
+Use of Shift Manager is under the [MIT License](LICENSE). Plain-language summary (no warranty, no liability, no SLA unless separately agreed): [`TERMS.md`](TERMS.md).

@@ -2,7 +2,7 @@
 
 Offline duty-rota app for a four-day block. Open one HTML file in a browser — nothing is sent over the internet.
 
-Built for An Garda Síochána shift managers. For ICT review see [`SECURITY.md`](SECURITY.md) and [`docs/THIRD_PARTY.md`](docs/THIRD_PARTY.md).
+Built for An Garda Síochána shift managers. See [`SECURITY.md`](SECURITY.md), [`TERMS.md`](TERMS.md), and [`docs/THIRD_PARTY.md`](docs/THIRD_PARTY.md).
 
 ## Run
 
@@ -59,6 +59,7 @@ Every push to `main` publishes a patch release. Use `#minor` / `#major` in the c
 | Doc | Contents |
 | --- | --- |
 | [`SECURITY.md`](SECURITY.md) | Offline posture, data stores, deployment |
+| [`TERMS.md`](TERMS.md) | Plain-language use terms; MIT / no warranty |
 | [`docs/THIRD_PARTY.md`](docs/THIRD_PARTY.md) | Tailwind, DaisyUI, esbuild |
 | [`docs/Shift_Manager_PRD.md`](docs/Shift_Manager_PRD.md) | Product requirements |
 | [`LICENSE`](LICENSE) | MIT |
