@@ -1,4 +1,4 @@
-import { iso, addDays, fmt } from "./util.js";
+import { iso, addDays, fmt, fmtLong } from "./util.js";
 import { S } from "./state.js";
 
 export const DEFAULT_STATUSES = [
