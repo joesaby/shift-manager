@@ -2,6 +2,8 @@
 
 Offline duty-rota app for a four-day block. Open the HTML file in a browser — nothing is sent over the internet.
 
+**Security & third-party software:** see [`SECURITY.md`](SECURITY.md) and [`docs/THIRD_PARTY.md`](docs/THIRD_PARTY.md) (written for ICT / information-security review).
+
 **To run:** open `shift-manager.html` (or `dist/shift-manager.html`) in Chrome or Edge. Firefox works for most features; **Choose folder** needs a Chromium browser.
 
 **In the app:** open **Home** for setup, unit/manager names, and the Attendance → Roster → Print path.
@@ -124,7 +126,8 @@ Every push to `main` cuts a patch release (`v1.0.0` → `v1.0.1`) and publishes 
 
 | Doc | What it covers |
 | --- | --- |
+| [`SECURITY.md`](SECURITY.md) | Offline posture, data stores, deployment, reporting |
+| [`docs/THIRD_PARTY.md`](docs/THIRD_PARTY.md) | Tailwind, DaisyUI, esbuild, and other third-party use |
 | [`docs/Shift_Manager_PRD.md`](docs/Shift_Manager_PRD.md) | Current PRD — scope, screens, persistence, schema v2, acceptance |
 | [`docs/Shift Manager App – Design Spec.md`](<docs/Shift Manager App – Design Spec.md>) | Original Excel/Power Apps design notes (historical) |
 | [`docs/Shift Manager App – PRD.pdf`](<docs/Shift Manager App – PRD.pdf>) | Original Excel/Power Apps PRD (historical) |
-# roster-manager

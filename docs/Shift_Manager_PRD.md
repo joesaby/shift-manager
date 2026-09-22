@@ -1,8 +1,19 @@
 # Shift Manager – HTML App PRD
 
-2026-09-20 · HTML / offline JSON edition (updated to match shipped UI)
+2026-09-22 · HTML / offline JSON edition (updated to match shipped UI)
 
 This PRD describes the single-file HTML app (`shift-manager.html` / `shift-manager-offline.zip`). It replaces Excel / Power Apps front-end assumptions from the original PRD while keeping the same business rules. The JSON document (plus optional workspace folder) is the system of record.
+
+### 2026-09-22 — PM feedback round
+
+1. **Rest day** added as an attendance status alongside Present / Annual leave / Sick leave / Duty away (H33).
+2. **People** screen list now sorts by surname instead of first name (H34).
+3. Roles gain a **Used by day** flag to pair with **Used at night**, so a role can be restricted to one shift type only (for example, Public Office is night-only) (H35).
+4. Print rota layout changed from person × role grid to **person × day**: one column per day, the cell holds the duty type (or status) as coloured text, matching whichever role group or status it belongs to (H36).
+5. People present with no role after Generate (**spare**) get an editable text box on the print screen so the manager can type a note (for example "HVB") before printing; left blank by default (H37).
+6. The print screen's day header row is frozen (stays visible) while scrolling through the person list, before printing (H38).
+7. Printing uses **A4 landscape** (H39).
+8. Attendance screen's per-day cards now show the **date large** and the **present headcount small**, reversing the previous sizing so the headcount is not mistaken for the date (H40).
 
 ---
 
@@ -63,7 +74,7 @@ Shift manager at a desk, last night of a block. Others only see the printed rota
 | H2 | Per person: qualification ticks for every role (People + Skills matrix for skill roles) |
 | H3 | Per person: optional fixed role (“only do this”), limited to qualified roles |
 | H4 | Set block start date and Day/Night for each of four days |
-| H5 | Set status per person per day: Present, Annual leave, Sick leave, Duty away |
+| H5 | Set status per person per day: Present, Annual leave, Sick leave, Duty away, Rest day |
 | H6 | Generate fills roles for Present people for the block |
 | H7 | Generate and manual edit only offer qualified people (hard block) |
 | H8 | Fixed-role people get that role when Present |
@@ -72,11 +83,19 @@ Shift manager at a desk, last night of a block. Others only see the printed rota
 | H11 | Hard roles not on back-to-back nights when alternatives exist |
 | H12 | Manual cell edit: assign, swap, leave unfilled (person × role grid per day) |
 | H13 | Warn on unfilled roles and on stale roster after attendance/setup changes |
-| H14 | Colour print: **person × role** tables per day, colours by role group; leave/away/spare listed under |
+| H14 | Colour print: **person × day** grid — person leftmost column, one column per day, each cell shows that person's duty type or status as text, coloured by role group (or status colour when not present) |
 | H15 | Save block to log; browse, re-print, delete, CSV export; show manager who saved when known |
 | H16 | Open / save JSON; `localStorage` backup; **Choose folder** workspace with autosave |
 | H17 | Set **unit name** (`meta.unitName`); show on Home, Attendance, Roster, Print, sidebar |
 | H18 | Set **manager name** (browser-local); stamp on new Save to log / print snapshots; do not rewrite older entries |
+| H33 | **Rest day** is an attendance status choice (does not allocate; shown as status text on print) |
+| H34 | People screen list is sorted by **surname** (last word of the person's name), not first name |
+| H35 | Roles have both **Used by day** and **Used at night** flags; a role can be restricted to only one shift type (day fills roles marked used-by-day, night fills roles marked used-at-night) |
+| H36 | Print screen renders **person × day**: person name in the leftmost column, each day as a column, duty-type/status text coloured per role group / status in the cell opposite that person |
+| H37 | On the print screen, a person who is Present but has no role after Generate (**spare**) gets a free-text box in their day cell so the manager can type a note (e.g. "HVB") before printing; left blank unless typed |
+| H38 | The print screen's day header row stays frozen (visible) while scrolling the person list on screen, before printing |
+| H39 | Print output uses **A4 landscape** |
+| H40 | Attendance screen's per-day card shows the date prominently (large) and the present headcount smaller, so the headcount is not mistaken for the date |
 
 ### Should
 
@@ -142,7 +161,7 @@ Roles → People → Skills →   3. Print (+ Save to log)
 ## 5. Business rules (domain)
 
 1. Working pattern: four days on (typically Day, Day, Night, Night), then four off.
-2. Day fills all roles; night fills only roles marked used-at-night.
+2. Day fills roles marked used-by-day; night fills roles marked used-at-night. Most roles are both; a role can be restricted to only one shift (for example, Public Office is used-at-night only, not used-by-day).
 3. Only **Present** people are allocated.
 4. Skill-restricted roles are a hard block on qualification.
 5. Fixed role always wins when Present.
@@ -205,7 +224,8 @@ When serving over `http` next to `data/shift-manager-data.json`, mock may auto-l
       { "id": "present", "label": "Present", "allocates": true, "printColor": "#EAF4EC" },
       { "id": "annual_leave", "label": "Annual leave", "allocates": false, "printColor": "#BBDEFB" },
       { "id": "sick_leave", "label": "Sick leave", "allocates": false, "printColor": "#FFCDD2" },
-      { "id": "duty_away", "label": "Duty away", "allocates": false, "printColor": "#E1BEE7" }
+      { "id": "duty_away", "label": "Duty away", "allocates": false, "printColor": "#E1BEE7" },
+      { "id": "rest_day", "label": "Rest day", "allocates": false, "printColor": "#E0E0E0" }
     ],
     "defaultShifts": ["Day", "Day", "Night", "Night"],
     "blockLengthDays": 4
@@ -218,6 +238,7 @@ When serving over `http` next to `data/shift-manager-data.json`, mock may auto-l
       "id": "r_gs101",
       "name": "Car 1",
       "groupId": "g_car",
+      "usedAtDay": true,
       "usedAtNight": true,
       "hard": true,
       "skillRestricted": true,
@@ -252,6 +273,9 @@ When serving over `http` next to `data/shift-manager-data.json`, mock may auto-l
           "personId": "p_owen",
           "source": "generated"
         }
+      ],
+      "spareNotes": [
+        { "date": "2026-09-21", "personId": "p_owen", "text": "HVB" }
       ]
     },
     "history": [
@@ -277,7 +301,8 @@ Notes:
 - `meta.unitName` is the unit shown in UI and print.
 - `blocks.history[].savedBy` / `snap.savedBy` stamp the manager at Save to log time.
 - `audit[]` in JSON is reserved; the live audit trail for milestones is the folder `audit_log.txt` files.
-- Print/view snapshots use `layout: "person-role"` (legacy role×day snaps still render when present).
+- `blocks.current.spareNotes[]` holds the manager's free-text note (for example "HVB") typed against a Present person with no role for a date, on the print screen; blank unless typed.
+- Print/view snapshots use `layout: "person-day"` (person × day grid, current). Older `layout: "person-role"` (person × role per day) and legacy role×day snaps still render when present, read-only.
 
 ### Entity dictionary
 
@@ -286,7 +311,7 @@ Notes:
 | `meta` | File identity; **`unitName` required for clear prints** |
 | `settings` | Statuses, default shifts, block length |
 | `groups` | Print colour bands |
-| `roles` | Catalogue + night / hard / skill / order |
+| `roles` | Catalogue + day / night / hard / skill / order |
 | `people` | Team; `fixedRoleId`; `active` |
 | `personRoles` | Qualifications |
 | `blocks.current` | Working four-day set |
@@ -329,7 +354,7 @@ Source is modular under `src/js/` and bundled to one HTML via `npm run build`:
 | Network | None required at runtime |
 | Delivery | Single offline HTML (~350 KB) or zip of that file |
 | Performance | Generate four days for ~25 people / 16 roles in well under 2s |
-| Print | Colour; crest; unit name; optional “Prepared by” |
+| Print | Colour; A4 landscape; crest; unit name; optional “Prepared by”; day header row frozen on screen before printing |
 | Resilience | Folder backups; `localStorage`; dirty badge; confirm before destructive clear |
 | Security | Local only; no telemetry |
 
@@ -345,6 +370,9 @@ Source is modular under `src/js/` and bundled to one HTML via `npm run build`:
 6. Save to log → Log lists entry with manager when set → View/Print keeps that name after manager rename.
 7. Historic roster and Duty stats read from history + current block.
 8. Open a v1 file → migrated to v2 without data loss.
+9. Attendance status dropdown offers Rest day; People screen lists the team sorted by surname.
+10. A role with Used by day off and Used at night on (for example Public Office) is offered by Generate and manual assign only on night shifts.
+11. Print screen shows one column per day with duty type / status text coloured per person; a spare person's cell is an editable box that stays blank until the manager types a note; the day header row stays visible while scrolling; Print in colour produces A4 landscape output.
 
 ---
 
