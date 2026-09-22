@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build zip
+        run: npm run build
+        env:
+          VERSION: ${{ github.ref_name }}
+
+      - name: Publish GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME}"
+          ZIP="dist/shift-manager-offline-${VERSION}.zip"
+          test -f "$ZIP"
+          gh release create "$VERSION" \
+            "$ZIP" \
+            "dist/shift-manager-offline.zip" \
+            --title "Shift Manager ${VERSION}" \
+            --generate-notes

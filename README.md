@@ -109,7 +109,16 @@ npm install
 npm run build
 ```
 
-Writes `dist/shift-manager.html` and `../shift-manager.html`. Zip with `shift-manager-offline.zip` for distribution.
+Writes `dist/shift-manager.html`, `../shift-manager.html` (local only), `dist/shift-manager-offline.zip`, and a versioned zip (`dist/shift-manager-offline-vX.Y.Z.zip` from `package.json` or `VERSION`).
+
+### Release
+
+Push a semver tag to publish a GitHub Release with the offline zip:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
 
 ---
 

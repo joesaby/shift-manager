@@ -1,5 +1,13 @@
 import * as esbuild from "esbuild";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, unlinkSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const { version: packageVersion } = require("./package.json");
+
+const version = (process.env.VERSION || packageVersion).replace(/^v/, "");
+const versionTag = `v${version}`;
 
 const result = await esbuild.build({
   entryPoints: ["src/js/main.js"],
@@ -39,5 +47,24 @@ ${js}
 
 mkdirSync("dist", { recursive: true });
 writeFileSync("dist/shift-manager.html", html);
-writeFileSync("../shift-manager.html", html);
-console.log("Built dist/shift-manager.html and ../shift-manager.html (" + (html.length / 1024).toFixed(0) + " KB)");
+
+if (!process.env.CI) {
+  writeFileSync("../shift-manager.html", html);
+}
+
+const zipName = `shift-manager-offline-${versionTag}.zip`;
+const zipPath = `dist/${zipName}`;
+const latestZipPath = "dist/shift-manager-offline.zip";
+
+for (const path of [zipPath, latestZipPath]) {
+  if (existsSync(path)) unlinkSync(path);
+}
+
+execFileSync("zip", ["-j", zipPath, "dist/shift-manager.html"], { stdio: "inherit" });
+execFileSync("zip", ["-j", latestZipPath, "dist/shift-manager.html"], { stdio: "inherit" });
+
+const kb = (html.length / 1024).toFixed(0);
+const targets = process.env.CI
+  ? `dist/shift-manager.html, ${zipPath}, ${latestZipPath}`
+  : `dist/shift-manager.html, ../shift-manager.html, ${zipPath}, ${latestZipPath}`;
+console.log(`Built ${targets} (${kb} KB, ${versionTag})`);
