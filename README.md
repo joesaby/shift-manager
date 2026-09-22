@@ -52,7 +52,7 @@ npm run build
 
 Produces `dist/shift-manager.html`, `dist/shift-manager-offline.zip`, and `dist/shift-manager-offline-vX.Y.Z.zip`. Locally it also writes `../shift-manager.html`.
 
-Every push to `main` publishes a patch release. Use `#minor` / `#major` in the commit message to bump those; `[skip release]` to skip.
+Every push to `main` publishes a patch release and keeps only the **latest 3** GitHub Releases (current, n−1, n−2). Older releases and tags are deleted. Use `#minor` / `#major` in the commit message to bump those; `[skip release]` to skip.
 
 ## Docs
 

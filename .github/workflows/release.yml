@@ -104,3 +104,22 @@ jobs:
             "dist/shift-manager-offline.zip" \
             --title "Shift Manager ${VERSION}" \
             --generate-notes
+
+      - name: Prune older releases (keep latest 3)
+        if: steps.version.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          KEEP=3
+          # Newest first (v1.0.6, v1.0.5, …)
+          mapfile -t tags < <(git tag -l 'v*.*.*' --sort=-v:refname)
+          if [ "${#tags[@]}" -le "${KEEP}" ]; then
+            echo "Have ${#tags[@]} release tag(s); nothing to prune."
+            exit 0
+          fi
+          for tag in "${tags[@]:${KEEP}}"; do
+            echo "Deleting old release ${tag}"
+            gh release delete "${tag}" --yes --cleanup-tag || true
+          done
+          echo "Kept: ${tags[*]:0:${KEEP}}"
