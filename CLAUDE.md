@@ -30,6 +30,7 @@ Bias toward caution over speed; for trivial typos, use judgment.
 - After behaviour changes: `npm run build` must succeed.
 - If persistence/schema changes: check migration in `model.js` and mention JSON impact.
 - If security/network/third-party posture changes: update `SECURITY.md` / `docs/THIRD_PARTY.md`.
+- Using a new Tailwind utility class? `src/styles/tailwind.css` is a fixed vendored file, not regenerated at build time — `grep -c '\.CLASSNAME' src/styles/tailwind.css` first. If it's `0`, the class silently does nothing; add plain CSS to `app.css` instead (see AGENTS.md hard constraint #7).
 
 ## Quick map
 

@@ -35,6 +35,7 @@ Do **not** run this for typos, copy tweaks, or one-line CSS with no product surf
    - Single HTML via `build.mjs`; `file://` must work
    - Schema: migrate-on-open in `model.js`; keep old log layouts readable
    - Escape user text with `esc()`; no fake in-app auth
+   - New Tailwind utility classes: `src/styles/tailwind.css` is a fixed vendored subset, not regenerated at build time — confirm the class is actually in that file before designing around it, or plan plain CSS in `app.css` instead
 4. **Security / third-party.** If storage, network, or build packaging changes → plan updates to `SECURITY.md` / `THIRD_PARTY.md` as part of done.
 5. **Alternatives.** If 2+ approaches matter, list them with one-line tradeoffs and a recommendation; ask before coding when the choice is non-obvious.
 6. **Doc sync plan.** Which PRD rows (H-ids), README bits, or security docs change? Record that before implementation.
@@ -65,6 +66,7 @@ Run against the **diff**, not a re-debug of every line:
 - [ ] User-facing strings go through `esc()`
 - [ ] `SECURITY.md` / `THIRD_PARTY.md` / `README.md` / PRD updated when posture or operator steps change
 - [ ] No drive-by refactors outside the request
+- [ ] Any new Tailwind utility class checked against `src/styles/tailwind.css` (vendored, fixed subset), not just assumed to work
 
 Unchecked items without justification → fix before commit.
 
