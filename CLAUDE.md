@@ -42,9 +42,9 @@ Bias toward caution over speed; for trivial typos, use judgment.
 
 For non-trivial behaviour changes, use project skills in order:
 
-1. **architect** (`.cursor/skills/architect/SKILL.md`) — PRD H-ids, constraints, doc sync  
-2. **tdd** (`.cursor/skills/tdd/SKILL.md`) — failing test mapped to H-ids, then implement  
-3. **verify** (`.cursor/skills/verify/SKILL.md`) — build + PRD/security acceptance  
+1. **architect** (`.cursor/skills/architect/SKILL.md`, also under `.agents/skills/` and `.claude/skills/`) — PRD H-ids, constraints, doc sync  
+2. **tdd** (same paths) — failing test mapped to H-ids, then implement  
+3. **verify** (same paths) — build + PRD/security acceptance  
 
 ## Do not
 

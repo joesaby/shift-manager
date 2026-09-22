@@ -64,7 +64,13 @@ UI pattern: screens return HTML strings; clicks use `data-act="…"`; inputs use
 
 ## Skills (feature workflow)
 
-Project skills live in `.cursor/skills/`:
+Project skills (same content in all three trees):
+
+- `.cursor/skills/`
+- `.agents/skills/`
+- `.claude/skills/`
+
+Skills: **architect**, **tdd**, **verify**.
 
 1. **architect** — map work to PRD H-ids + docs; design brief or fit review  
 2. **tdd** — failing check first for domain rules (`model` / `generator` / migrations)  
