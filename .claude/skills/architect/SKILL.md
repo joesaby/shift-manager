@@ -15,7 +15,7 @@ Ground designs in the product docs so work reuses what exists, stays offline, an
 
 | Doc | Use for |
 | --- | --- |
-| [`docs/Shift_Manager_PRD.md`](../../../docs/Shift_Manager_PRD.md) | Requirements (H1…), business rules, schema, non-goals |
+| [`docs/Shift_Manager_PRD.md`](../../../docs/Shift_Manager_PRD.md) | Requirements (H1…), business rules, schema |
 | [`AGENTS.md`](../../../AGENTS.md) | Module map, hard constraints, release |
 | [`SECURITY.md`](../../../SECURITY.md) | Offline posture, data stores, deployment trust |
 | [`TERMS.md`](../../../TERMS.md) | No-warranty / org responsibility framing |
@@ -28,7 +28,7 @@ Do **not** run this for typos, copy tweaks, or one-line CSS with no product surf
 
 ## Mode A — Feature brainstorm (before code)
 
-1. **Map to PRD.** Find matching Must/Should IDs (H…). If none, is it a new Must, a Should, or a **non-goal**? Non-goals (RDMS import, cloud sync, multi-user edit, …) need an explicit user override before design continues.
+1. **Map to PRD.** Find matching Must/Should IDs (H…). If none, treat it as a new requirement — confirm with the user and plan a PRD update before coding.
 2. **Locate code.** Using `AGENTS.md`, name the modules likely touched (`model.js`, `generator.js`, `snapshot.js`, `screens/…`, `workspace.js`, …). Prefer extending those over new frameworks.
 3. **Constraints check** (fail the design if violated):
    - Offline / no CDN / no new runtime network
@@ -44,7 +44,6 @@ Do **not** run this for typos, copy tweaks, or one-line CSS with no product surf
 ```markdown
 ## Design brief
 - PRD: H… (quote requirement in one line)
-- Non-goal conflict?: no | yes — …
 - Modules: …
 - Approach: …
 - Alternatives considered: …

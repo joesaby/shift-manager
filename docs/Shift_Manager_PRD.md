@@ -39,15 +39,6 @@ Shift manager at a desk, last night of a block. Others only see the printed rota
 
 **Best practice: one folder per unit** (for example `mill-street/`, `pearse-street/`). Each folder holds that unit’s data file, backups, and file-based audit trail. Switching units = finish saving, then **Change folder** (or Open another file). Do not mix two units in one folder.
 
-### Non-goals (for now)
-
-- RDMS leave import
-- Shift swaps, overtime, pay
-- Multi-user concurrent editing of the same file
-- Planning more than one block ahead
-- Cloud sync API (OneDrive/SharePoint may hold the folder; the app does not call an API)
-- In-app viewer for the folder audit text files (audit is written to disk for accountability)
-
 ---
 
 ## 2. Goals and success

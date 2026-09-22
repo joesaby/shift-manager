@@ -37,7 +37,6 @@ For each H-id in the change set, mark pass/fail/skip:
 | Check | How |
 | --- | --- |
 | Requirement met | Manual path in `dist/shift-manager.html` or unit test evidence |
-| Non-goals untouched | No RDMS/cloud/multi-user/sync creeping in |
 | Schema safe | Old JSON still opens; new fields optional or migrated |
 | Print/log | If touched: `person-day` works; legacy snaps still open from Log |
 

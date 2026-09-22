@@ -77,7 +77,3 @@ Skills: **architect**, **tdd**, **verify**.
 3. **verify** — `npm run build` (+ `npm test` if present), PRD/security acceptance before commit  
 
 Typical order for non-trivial behaviour: architect → tdd → implement → verify.
-
-## Out of scope (for now)
-
-RDMS leave import, shift swaps/overtime/pay, multi-user concurrent edit, cloud sync API, in-app audit file viewer.
