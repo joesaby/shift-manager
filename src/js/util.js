@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------ formatting + id helpers */
-export const STAT = ["Present", "Annual leave", "Sick leave", "Duty away"];
-export const SBG = { "Present": "#EAF4EC", "Annual leave": "#BBDEFB", "Sick leave": "#FFCDD2", "Duty away": "#E1BEE7" };
+export const STAT = ["Present", "Annual leave", "Sick leave", "Duty away", "Rest day"];
+export const SBG = { "Present": "#EAF4EC", "Annual leave": "#BBDEFB", "Sick leave": "#FFCDD2", "Duty away": "#E1BEE7", "Rest day": "#E0E0E0" };
 export const LKEY = "shiftManager.v2";
 export const LKEY_LEGACY = "shiftManager.v1";
 

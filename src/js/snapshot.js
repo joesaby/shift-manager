@@ -1,39 +1,30 @@
 import { esc, fmt, fmtLong, SBG } from "./util.js";
-import { D, block, dayLabels, activePeople, personById, roleById, groupById, getStatus, isPresent, roleOfPerson, rosterDays, rolesForDay, unitName } from "./model.js";
+import { block, dayLabels, activePeople, roleById, groupById, getStatus, isPresent, roleOfPerson, rosterDays, rolesForDay, getSpareNote, unitName } from "./model.js";
 import { LOGO_DATA_URI } from "../assets/logo.js";
 import { getSessionUser } from "./audit.js";
 
+/** Person × day snapshot: one cell per person per day, the duty type / status as text. */
 export function buildSnapshot() {
   const days = dayLabels();
   const ros = rosterDays();
   const people = activePeople();
-  const roleMeta = D().roles.map((r) => ({
-    id: r.id, name: r.name, color: groupById(r.groupId).color, night: r.usedAtNight
+
+  const cells = people.map((p) => days.map((day, d) => {
+    if (!isPresent(p, d)) {
+      const st = getStatus(p.id, d);
+      return { kind: "status", text: st, color: SBG[st] || "#EEEEEE" };
+    }
+    const rid = ros ? roleOfPerson(ros[d], p.id) : null;
+    if (rid) {
+      const role = roleById(rid) || { name: "", groupId: "" };
+      return { kind: "role", text: role.name, color: groupById(role.groupId).color };
+    }
+    return { kind: "spare", text: getSpareNote(p.id, d), color: "#FFFFFF" };
   }));
 
-  /* Per-day person × role grids (matches on-screen roster). */
-  const byDay = days.map((day, d) => {
-    const roles = rolesForDay(d).map((r) => roleMeta.find((x) => x.id === r.id) || {
-      id: r.id, name: r.name, color: groupById(r.groupId).color, night: r.usedAtNight
-    });
-    const cells = people.map((p) => roles.map((r) => {
-      if (!isPresent(p, d)) {
-        return { text: getStatus(p.id, d), color: SBG[getStatus(p.id, d)] || "#EEEEEE", kind: "away" };
-      }
-      const holder = ros ? ros[d].assign[r.id] : null;
-      if (holder === p.id) return { text: "✓", color: r.color, kind: "mine" };
-      if (!holder) return { text: "", color: "#F8D7D3", kind: "unfilled" };
-      return { text: "", color: "#FFFFFF", kind: "other" };
-    }));
-    const unfilled = roles.filter((r) => !(ros && ros[d].assign[r.id])).map((r) => r.name);
-    return { day, roles, people: people.map((p) => ({ id: p.id, name: p.name })), cells, unfilled };
-  });
-
-  const leave = [["Annual leave", "#BBDEFB"], ["Sick leave", "#FFCDD2"], ["Duty away", "#E1BEE7"]].map((x) => ({
-    label: x[0], color: x[1], cells: days.map((day, d) => people.filter((p) => getStatus(p.id, d) === x[0]).map((p) => p.name).join(", "))
-  }));
-  const spare = days.map((day, d) => people.filter((p) => isPresent(p, d) && !(ros && roleOfPerson(ros[d], p.id))).map((p) => p.name).join(", "));
-  leave.push({ label: "Spare (no role)", color: "#FFFFFF", cells: spare });
+  const unfilled = days.map((day, d) => rolesForDay(d)
+    .filter((r) => !(ros && ros[d].assign[r.id]))
+    .map((r) => r.name));
 
   const records = [];
   days.forEach((day, d) => people.forEach((p) => {
@@ -42,14 +33,14 @@ export function buildSnapshot() {
   }));
 
   return {
-    layout: "person-role",
+    layout: "person-day",
     unitName: unitName(),
     savedBy: getSessionUser() || "",
     start: block().startDate,
     days,
-    roles: roleMeta,
-    byDay,
-    leave,
+    people: people.map((p) => ({ id: p.id, name: p.name })),
+    cells,
+    unfilled,
     records
   };
 }
@@ -71,7 +62,31 @@ function leaveTables(snap) {
     <table class="rota"><thead><tr><th class="bg-neutral text-neutral-content text-left p-2"></th>${head}</tr></thead><tbody>${leave}</tbody></table>`;
 }
 
-/** New layout: one person × role table per day. */
+/** Current layout: one table, person leftmost, one column per day — duty type / status as coloured text. */
+function rotaHTMLPersonDay(snap, editable) {
+  const head = snap.days.map((d) =>
+    `<th class="bg-neutral text-neutral-content text-center p-2 align-bottom"><div>${esc(d.label)}</div><div class="font-normal opacity-80 text-xs">${esc(d.shift)}</div></th>`
+  ).join("");
+  const rows = snap.people.map((p, pi) => {
+    const cells = snap.cells[pi].map((c, d) => {
+      if (c.kind === "spare" && editable) {
+        return `<td class="p-1 text-center" style="background:#ffffff"><input type="text" class="input input-bordered input-xs w-full text-center" placeholder="HVB" value="${esc(c.text)}" data-ch="spareNote" data-p="${p.id}" data-d="${d}" aria-label="${esc(p.name)} spare note, ${esc(snap.days[d].label)}"></td>`;
+      }
+      const style = `background:${c.color};color:#1f2937`;
+      return `<td class="p-2 text-center text-sm font-medium" style="${style}">${esc(c.text)}</td>`;
+    }).join("");
+    return `<tr><td class="p-2 font-semibold whitespace-nowrap">${esc(p.name)}</td>${cells}</tr>`;
+  }).join("");
+  const unfBits = snap.days.map((d, i) => (snap.unfilled && snap.unfilled[i] && snap.unfilled[i].length) ? `${d.label}: ${snap.unfilled[i].join(", ")}` : "").filter(Boolean);
+  const unf = unfBits.length ? `<div class="text-xs text-error mb-2 print:mb-1">Unfilled — ${esc(unfBits.join(" · "))}</div>` : "";
+  return `<div id="printArea" class="bg-white text-black border border-base-300 rounded-box p-6 shadow-sm min-w-[40rem]">
+    ${headerBlock(snap)}
+    ${unf}
+    <div class="printScroll"><table class="rota rota-freeze"><thead><tr><th class="bg-neutral text-neutral-content text-left p-2">Person</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>
+  </div>`;
+}
+
+/** Older layout: one person × role table per day. */
 function rotaHTMLPersonRole(snap) {
   const sections = snap.byDay.map((block) => {
     const head = block.roles.map((r) =>
@@ -115,8 +130,9 @@ function rotaHTMLLegacy(snap) {
     ${leaveTables(snap)}</div>`;
 }
 
-export function rotaHTML(snap) {
+export function rotaHTML(snap, opts) {
   if (!snap) return "";
+  if (snap.layout === "person-day" && snap.cells && snap.people) return rotaHTMLPersonDay(snap, !!(opts && opts.editable));
   if (snap.layout === "person-role" && snap.byDay) return rotaHTMLPersonRole(snap);
   if (snap.cells && snap.roles) return rotaHTMLLegacy(snap);
   /* Rebuild-friendly: if log entry only has records, show a simple person×day role table */

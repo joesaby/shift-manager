@@ -8,9 +8,9 @@ export function loadSample() {
     { id: "g2", name: "Beat", color: "#C8E6C9", sortOrder: 2 },
     { id: "g3", name: "Inside", color: "#FFE0B2", sortOrder: 3 }
   ];
-  const defs = [["Car 1", "g1", 1, 1, 1], ["Car 2", "g1", 1, 1, 1], ["Member in Charge", "g3", 1, 0, 1], ["Jailer", "g3", 1, 0, 1], ["Public Office", "g3", 0, 0, 0], ["Admin Support", "g3", 0, 0, 0], ["Comms Desk", "g3", 1, 0, 0], ["Station Duty", "g3", 1, 0, 0], ["Beat 1", "g2", 1, 1, 0], ["Beat 2", "g2", 1, 0, 0], ["Beat 3", "g2", 1, 0, 0], ["Beat 4", "g2", 1, 0, 0], ["Traffic Unit", "g1", 1, 1, 0], ["Patrol Support", "g2", 1, 0, 0], ["Escort Car", "g1", 1, 0, 0], ["Scene Support", "g2", 1, 0, 0]];
+  const defs = [["Car 1", "g1", 1, 1, 1], ["Car 2", "g1", 1, 1, 1], ["Member in Charge", "g3", 1, 0, 1], ["Jailer", "g3", 1, 0, 1], ["Public Office", "g3", 1, 0, 0, 0], ["Admin Support", "g3", 0, 0, 0], ["Comms Desk", "g3", 1, 0, 0], ["Station Duty", "g3", 1, 0, 0], ["Beat 1", "g2", 1, 1, 0], ["Beat 2", "g2", 1, 0, 0], ["Beat 3", "g2", 1, 0, 0], ["Beat 4", "g2", 1, 0, 0], ["Traffic Unit", "g1", 1, 1, 0], ["Patrol Support", "g2", 1, 0, 0], ["Escort Car", "g1", 1, 0, 0], ["Scene Support", "g2", 1, 0, 0]];
   const roles = defs.map((x, i) => ({
-    id: uid(), name: x[0], groupId: x[1], usedAtNight: !!x[2], hard: !!x[3], skillRestricted: !!x[4], sortOrder: i + 1
+    id: uid(), name: x[0], groupId: x[1], usedAtDay: x[5] == null ? true : !!x[5], usedAtNight: !!x[2], hard: !!x[3], skillRestricted: !!x[4], sortOrder: i + 1
   }));
   const rn = (n) => roles.find((r) => r.name === n).id;
   const names = ["Aoife Brennan", "Ciaran Doyle", "Declan Murphy", "Eimear Walsh", "Fionn Kelly", "Grainne Byrne", "Hugh Ryan", "Ita Nolan", "Jack Moran", "Katie Burke", "Liam Duffy", "Maeve Quinn", "Niall Regan", "Owen Lyons", "Padraig Costello", "Roisin Farrell", "Sean Egan", "Tadhg Hayes", "Una Carey", "Vincent Daly", "Willie Fahey", "Yvonne Gill", "Zach Naughton"];
@@ -37,12 +37,13 @@ export function loadSample() {
   const shifts = ["Day", "Day", "Night", "Night"];
   const attendance = [];
   const setS = (n, d, label) => {
-    const statusId = ({ "Annual leave": "annual_leave", "Sick leave": "sick_leave", "Duty away": "duty_away" })[label];
+    const statusId = ({ "Annual leave": "annual_leave", "Sick leave": "sick_leave", "Duty away": "duty_away", "Rest day": "rest_day" })[label];
     if (!statusId) return;
     attendance.push({ date: addDays(start, d), personId: pid(n), statusId });
   };
   ["Ciaran Doyle", "Grainne Byrne", "Padraig Costello", "Yvonne Gill"].forEach((n) => { setS(n, 0, "Annual leave"); setS(n, 1, "Annual leave"); });
   setS("Sean Egan", 1, "Sick leave");
+  setS("Zach Naughton", 0, "Rest day");
   [2, 3].forEach((d) => {
     ["Padraig Costello", "Yvonne Gill", "Vincent Daly", "Una Carey"].forEach((n) => setS(n, d, "Annual leave"));
     setS("Sean Egan", d, "Sick leave");
@@ -57,7 +58,8 @@ export function loadSample() {
         { id: "present", label: "Present", allocates: true, printColor: "#EAF4EC" },
         { id: "annual_leave", label: "Annual leave", allocates: false, printColor: "#BBDEFB" },
         { id: "sick_leave", label: "Sick leave", allocates: false, printColor: "#FFCDD2" },
-        { id: "duty_away", label: "Duty away", allocates: false, printColor: "#E1BEE7" }
+        { id: "duty_away", label: "Duty away", allocates: false, printColor: "#E1BEE7" },
+        { id: "rest_day", label: "Rest day", allocates: false, printColor: "#E0E0E0" }
       ],
       defaultShifts: ["Day", "Day", "Night", "Night"],
       blockLengthDays: 4
@@ -74,7 +76,8 @@ export function loadSample() {
         stale: false,
         generatedAt: null,
         attendance,
-        assignments: []
+        assignments: [],
+        spareNotes: []
       },
       history: []
     },

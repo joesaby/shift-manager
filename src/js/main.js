@@ -7,7 +7,7 @@ import { logAudit } from "./audit.js";
 import { vStart, actions as startActions, changes as startChanges } from "./screens/start.js";
 import { vAtt, actions as attActions, changes as attChanges } from "./screens/attendance.js";
 import { vRos, actions as rosActions } from "./screens/roster.js";
-import { vPrt, actions as prtActions } from "./screens/print.js";
+import { vPrt, actions as prtActions, changes as prtChanges } from "./screens/print.js";
 import { vPpl, actions as pplActions, changes as pplChanges } from "./screens/people.js";
 import { vSkills, actions as sklActions, changes as sklChanges } from "./screens/skills.js";
 import { vRol, actions as rolActions, changes as rolChanges } from "./screens/roles.js";
@@ -18,7 +18,7 @@ import { actions as appActions } from "./app-actions.js";
 
 const SCREENS = { start: vStart, att: vAtt, ros: vRos, prt: vPrt, ppl: vPpl, skl: vSkills, rol: vRol, log: vLog, hist: vHist, stats: vStats };
 const ACT = { ...appActions, ...startActions, ...attActions, ...rosActions, ...prtActions, ...sklActions, ...rolActions, ...logActions, ...histActions, ...statsActions, ...pplActions };
-const CHANGES = { ...startChanges, ...attChanges, ...pplChanges, ...sklChanges, ...rolChanges, ...histChanges };
+const CHANGES = { ...startChanges, ...attChanges, ...pplChanges, ...sklChanges, ...rolChanges, ...histChanges, ...prtChanges };
 
 function render() {
   if (S.ui.screen === "help" || !SCREENS[S.ui.screen]) S.ui.screen = "start";

@@ -15,6 +15,11 @@ function initials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+function surname(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  return parts.length ? parts[parts.length - 1] : "";
+}
+
 function skillCount(p) {
   return personRoleIds(p.id).filter((rid) => {
     const r = roleById(rid);
@@ -27,7 +32,7 @@ function filteredPeople() {
   const f = S.ui.peopleFilter || "all";
   return D().people
     .slice()
-    .sort((a, b) => a.name.localeCompare(b.name, "en-IE"))
+    .sort((a, b) => surname(a.name).localeCompare(surname(b.name), "en-IE") || a.name.localeCompare(b.name, "en-IE"))
     .filter((p) => {
       if (q && p.name.toLowerCase().indexOf(q) < 0) return false;
       if (f === "active") return p.active !== false;

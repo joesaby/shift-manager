@@ -5,20 +5,23 @@ export const DEFAULT_STATUSES = [
   { id: "present", label: "Present", allocates: true, printColor: "#EAF4EC" },
   { id: "annual_leave", label: "Annual leave", allocates: false, printColor: "#BBDEFB" },
   { id: "sick_leave", label: "Sick leave", allocates: false, printColor: "#FFCDD2" },
-  { id: "duty_away", label: "Duty away", allocates: false, printColor: "#E1BEE7" }
+  { id: "duty_away", label: "Duty away", allocates: false, printColor: "#E1BEE7" },
+  { id: "rest_day", label: "Rest day", allocates: false, printColor: "#E0E0E0" }
 ];
 
 const LABEL_TO_STATUS = {
   Present: "present",
   "Annual leave": "annual_leave",
   "Sick leave": "sick_leave",
-  "Duty away": "duty_away"
+  "Duty away": "duty_away",
+  "Rest day": "rest_day"
 };
 const STATUS_TO_LABEL = {
   present: "Present",
   annual_leave: "Annual leave",
   sick_leave: "Sick leave",
-  duty_away: "Duty away"
+  duty_away: "Duty away",
+  rest_day: "Rest day"
 };
 
 function defaultStatusesCopy() {
@@ -26,7 +29,8 @@ function defaultStatusesCopy() {
     { id: "present", label: "Present", allocates: true, printColor: "#EAF4EC" },
     { id: "annual_leave", label: "Annual leave", allocates: false, printColor: "#BBDEFB" },
     { id: "sick_leave", label: "Sick leave", allocates: false, printColor: "#FFCDD2" },
-    { id: "duty_away", label: "Duty away", allocates: false, printColor: "#E1BEE7" }
+    { id: "duty_away", label: "Duty away", allocates: false, printColor: "#E1BEE7" },
+    { id: "rest_day", label: "Rest day", allocates: false, printColor: "#E0E0E0" }
   ];
 }
 
@@ -57,7 +61,8 @@ export function emptyData() {
         stale: false,
         generatedAt: null,
         attendance: [],
-        assignments: []
+        assignments: [],
+        spareNotes: []
       },
       history: []
     },
@@ -111,6 +116,7 @@ export function migrateToV2(raw) {
     id: r.id,
     name: r.name,
     groupId: r.group || r.groupId || "",
+    usedAtDay: r.usedAtDay == null ? true : !!r.usedAtDay,
     usedAtNight: !!(r.night ?? r.usedAtNight),
     hard: !!r.hard,
     skillRestricted: !!(r.skill ?? r.skillRestricted),
@@ -205,10 +211,12 @@ function normalizeV2(d) {
   const c = d.blocks.current;
   if (!c.attendance) c.attendance = [];
   if (!c.assignments) c.assignments = [];
+  if (!c.spareNotes) c.spareNotes = [];
   if (c.generatedAt === undefined) c.generatedAt = c.assignments.length ? new Date().toISOString() : null;
   if (c.stale == null) c.stale = false;
   d.roles.forEach((r, i) => {
     if (r.groupId == null && r.group != null) r.groupId = r.group;
+    if (r.usedAtDay == null) r.usedAtDay = true;
     if (r.usedAtNight == null && r.night != null) r.usedAtNight = !!r.night;
     if (r.skillRestricted == null && r.skill != null) r.skillRestricted = !!r.skill;
     if (r.sortOrder == null) r.sortOrder = i + 1;
@@ -240,7 +248,7 @@ export const activePeople = () => D().people.filter((p) => p.active !== false);
 export const blockLen = () => (D().settings && D().settings.blockLengthDays) || block().shifts.length || 4;
 export const dateOf = (d) => addDays(block().startDate, d);
 export const shiftOf = (d) => block().shifts[d];
-export const rolesForDay = (d) => D().roles.filter((r) => shiftOf(d) === "Day" || r.usedAtNight);
+export const rolesForDay = (d) => D().roles.filter((r) => (shiftOf(d) === "Day" ? r.usedAtDay !== false : r.usedAtNight));
 export const dayLabels = () => block().shifts.map((s, d) => ({ label: fmt(dateOf(d)), shift: s, iso: dateOf(d) }));
 
 export function statusLabel(statusId) {
@@ -350,6 +358,23 @@ export function writeRoster(days, source) {
   b.generatedAt = new Date().toISOString();
   b.stale = false;
   touchMeta();
+}
+
+export function getSpareNote(pid, d) {
+  const date = dateOf(d);
+  const row = (block().spareNotes || []).find((n) => n.personId === pid && n.date === date);
+  return row ? row.text : "";
+}
+
+export function setSpareNote(pid, d, text) {
+  const date = dateOf(d);
+  if (!block().spareNotes) block().spareNotes = [];
+  const rows = block().spareNotes;
+  const i = rows.findIndex((n) => n.personId === pid && n.date === date);
+  const t = String(text || "").trim();
+  if (!t) { if (i >= 0) rows.splice(i, 1); return; }
+  if (i >= 0) rows[i].text = t;
+  else rows.push({ date, personId: pid, text: t });
 }
 
 export function setAssignment(d, rid, pid, source) {
@@ -484,6 +509,11 @@ export function historicRosterModel(entry) {
       });
     });
   }
+  if (entry.snap && entry.snap.people) {
+    entry.snap.people.forEach((p) => {
+      if (p.id && !peopleMap[p.id]) peopleMap[p.id] = { id: p.id, name: p.name, active: true };
+    });
+  }
   const people = Object.values(peopleMap).sort((a, b) => a.name.localeCompare(b.name));
 
   const statusFor = (pid, date) => {
@@ -510,7 +540,7 @@ export function historicRosterModel(entry) {
     return { assign };
   });
 
-  const rolesFor = (d) => D().roles.filter((r) => days[d].shift === "Day" || r.usedAtNight);
+  const rolesFor = (d) => D().roles.filter((r) => (days[d].shift === "Day" ? r.usedAtDay !== false : r.usedAtNight));
 
   return { start, days, people, roster, statusFor, rolesFor };
 }

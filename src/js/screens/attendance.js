@@ -7,7 +7,7 @@ export function vAtt() {
   if (!D().people.length) return noPeople();
   const days = dayLabels(); const ppl = activePeople();
   const info = days.map((d, i) => ({ d: d, need: rolesForDay(i).length, pc: ppl.filter((p) => isPresent(p, i)).length }));
-  const stats = info.map((x) => `<div class="stat"><div class="stat-title">${esc(x.d.label)} <span class="badge badge-sm ${x.d.shift === "Day" ? "badge-warning" : "badge-info"}">${x.d.shift}</span></div><div class="stat-value text-3xl ${x.pc < x.need ? "text-error" : "text-success"}">${x.pc}</div><div class="stat-desc">present, ${x.need} roles to fill</div></div>`).join("");
+  const stats = info.map((x) => `<div class="stat"><div class="stat-value text-2xl leading-snug">${esc(x.d.label)} <span class="badge badge-sm ${x.d.shift === "Day" ? "badge-warning" : "badge-info"}">${x.d.shift}</span></div><div class="stat-desc mt-1 font-semibold ${x.pc < x.need ? "text-error" : "text-success"}">${x.pc} present, ${x.need} roles to fill</div></div>`).join("");
   const heads = days.map((d, i) => `<th class="align-bottom min-w-40"><div class="font-semibold">${esc(d.label)}</div><select class="select select-bordered select-xs mt-1" data-ch="shift" data-d="${i}" aria-label="Shift for ${esc(d.label)}"><option${d.shift === "Day" ? " selected" : ""}>Day</option><option${d.shift === "Night" ? " selected" : ""}>Night</option></select></th>`).join("");
   const rows = ppl.map((p) => `<tr class="hover"><td class="stickycol font-medium whitespace-nowrap">${esc(p.name)}${p.fixedRoleId ? `<div class="text-xs text-base-content/60 font-normal">Only ${esc((roleById(p.fixedRoleId) || { name: "" }).name)}</div>` : ""}</td>` + days.map((d, i) => {
     const v = getStatus(p.id, i);
