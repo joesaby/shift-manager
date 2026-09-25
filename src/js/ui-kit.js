@@ -7,7 +7,7 @@ import { getSessionUser } from "./audit.js";
 
 export const ph = (title, sub, actions) => `<div class="flex flex-wrap items-end justify-between gap-3 print:hidden"><div><h1 class="text-2xl font-bold tracking-tight">${title}</h1>${sub ? `<p class="text-base-content/70 mt-1">${sub}</p>` : ""}</div>${actions ? `<div class="flex flex-wrap items-end gap-2">${actions}</div>` : ""}</div>`;
 
-export const noPeople = () => `<div role="alert" class="alert alert-info"><span>Add your people and roles first (or load the sample data from Home).</span><button class="btn btn-sm" data-act="nav" data-s="start">Home</button></div>`;
+export const noPeople = () => `<div role="alert" class="alert alert-info"><span>Add your people and roles first.</span><button class="btn btn-sm" data-act="nav" data-s="start">Home</button></div>`;
 
 /** Unit line for roster / attendance page headers (screen only). */
 export function unitBanner() {

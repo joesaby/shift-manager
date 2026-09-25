@@ -1,7 +1,6 @@
 import { uid, LKEY } from "./util.js";
 import { S, touch, toast, askConfirm, openFile, saveFile, applyLoaded } from "./state.js";
 import { D, emptyData } from "./model.js";
-import { loadSample } from "./sampleData.js";
 import { pickWorkspace, reconnectWorkspace, hasWorkspace, readWorkspaceData } from "./workspace.js";
 import { setSessionUser, getSessionUser, logAudit } from "./audit.js";
 
@@ -9,7 +8,6 @@ export const actions = {
   nav: (a) => { S.ui.screen = a.s === "help" ? "start" : a.s; S.ui.sel = null; S.ui.viewLog = null; },
   open: () => { openFile(); },
   save: () => { saveFile(); },
-  sample: () => { if (D().people.length || D().roles.length) askConfirm("Replace your data?", "Loading the sample data replaces everything currently in the app.", "Replace", loadSample); else loadSample(); },
   askClear: () => askConfirm("Clear everything?", "This removes all people, roles and saved rotas from the app. A data file you saved earlier is not affected.", "Clear everything", () => {
     S.data = emptyData(); S.handle = null; S.dirty = false;
     try { localStorage.removeItem(LKEY); } catch (e) { /* ignore */ }

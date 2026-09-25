@@ -168,7 +168,6 @@ export function vStart() {
       <summary>Tips</summary>
       <div class="home-details-body">
         <ul class="list-disc ml-5 space-y-2 mb-0">
-          <li><b>Sample data</b> explores the app with fake names; it replaces what is loaded (you will confirm).</li>
           <li><b>Clear everything</b> wipes in-app data and the browser backup — not a JSON file already saved elsewhere.</li>
           <li>Older data files open fine; the app upgrades them on open.</li>
           <li>Chrome or Edge is best for Choose folder. Open / Save file works in other modern browsers.</li>
@@ -180,7 +179,6 @@ export function vStart() {
   </div>`;
 
   const footer = `<div class="flex flex-wrap items-center gap-2 pt-2" style="border-top:1px solid oklch(var(--bc)/.12)">
-    <button type="button" class="btn btn-outline btn-sm" data-act="sample">Load sample data</button>
     <button type="button" class="btn btn-outline btn-error btn-sm" data-act="askClear">Clear everything</button>
     <span class="text-xs opacity-50 ml-auto">Nothing is sent over the internet.</span>
   </div>`;
