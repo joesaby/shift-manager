@@ -1,8 +1,13 @@
 # Shift Manager – HTML App PRD
 
-2026-09-22 · HTML / offline JSON edition (updated to match shipped UI)
+2026-09-25 · HTML / offline JSON edition (updated to match shipped UI)
 
 This PRD describes the single-file HTML app (`shift-manager.html` / `shift-manager-offline.zip`). It replaces Excel / Power Apps front-end assumptions from the original PRD while keeping the same business rules. The JSON document (plus optional workspace folder) is the system of record.
+
+### 2026-09-25 — Attendance polish
+
+1. **Unavailable = blue:** Present keeps its green cell colour; Annual leave, Sick leave, Duty away, and Rest day all use the same blue on the Attendance screen and on the Print rota, so blue means “not available” at a glance (H41). Role-group colours on Print are unchanged.
+2. **Attendance freeze panes:** the day / shift header row stays pinned while scrolling the person list, same idea as the print screen (H42).
 
 ### 2026-09-22 — PM feedback round
 
@@ -74,7 +79,7 @@ Shift manager at a desk, last night of a block. Others only see the printed rota
 | H11 | Hard roles not on back-to-back nights when alternatives exist |
 | H12 | Manual cell edit: assign, swap, leave unfilled (person × role grid per day) |
 | H13 | Warn on unfilled roles and on stale roster after attendance/setup changes |
-| H14 | Colour print: **person × day** grid — person leftmost column, one column per day, each cell shows that person's duty type or status as text, coloured by role group (or status colour when not present) |
+| H14 | Colour print: **person × day** grid — person leftmost column, one column per day, each cell shows that person's duty type or status as text, coloured by role group when Present, or by the shared unavailable-status colour when not Present (see H41) |
 | H15 | Save block to log; browse, re-print, delete, CSV export; show manager who saved when known |
 | H16 | Open / save JSON; `localStorage` backup; **Choose folder** workspace with autosave |
 | H17 | Set **unit name** (`meta.unitName`); show on Home, Attendance, Roster, Print, sidebar |
@@ -87,6 +92,8 @@ Shift manager at a desk, last night of a block. Others only see the printed rota
 | H38 | The print screen's day header row stays frozen (visible) while scrolling the person list on screen, before printing |
 | H39 | Print output uses **A4 landscape** |
 | H40 | Attendance screen's per-day card shows the date prominently (large) and the present headcount smaller, so the headcount is not mistaken for the date |
+| H41 | Attendance and Print use the same status colours: **Present** is green; **Annual leave**, **Sick leave**, **Duty away**, and **Rest day** share one blue (unavailable). Role-group colours on Print stay as configured under Roles and groups |
+| H42 | Attendance screen's day / shift header row stays frozen (visible) while scrolling the person list |
 
 ### Should
 
@@ -214,9 +221,9 @@ When serving over `http` next to `data/shift-manager-data.json`, mock may auto-l
     "statuses": [
       { "id": "present", "label": "Present", "allocates": true, "printColor": "#EAF4EC" },
       { "id": "annual_leave", "label": "Annual leave", "allocates": false, "printColor": "#BBDEFB" },
-      { "id": "sick_leave", "label": "Sick leave", "allocates": false, "printColor": "#FFCDD2" },
-      { "id": "duty_away", "label": "Duty away", "allocates": false, "printColor": "#E1BEE7" },
-      { "id": "rest_day", "label": "Rest day", "allocates": false, "printColor": "#E0E0E0" }
+      { "id": "sick_leave", "label": "Sick leave", "allocates": false, "printColor": "#BBDEFB" },
+      { "id": "duty_away", "label": "Duty away", "allocates": false, "printColor": "#BBDEFB" },
+      { "id": "rest_day", "label": "Rest day", "allocates": false, "printColor": "#BBDEFB" }
     ],
     "defaultShifts": ["Day", "Day", "Night", "Night"],
     "blockLengthDays": 4
@@ -364,6 +371,8 @@ Source is modular under `src/js/` and bundled to one HTML via `npm run build`:
 9. Attendance status dropdown offers Rest day; People screen lists the team sorted by surname.
 10. A role with Used by day off and Used at night on (for example Public Office) is offered by Generate and manual assign only on night shifts.
 11. Print screen shows one column per day with duty type / status text coloured per person; a spare person's cell is an editable box that stays blank until the manager types a note; the day header row stays visible while scrolling; Print in colour produces A4 landscape output.
+12. On Attendance and Print, Present cells are green; Annual leave, Sick leave, Duty away, and Rest day cells are the same blue; assigned roles still use their role-group colours on Print.
+13. On Attendance, scrolling the person list keeps the day / shift header row visible (and the Person column still sticks when scrolling sideways).
 
 ---
 

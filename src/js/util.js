@@ -1,6 +1,7 @@
 /* ------------------------------------------------------------------ formatting + id helpers */
 export const STAT = ["Present", "Annual leave", "Sick leave", "Duty away", "Rest day"];
-export const SBG = { "Present": "#EAF4EC", "Annual leave": "#BBDEFB", "Sick leave": "#FFCDD2", "Duty away": "#E1BEE7", "Rest day": "#E0E0E0" };
+/* Present = green; every other attendance status = same blue (unavailable). Used by Attendance + Print. */
+export const SBG = { "Present": "#EAF4EC", "Annual leave": "#BBDEFB", "Sick leave": "#BBDEFB", "Duty away": "#BBDEFB", "Rest day": "#BBDEFB" };
 export const LKEY = "shiftManager.v2";
 export const LKEY_LEGACY = "shiftManager.v1";
 

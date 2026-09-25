@@ -25,7 +25,7 @@ Untick **Active** on People when someone leaves long term.
 
 ## Each block
 
-1. **Attendance** — block start date, Day/Night per day, status per person (Present, Annual leave, Sick leave, Duty away, Rest day), then **Generate roster**.
+1. **Attendance** — block start date, Day/Night per day, status per person (Present = green; Annual leave / Sick leave / Duty away / Rest day = blue / unavailable), then **Generate roster**.
 2. **Roster** — review and edit the person × role grid (qualified + present only).
 3. **Print rota** — person × day colour layout (A4 landscape); type spare notes if needed; **Print in colour**; **Save to log**.
 
@@ -48,9 +48,12 @@ Untick **Active** on People when someone leaves long term.
 ```bash
 npm install
 npm run build
+npm run mock-data   # writes data/shift-manager-data.json (fictional demo unit)
 ```
 
 Produces `dist/shift-manager.html`, `dist/shift-manager-offline.zip`, and `dist/shift-manager-offline-vX.Y.Z.zip`. Locally it also writes `../shift-manager.html`.
+
+**Load the local demo:** open `dist/shift-manager.html`, then **Open file** and choose `data/shift-manager-data.json` (12 people, 10 roles — all fictional). Or serve the repo over `http` so the app can auto-load `data/shift-manager-data.json` when the browser has no saved unit yet.
 
 Every push to `main` publishes a patch release and keeps only the **latest 3** GitHub Releases (current, n−1, n−2). Older releases and tags are deleted. Use `#minor` / `#major` in the commit message to bump those; `[skip release]` to skip.
 

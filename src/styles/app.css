@@ -18,6 +18,9 @@ html,body{font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helve
 .rota{border-collapse:collapse;width:100%}
 .printScroll{max-height:70vh;overflow:auto}
 .rota-freeze thead th{position:sticky;top:0;z-index:3}
+.attScroll{max-height:70vh;overflow:auto}
+.att-freeze thead th{position:sticky;top:0;z-index:3;background:oklch(var(--b1))}
+.att-freeze thead th.stickycol{z-index:6}
 
 /* Roster / historic-roster grids: fixed, equal-width role columns so a long role
    name wraps onto a second line instead of stretching its column wider than the

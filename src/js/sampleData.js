@@ -57,9 +57,9 @@ export function loadSample() {
       statuses: [
         { id: "present", label: "Present", allocates: true, printColor: "#EAF4EC" },
         { id: "annual_leave", label: "Annual leave", allocates: false, printColor: "#BBDEFB" },
-        { id: "sick_leave", label: "Sick leave", allocates: false, printColor: "#FFCDD2" },
-        { id: "duty_away", label: "Duty away", allocates: false, printColor: "#E1BEE7" },
-        { id: "rest_day", label: "Rest day", allocates: false, printColor: "#E0E0E0" }
+        { id: "sick_leave", label: "Sick leave", allocates: false, printColor: "#BBDEFB" },
+        { id: "duty_away", label: "Duty away", allocates: false, printColor: "#BBDEFB" },
+        { id: "rest_day", label: "Rest day", allocates: false, printColor: "#BBDEFB" }
       ],
       defaultShifts: ["Day", "Day", "Night", "Night"],
       blockLengthDays: 4

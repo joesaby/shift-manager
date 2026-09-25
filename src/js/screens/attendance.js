@@ -18,7 +18,7 @@ export function vAtt() {
    ${unitBanner()}
    <div class="stats stats-vertical lg:stats-horizontal shadow-sm border border-base-300 bg-base-100 w-full">${stats}</div>
    ${short.length ? `<div role="alert" class="alert alert-error"><span>Not enough people present: ${short.map((x) => esc(x.d.label) + " has " + x.pc + " for " + x.need + " roles").join("; ")}.</span></div>` : ""}
-   <div class="card bg-base-100 shadow-sm border border-base-300"><div class="overflow-x-auto"><table class="table"><thead><tr><th class="stickycol">Person</th>${heads}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
+   <div class="card bg-base-100 shadow-sm border border-base-300"><div class="attScroll"><table class="table att-freeze"><thead><tr><th class="stickycol">Person</th>${heads}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 
 export const actions = {};

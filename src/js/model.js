@@ -4,9 +4,9 @@ import { S } from "./state.js";
 export const DEFAULT_STATUSES = [
   { id: "present", label: "Present", allocates: true, printColor: "#EAF4EC" },
   { id: "annual_leave", label: "Annual leave", allocates: false, printColor: "#BBDEFB" },
-  { id: "sick_leave", label: "Sick leave", allocates: false, printColor: "#FFCDD2" },
-  { id: "duty_away", label: "Duty away", allocates: false, printColor: "#E1BEE7" },
-  { id: "rest_day", label: "Rest day", allocates: false, printColor: "#E0E0E0" }
+  { id: "sick_leave", label: "Sick leave", allocates: false, printColor: "#BBDEFB" },
+  { id: "duty_away", label: "Duty away", allocates: false, printColor: "#BBDEFB" },
+  { id: "rest_day", label: "Rest day", allocates: false, printColor: "#BBDEFB" }
 ];
 
 const LABEL_TO_STATUS = {
@@ -25,13 +25,7 @@ const STATUS_TO_LABEL = {
 };
 
 function defaultStatusesCopy() {
-  return [
-    { id: "present", label: "Present", allocates: true, printColor: "#EAF4EC" },
-    { id: "annual_leave", label: "Annual leave", allocates: false, printColor: "#BBDEFB" },
-    { id: "sick_leave", label: "Sick leave", allocates: false, printColor: "#FFCDD2" },
-    { id: "duty_away", label: "Duty away", allocates: false, printColor: "#E1BEE7" },
-    { id: "rest_day", label: "Rest day", allocates: false, printColor: "#E0E0E0" }
-  ];
+  return DEFAULT_STATUSES.map((s) => ({ ...s }));
 }
 
 export function emptyData() {
@@ -204,6 +198,13 @@ export function migrateToV2(raw) {
 function normalizeV2(d) {
   if (!d.meta) d.meta = { title: "Shift Manager", unitName: "", updatedAt: new Date().toISOString(), app: "shift-manager-html" };
   if (!d.settings) d.settings = { statuses: defaultStatusesCopy(), defaultShifts: ["Day", "Day", "Night", "Night"], blockLengthDays: 4 };
+  /* Keep known status print colours on the current palette (Present green; others shared blue). */
+  if (d.settings.statuses) {
+    const byId = Object.fromEntries(DEFAULT_STATUSES.map((s) => [s.id, s]));
+    d.settings.statuses.forEach((s) => {
+      if (byId[s.id]) s.printColor = byId[s.id].printColor;
+    });
+  }
   if (!d.personRoles) d.personRoles = [];
   if (!d.blocks) d.blocks = { current: null, history: [] };
   if (!d.blocks.history) d.blocks.history = [];
