@@ -1,12 +1,12 @@
-import { esc } from "../util.js";
+import { esc, fmt, fmtLong } from "../util.js";
 import { S } from "../state.js";
 import {
-  roleById, groupById, roleOfPerson,
   historicYears, historicMonthsInYear, historicPeriodsInMonth, historicPeriods,
-  historicRosterModel, monthLabel
+  monthLabel, unitName
 } from "../model.js";
 import { ph } from "../ui-kit.js";
-import { rotaHTML } from "../snapshot.js";
+import { rotaHTML, printFitStyle, personDaySnapFromHistory } from "../snapshot.js";
+import { LOGO_DATA_URI } from "../../assets/logo.js";
 
 function ensureHistSelection() {
   const periods = historicPeriods();
@@ -25,12 +25,66 @@ function ensureHistSelection() {
   return periods.find((p) => p.id === S.ui.histId) || inMonth[0] || null;
 }
 
+function headerHTML(snap) {
+  const first = snap.days[0];
+  const last = snap.days[snap.days.length - 1];
+  const unit = (snap.unitName || unitName() || "").trim();
+  const unitLine = unit ? `<div class="text-base font-semibold">${esc(unit)}</div>` : "";
+  const by = (snap.savedBy || "").trim();
+  const byLine = by ? `<div class="text-xs opacity-70">Prepared by ${esc(by)}</div>` : "";
+  return `<div class="flex items-center gap-3 mb-4"><img src="${LOGO_DATA_URI}" alt="An Garda Síochána" class="w-12 h-12 object-contain shrink-0" width="48" height="48"><div><div class="text-xs font-semibold uppercase tracking-wide opacity-70">An Garda Síochána</div>${unitLine}<h2 class="text-xl font-semibold">Duty rota: ${esc(fmt(first.iso))} to ${esc(fmtLong(last.iso))}</h2>${byLine}</div></div>`;
+}
+
+/** Read-only person × day grid matching the unified Roster look (no parking / drag). */
+function personDayScreenHTML(snap) {
+  const withNums = (snap.people || []).some((p) =>
+    Object.prototype.hasOwnProperty.call(p, "employeeNo")
+    || Object.prototype.hasOwnProperty.call(p, "shoulderNo"));
+  const head = snap.days.map((d) =>
+    `<th class="bg-neutral text-neutral-content text-center p-2 align-bottom"><div>${esc(d.label)}</div><div class="font-normal opacity-80 text-xs">${esc(d.shift)}</div></th>`
+  ).join("");
+  const unfBits = (snap.days || []).map((d, i) =>
+    (snap.unfilled && snap.unfilled[i] && snap.unfilled[i].length)
+      ? `${d.label}: ${snap.unfilled[i].join(", ")}` : "").filter(Boolean);
+  const rows = snap.people.map((p, pi) => {
+    const cells = (snap.cells[pi] || []).map((c) => {
+      if (c.kind === "spare") {
+        return `<td class="p-1 text-center" style="background:#ffffff">${c.text
+          ? `<span class="text-sm font-medium">${esc(c.text)}</span>`
+          : '<span class="spare-empty">Unassigned</span>'}</td>`;
+      }
+      return `<td class="p-2 text-center text-sm font-medium" style="background:${c.color};color:#1f2937">${esc(c.text)}</td>`;
+    }).join("");
+    const nums = withNums
+      ? `<td class="numcol numcol-e">${esc(p.employeeNo || "")}</td><td class="numcol numcol-s">${esc(p.shoulderNo || "")}</td>`
+      : "";
+    return `<tr>
+      <td class="p-2 font-semibold whitespace-nowrap stickycol">${esc(p.name)}</td>
+      ${nums}${cells}
+    </tr>`;
+  }).join("");
+
+  return `<div id="printArea" class="bg-white text-black border border-base-300 rounded-box p-2 shadow-sm min-w-[40rem]" style="${printFitStyle(snap.people.length)}">
+    <div class="print-only">${headerHTML(snap)}</div>
+    ${unfBits.length ? `<div class="print-only text-xs text-error mb-1">Unfilled — ${esc(unfBits.join(" · "))}</div>` : ""}
+    ${unfBits.length ? `<div role="alert" class="alert alert-error no-print roster-alert"><span>Unfilled essential — ${esc(unfBits.join(" · "))}</span></div>` : ""}
+    <div class="printScroll roster-scroll"><table class="rota rota-freeze roster-compact">
+      <thead><tr>
+        <th class="bg-neutral text-neutral-content text-left p-2 stickycol">Person</th>
+        ${withNums ? '<th class="bg-neutral text-neutral-content numcol numcol-e">Employee no.</th><th class="bg-neutral text-neutral-content numcol numcol-s">Shoulder no.</th>' : ""}
+        ${head}
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
+}
+
 export function vHist() {
   const periods = historicPeriods();
   if (!periods.length) {
     return `${ph("Historic roster", "Browse past four-day blocks the same way as the live roster.")}
-      <div role="alert" class="alert"><span>No saved periods yet. On <a class="link link-primary" data-act="nav" data-s="prt">Print rota</a>, use <b>Save to log</b> after each block.</span>
-      <button class="btn btn-sm" data-act="nav" data-s="prt">Print rota</button></div>`;
+      <div role="alert" class="alert"><span>No saved periods yet. On <a class="link link-primary" data-act="nav" data-s="ros">Roster</a>, use <b>Save roster</b> after each block.</span>
+      <button class="btn btn-sm" data-act="nav" data-s="ros">Roster</button></div>`;
   }
 
   const selected = ensureHistSelection();
@@ -45,95 +99,49 @@ export function vHist() {
     return `<option value="${p.id}"${selected && selected.id === p.id ? " selected" : ""}>${esc(label)}</option>`;
   }).join("");
 
-  const selectors = `<div class="flex flex-wrap items-end gap-3 print:hidden">
+  const selectors = `<span class="hist-selectors no-print">
     <label class="form-control"><span class="label-text text-xs mb-1">Year</span>
       <select class="select select-bordered select-sm" data-ch="histYear">${yearOpts}</select></label>
     <label class="form-control"><span class="label-text text-xs mb-1">Month</span>
       <select class="select select-bordered select-sm" data-ch="histMonth">${monthOpts}</select></label>
-    <label class="form-control min-w-[16rem] flex-1"><span class="label-text text-xs mb-1">Four-day period</span>
+    <label class="form-control hist-period"><span class="label-text text-xs mb-1">Four-day period</span>
       <select class="select select-bordered select-sm w-full" data-ch="histPeriod">${periodOpts}</select></label>
-  </div>`;
+  </span>`;
 
   if (!selected) {
-    return `${ph("Historic roster", "Browse past four-day blocks the same way as the live roster.")}${selectors}
+    return `<div class="roster-toolbar no-print"><h1 class="text-xl font-bold tracking-tight">Historic roster</h1>${selectors}</div>
       <div class="opacity-70">No period in this month.</div>`;
   }
 
-  const model = historicRosterModel(selected.entry);
-  if (!model) {
-    return `${ph("Historic roster", "")}${selectors}
-      <div role="alert" class="alert alert-warning"><span>This log entry cannot be shown as a roster grid. Try View on the Log screen for the print layout.</span>
+  const personDay = personDaySnapFromHistory(selected.entry);
+  const legacySnap = selected.entry.snap
+    && !(selected.entry.snap.layout === "person-day" && selected.entry.snap.cells && selected.entry.snap.people)
+    ? selected.entry.snap
+    : null;
+
+  if (!personDay && !legacySnap) {
+    return `<div class="roster-toolbar no-print"><h1 class="text-xl font-bold tracking-tight">Historic roster</h1>${selectors}</div>
+      <div role="alert" class="alert alert-warning"><span>This log entry cannot be shown as a roster grid. Try View on the Log screen.</span>
       <button class="btn btn-sm" data-act="nav" data-s="log">Open Log</button></div>`;
   }
 
-  const days = model.days;
-  if (S.ui.histDay == null || S.ui.histDay < 0 || S.ui.histDay >= days.length) S.ui.histDay = 0;
-  const di = S.ui.histDay;
-  const day = days[di];
-  const roles = model.rolesFor(di);
-  const dayAssign = model.roster[di];
-  const ppl = model.people;
+  const printBtn = `<button class="btn btn-sm btn-primary" data-act="print">Print in colour</button>`;
+  const meta = `<span class="text-sm opacity-70">${esc(selected.rangeLabel)}${selected.savedLabel ? " · saved " + esc(selected.savedLabel) : ""} · read-only</span>`;
+  const toolbar = `<div class="roster-toolbar no-print"><h1 class="text-xl font-bold tracking-tight">Historic roster</h1>${selectors}${meta}<span class="roster-toolbar-actions">${printBtn}</span></div>`;
 
-  const dayTabs = days.map((d, i) =>
-    `<button class="btn btn-sm ${i === di ? "btn-primary" : "btn-ghost"}" data-act="histDay" data-d="${i}">${esc(d.label)} <span class="badge badge-sm ${d.shift === "Day" ? "badge-warning" : "badge-info"}">${d.shift}</span></button>`
-  ).join("");
-
-  const head = roles.map((r) => {
-    const filled = !!dayAssign.assign[r.id];
-    return `<th class="text-center rolecol align-bottom px-1">
-      <div class="flex flex-col items-center gap-1">
-        <span class="grpdot" style="background:${groupById(r.groupId).color};border:1px solid #9ca3af"></span>
-        <span class="rolename font-semibold text-xs leading-tight">${esc(r.name)}</span>
-        ${!filled ? '<span class="badge badge-error badge-xs">Unfilled</span>' : ""}
-      </div>
-    </th>`;
-  }).join("");
-
-  const unf = roles.filter((r) => !dayAssign.assign[r.id]).map((r) => r.name);
-
-  const rows = ppl.map((p) => {
-    const st = model.statusFor(p.id, day.iso);
-    const present = st === "Present";
-    const myRole = roleOfPerson(dayAssign, p.id);
-    const statusBit = present ? "" : `<div class="text-xs font-normal opacity-70">${esc(st)}</div>`;
-    const cells = roles.map((r) => {
-      if (!present) {
-        return `<td class="p-1"><div class="cellbtn text-center opacity-40" style="background:#EEEEEE;color:#6B7378">—</div></td>`;
-      }
-      const holderId = dayAssign.assign[r.id];
-      if (holderId === p.id) {
-        return `<td class="p-1"><div class="cellbtn font-semibold text-center" style="background:${groupById(r.groupId).color}">✓</div></td>`;
-      }
-      return `<td class="p-1"><div class="cellbtn text-center opacity-20" style="background:#f3f4f6">·</div></td>`;
-    }).join("");
-    return `<tr class="hover ${present ? "" : "opacity-70"}"><td class="stickycol font-medium whitespace-nowrap">${esc(p.name)}${statusBit}${myRole && present ? `<div class="text-xs font-normal opacity-60">${esc((roleById(myRole) || {}).name || "")}</div>` : ""}</td>${cells}</tr>`;
-  }).join("");
-
-  const printBtn = selected.entry.snap
-    ? `<button class="btn btn-outline" data-act="histPrint">Print layout</button>`
-    : "";
-
-  if (S.ui.histPrint && selected.entry.snap) {
-    return `${ph("Historic roster", selected.rangeLabel, '<button class="btn btn-outline" data-act="histPrintOff">Back to grid</button><button class="btn btn-primary" data-act="print">Print in colour</button>')}
-      <div class="overflow-x-auto">${rotaHTML(selected.entry.snap)}</div>`;
+  if (personDay) {
+    return `${toolbar}
+      <div class="text-sm opacity-70 no-print mb-2">Same person × day layout as Roster. Choose a saved block above, then print if needed.</div>
+      <div class="overflow-x-auto">${personDayScreenHTML(personDay)}</div>`;
   }
 
-  return `${ph("Historic roster", "Same person × role view as the live roster. Choose year, month, then the four-day period.", printBtn)}
-   ${selectors}
-   <div class="text-sm opacity-70">Block ${esc(selected.rangeLabel)}${selected.savedLabel ? " · saved " + esc(selected.savedLabel) : ""} · read-only</div>
-   <div class="flex flex-wrap gap-2 print:hidden">${dayTabs}</div>
-   <div class="text-sm opacity-70">${esc(day.label)} · ${esc(day.shift)} shift</div>
-   ${unf.length ? `<div role="alert" class="alert alert-error"><span>Unfilled on this day: ${esc(unf.join("; "))}.</span></div>` : ""}
-   <div class="card bg-base-100 shadow-sm border border-base-300"><div class="overflow-x-auto"><table class="table table-sm rostergrid">
-     <thead><tr><th class="stickycol personcol">Person</th>${head}</tr></thead>
-     <tbody>${rows}</tbody>
-   </table></div></div>`;
+  return `${toolbar}
+    <div class="text-sm opacity-70 no-print mb-2">Older saved layout (read-only).</div>
+    <div class="overflow-x-auto">${rotaHTML(legacySnap)}</div>`;
 }
 
 export const actions = {
-  histDay: (a) => { S.ui.histDay = +a.d; },
-  histPrint: () => { S.ui.histPrint = true; },
-  histPrintOff: () => { S.ui.histPrint = false; }
+  print: () => window.print()
 };
 
 export const changes = {
@@ -143,19 +151,13 @@ export const changes = {
     S.ui.histMonth = months[0] || null;
     const ps = S.ui.histMonth ? historicPeriodsInMonth(S.ui.histMonth) : [];
     S.ui.histId = ps[0] ? ps[0].id : null;
-    S.ui.histDay = 0;
-    S.ui.histPrint = false;
   },
   histMonth: (v) => {
     S.ui.histMonth = v;
     const ps = historicPeriodsInMonth(S.ui.histMonth);
     S.ui.histId = ps[0] ? ps[0].id : null;
-    S.ui.histDay = 0;
-    S.ui.histPrint = false;
   },
   histPeriod: (v) => {
     S.ui.histId = v;
-    S.ui.histDay = 0;
-    S.ui.histPrint = false;
   }
 };

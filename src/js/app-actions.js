@@ -1,11 +1,13 @@
 import { uid, LKEY } from "./util.js";
+import { navCollapsed, setNavCollapsed } from "./ui-kit.js";
 import { S, touch, toast, askConfirm, openFile, saveFile, applyLoaded } from "./state.js";
 import { D, emptyData } from "./model.js";
 import { pickWorkspace, reconnectWorkspace, hasWorkspace, readWorkspaceData } from "./workspace.js";
 import { setSessionUser, getSessionUser, logAudit } from "./audit.js";
 
 export const actions = {
-  nav: (a) => { S.ui.screen = a.s === "help" ? "start" : a.s; S.ui.sel = null; S.ui.viewLog = null; },
+  toggleNav: () => { setNavCollapsed(!navCollapsed()); },
+  nav: (a) => { S.ui.screen = a.s === "help" ? "start" : (a.s === "prt" ? "ros" : a.s); S.ui.sel = null; S.ui.viewLog = null; },
   open: () => { openFile(); },
   save: () => { saveFile(); },
   askClear: () => askConfirm("Clear everything?", "This removes all people, roles and saved rotas from the app. A data file you saved earlier is not affected.", "Clear everything", () => {
@@ -18,10 +20,10 @@ export const actions = {
   closeBulk: () => { S.ui.bulk = null; },
   doBulk: () => {
     const lines = (document.getElementById("bulkText").value || "").split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
-    if (S.ui.bulk.k === "people") lines.forEach((n) => D().people.push({ id: uid(), name: n, active: true, fixedRoleId: null }));
+    if (S.ui.bulk.k === "people") lines.forEach((n) => D().people.push({ id: uid(), name: n, active: true, fixedRoleId: null, employeeNo: "", shoulderNo: "" }));
     else lines.forEach((n) => D().roles.push({
       id: uid(), name: n, groupId: D().groups[0] ? D().groups[0].id : "",
-      usedAtNight: true, hard: false, skillRestricted: false, sortOrder: D().roles.length + 1
+      usedAtDay: true, usedAtNight: true, hard: false, skillRestricted: false, essential: true, sortOrder: D().roles.length + 1
     }));
     S.ui.bulk = null; touch(); toast(lines.length + " added");
   },

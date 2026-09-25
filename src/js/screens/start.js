@@ -100,7 +100,7 @@ export function vStart() {
               <input id="managerNameDisplay" class="input input-bordered w-full" value="${esc(manager)}" placeholder="Not set" readonly>
               <button type="button" class="btn btn-outline shrink-0" data-act="editManagerName">${manager ? "Change" : "Set"}</button>
             </div>
-            <span class="label-text-alt opacity-60 mt-1">Audit log + new Save to log. Past rotas keep the name they were saved with.</span>
+            <span class="label-text-alt opacity-60 mt-1">Audit log + new Save roster. Past rotas keep the name they were saved with.</span>
           </div>
         </div>
       </div>
@@ -112,8 +112,7 @@ export function vStart() {
     <p class="text-sm opacity-70 mb-3">Every four days — work left to right.</p>
     <div class="home-blocks">
       ${blockCard(1, "att", "Attendance", "Dates, Day/Night, who is Present.", "att")}
-      ${blockCard(2, "ros", "Roster", "Generate, then edit the person × role grid.", "ros")}
-      ${blockCard(3, "prt", "Print rota", "Colour print and Save to log.", "prt")}
+      ${blockCard(2, "ros", "Roster", "Generate once, then edit the person × day view (swap, Save roster, print).", "ros")}
     </div>
   </div>`;
 

@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "mock-data": "node scripts/write-mock-data.mjs"
+    "mock-data": "node scripts/write-mock-data.mjs",
+    "test": "node --test test/**/*.test.js"
   },
   "devDependencies": {
     "esbuild": "^0.24.0"

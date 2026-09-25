@@ -34,7 +34,14 @@ function filteredPeople() {
     .slice()
     .sort((a, b) => surname(a.name).localeCompare(surname(b.name), "en-IE") || a.name.localeCompare(b.name, "en-IE"))
     .filter((p) => {
-      if (q && p.name.toLowerCase().indexOf(q) < 0) return false;
+      if (q) {
+        const hay = [
+          p.name,
+          p.employeeNo || "",
+          p.shoulderNo || ""
+        ].join(" ").toLowerCase();
+        if (hay.indexOf(q) < 0) return false;
+      }
       if (f === "active") return p.active !== false;
       if (f === "inactive") return p.active === false;
       if (f === "fixed") return !!p.fixedRoleId;
@@ -94,7 +101,7 @@ export function vPpl() {
           <span class="label-text font-semibold mb-1">Person</span>
           <div class="join w-full">
             <input id="peopleSearch" type="search" class="input input-bordered join-item w-full"
-              placeholder="${sel ? "Search names…" : "Search or pick a person…"}"
+              placeholder="${sel ? "Search names or numbers…" : "Search or pick a person…"}"
               value="${esc(q)}" data-ch="peopleQ" autocomplete="off"
               aria-expanded="${open ? "true" : "false"}" aria-controls="peoplePickerList">
             <button type="button" class="btn btn-outline join-item" data-act="togglePeoplePicker" title="Show people" aria-label="Show people">
@@ -151,7 +158,11 @@ export function vPpl() {
           <div class="text-xs opacity-60">${sel.active !== false ? "Active" : "Inactive"} · ${qualCount(sel)} roles · ${skillCount(sel)} skills</div>
         </div>
       </div>
-      <label class="form-control max-w-sm"><span class="label-text font-semibold">Name</span><input class="input input-bordered" value="${esc(sel.name)}" data-ch="pname" data-p="${sel.id}"></label>
+      <div class="flex flex-wrap gap-3 items-end">
+        <label class="form-control flex-1 max-w-sm"><span class="label-text font-semibold">Name</span><input class="input input-bordered" value="${esc(sel.name)}" data-ch="pname" data-p="${sel.id}"></label>
+        <label class="form-control ppl-emp"><span class="label-text font-semibold">Employee no.</span><input class="input input-bordered" value="${esc(sel.employeeNo || "")}" data-ch="pemp" data-p="${sel.id}" inputmode="numeric" autocomplete="off"></label>
+        <label class="form-control ppl-shldr"><span class="label-text font-semibold">Shoulder no.</span><input class="input input-bordered" value="${esc(sel.shoulderNo || "")}" data-ch="pshldr" data-p="${sel.id}" inputmode="numeric" autocomplete="off"></label>
+      </div>
       <label class="flex items-center gap-3"><input type="checkbox" class="toggle toggle-primary" ${sel.active !== false ? "checked" : ""} data-ch="pactive" data-p="${sel.id}"><span>Active (untick when someone leaves or is away long term)</span></label>
       <div><div class="font-semibold">Roles this person is qualified for</div><div class="text-sm opacity-70 mb-2">Only ticked roles are ever offered to them. Skill roles also appear on the Skills screen.</div>
         ${D().roles.length ? `<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">${tog}</div>` : `<div class="alert">Add roles first on the Roles and groups screen.</div>`}</div>
@@ -175,7 +186,7 @@ export const actions = {
   },
   addPerson: () => {
     const el = document.getElementById("newPerson"); const n = el && el.value.trim(); if (!n) return;
-    const p = { id: uid(), name: n, active: true, fixedRoleId: null };
+    const p = { id: uid(), name: n, active: true, fixedRoleId: null, employeeNo: "", shoulderNo: "" };
     D().people.push(p); S.ui.selPerson = p.id; markStale(); touch();
     logAudit("PERSON_ADDED", n);
   },
@@ -194,5 +205,7 @@ export const changes = {
   qual: (v, ds) => { setQual(ds.p, ds.r, v); markStale(); },
   ponly: (v, ds) => { personById(ds.p).fixedRoleId = v || null; markStale(); },
   pname: (v, ds) => { if (v.trim()) personById(ds.p).name = v.trim(); },
+  pemp: (v, ds) => { personById(ds.p).employeeNo = String(v || ""); },
+  pshldr: (v, ds) => { personById(ds.p).shoulderNo = String(v || ""); },
   pactive: (v, ds) => { personById(ds.p).active = v; markStale(); }
 };

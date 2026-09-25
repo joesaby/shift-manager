@@ -10,7 +10,7 @@ export function loadSample() {
   ];
   const defs = [["Car 1", "g1", 1, 1, 1], ["Car 2", "g1", 1, 1, 1], ["Member in Charge", "g3", 1, 0, 1], ["Jailer", "g3", 1, 0, 1], ["Public Office", "g3", 1, 0, 0, 0], ["Admin Support", "g3", 0, 0, 0], ["Comms Desk", "g3", 1, 0, 0], ["Station Duty", "g3", 1, 0, 0], ["Beat 1", "g2", 1, 1, 0], ["Beat 2", "g2", 1, 0, 0], ["Beat 3", "g2", 1, 0, 0], ["Beat 4", "g2", 1, 0, 0], ["Traffic Unit", "g1", 1, 1, 0], ["Patrol Support", "g2", 1, 0, 0], ["Escort Car", "g1", 1, 0, 0], ["Scene Support", "g2", 1, 0, 0]];
   const roles = defs.map((x, i) => ({
-    id: uid(), name: x[0], groupId: x[1], usedAtDay: x[5] == null ? true : !!x[5], usedAtNight: !!x[2], hard: !!x[3], skillRestricted: !!x[4], sortOrder: i + 1
+    id: uid(), name: x[0], groupId: x[1], usedAtDay: x[5] == null ? true : !!x[5], usedAtNight: !!x[2], hard: !!x[3], skillRestricted: !!x[4], essential: true, sortOrder: i + 1
   }));
   const rn = (n) => roles.find((r) => r.name === n).id;
   const names = ["Aoife Brennan", "Ciaran Doyle", "Declan Murphy", "Eimear Walsh", "Fionn Kelly", "Grainne Byrne", "Hugh Ryan", "Ita Nolan", "Jack Moran", "Katie Burke", "Liam Duffy", "Maeve Quinn", "Niall Regan", "Owen Lyons", "Padraig Costello", "Roisin Farrell", "Sean Egan", "Tadhg Hayes", "Una Carey", "Vincent Daly", "Willie Fahey", "Yvonne Gill", "Zach Naughton"];
@@ -19,7 +19,7 @@ export function loadSample() {
   const jailer = ["Ciaran Doyle", "Eimear Walsh", "Grainne Byrne", "Ita Nolan", "Liam Duffy", "Willie Fahey", "Yvonne Gill", "Zach Naughton"];
   const notq = ["Hugh Ryan|Beat 1", "Zach Naughton|Traffic Unit", "Ita Nolan|Escort Car"];
   const personRoles = [];
-  const people = names.map((n) => {
+  const people = names.map((n, i) => {
     const id = uid();
     const rs = roles.filter((r) => {
       if (n === "Owen Lyons") return r.name === "Comms Desk" || r.name === "Station Duty";
@@ -29,7 +29,7 @@ export function loadSample() {
       return notq.indexOf(n + "|" + r.name) < 0;
     });
     rs.forEach((r) => personRoles.push({ personId: id, roleId: r.id }));
-    return { id, name: n, active: true, fixedRoleId: n === "Owen Lyons" ? rn("Comms Desk") : null };
+    return { id, name: n, active: true, fixedRoleId: n === "Owen Lyons" ? rn("Comms Desk") : null, employeeNo: String(90000000 + i), shoulderNo: String(1000 + i).padStart(4, "0") };
   });
   const pid = (n) => people.find((p) => p.name === n).id;
   const t = new Date(); t.setDate(t.getDate() + 1);

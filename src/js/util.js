@@ -13,7 +13,7 @@ export const fmt = (s) => new Date(s + "T12:00:00").toLocaleDateString("en-IE", 
 export const fmtLong = (s) => new Date(s + "T12:00:00").toLocaleDateString("en-IE", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
 
 /* ------------------------------------------------------------------ nav + icons */
-export const NAV = [["start", "Home", "Guide"], ["att", "1. Attendance", "Each block"], ["ros", "2. Roster", ""], ["prt", "3. Print rota", ""], ["ppl", "People", "Set up"], ["skl", "Skills", ""], ["rol", "Roles and groups", ""], ["log", "Log", "Records"], ["hist", "Historic roster", ""], ["stats", "Duty stats", ""]];
+export const NAV = [["start", "Home", "Guide"], ["att", "1. Attendance", "Each block"], ["ros", "2. Roster", ""], ["ppl", "People", "Set up"], ["skl", "Skills", ""], ["rol", "Roles and groups", ""], ["log", "Log", "Records"], ["hist", "Historic roster", ""], ["stats", "Duty stats", ""]];
 
 export const ICON = {
   start: '<path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/>',

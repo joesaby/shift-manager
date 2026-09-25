@@ -33,11 +33,13 @@ After the file is on disk, the app is designed to work **with the network discon
 Typical content (unit-local operational data):
 
 - Unit and manager names  
-- People names, roles, skills / qualifications  
+- People names, optional **employee numbers** and **shoulder numbers**, roles, skills / qualifications  
 - Attendance for a four-day block  
 - Generated / edited duty roster  
 - Saved rota log entries and CSV exports  
 - Optional plain-text audit lines under the workspace `logs/` folder  
+
+Employee and shoulder numbers are stored as strings in the unit JSON (`shift-manager-data.json`), the workspace folder (including `backups/`), browser `localStorage` backup, and saved rota snapshots in the Log. They appear on Roster/print when set. Treat them under the same records and access controls as other unit-local operational data.
 
 Treat the workspace folder and any JSON / CSV / printouts as **official records** under local Garda ICT and records policy (classification, retention, sharing).
 

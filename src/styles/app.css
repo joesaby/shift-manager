@@ -10,6 +10,42 @@ html,body{font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helve
 .font-bold,.font-semibold,h1,h2,h3,.card-title,.btn,.menu-title,.stat-value{letter-spacing:-0.015em}
 
 .menu li>a.active,.menu li>a.active:hover{background-color:oklch(var(--p))!important;color:oklch(var(--pc))!important}
+/* Attendance / Roster: full-width main (sidebar collapses by default there). */
+.main-wide{max-width:none!important;padding:.75rem 1rem!important}
+/* Roster chrome (H55/H56): one toolbar row, compact alerts, table sized to the viewport. */
+.main-wide>*+*{margin-top:.5rem!important}
+.roster-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .75rem}
+.roster-toolbar-actions{margin-left:auto;display:flex;flex-wrap:wrap;align-items:center;gap:.5rem}
+.hist-selectors{display:flex;flex-wrap:wrap;align-items:flex-end;gap:.5rem .75rem}
+.hist-selectors .hist-period{min-width:16rem;flex:1 1 16rem}
+.roster-alert{padding:.35rem .75rem;min-height:0;font-size:.85rem}
+.print-only{display:none}
+.printScroll.roster-scroll{max-height:calc(100vh - 14.5rem);max-height:calc(100dvh - 14.5rem);min-height:14rem}
+.roster-compact td{padding-top:.125rem;padding-bottom:.125rem}
+.roster-compact .roster-cell-inner{min-height:1.5rem}
+.parking-chips{max-height:3.6rem;overflow:auto}
+/* Duty stats pivot (H59/H60): person x role counts, sortable headings, tallies at the end. */
+.pivot-scroll{max-height:calc(100vh - 18rem);min-height:12rem;overflow:auto}
+.stats-pivot thead th{position:sticky;top:0;z-index:3;background:oklch(var(--b1));vertical-align:bottom}
+.stats-pivot thead th.stickycol{z-index:6}
+.stats-pivot tbody .stickycol{z-index:2}
+.stats-pivot .pivot-role{min-width:4.5rem;max-width:6.5rem;text-align:center;white-space:normal;font-size:.7rem;line-height:1.15}
+.stats-pivot .pivot-sort{font:inherit;font-weight:600;background:none;border:0;padding:0;cursor:pointer;color:inherit;line-height:inherit;text-align:inherit}
+.stats-pivot .pivot-sort:hover{text-decoration:underline}
+.stats-pivot .pivot-head{display:flex;flex-direction:column;align-items:center;gap:.15rem}
+.stats-pivot th.stickycol .pivot-head{align-items:flex-start}
+.stats-pivot .pivot-arrows{display:flex;gap:.1rem}
+.stats-pivot .pivot-dir{font-size:.6rem;line-height:1;padding:.15rem .25rem;border:0;background:none;cursor:pointer;opacity:.35;border-radius:.2rem;color:inherit}
+.stats-pivot .pivot-dir:hover{opacity:.9;background:oklch(var(--bc)/.1)}
+.stats-pivot .pivot-dir.on{opacity:1;color:oklch(var(--p));background:oklch(var(--p)/.12)}
+.stats-pivot .pivot-tag{display:inline-block;font-size:.55rem;font-weight:700;padding:0 .25rem;border-radius:.25rem;background:oklch(var(--er)/.15);color:oklch(var(--er))}
+.stats-pivot td.pivot-n{text-align:center;font-variant-numeric:tabular-nums}
+.stats-pivot td.pivot-zero{opacity:.3}
+.stats-pivot .pivot-total{position:sticky;right:0;z-index:2;background:oklch(var(--b1));border-left:1px solid oklch(var(--bc)/.15)}
+.stats-pivot thead th.pivot-total{z-index:6}
+.stats-pivot tr.pivot-total-row td{position:sticky;bottom:0;z-index:3;background:oklch(var(--b2));font-weight:700;border-top:2px solid oklch(var(--bc)/.25)}
+.stats-pivot tr.pivot-total-row td.stickycol{z-index:5}
+.stats-pivot tr.pivot-total-row td.pivot-total{z-index:5;background:oklch(var(--b2))}
 .stickycol{position:sticky;left:0;z-index:5;background:oklch(var(--b1))}
 .grpdot{display:inline-block;width:.75rem;height:.75rem;border-radius:9999px;flex-shrink:0}
 .cellbtn{width:100%;min-height:2.25rem;border-radius:.5rem;padding:.25rem .5rem;font-size:.875rem;color:#1f2937;border:2px solid transparent}
@@ -33,7 +69,24 @@ html,body{font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helve
 
 /* Compact spare-note box on the print screen (input-xs is not in the vendored
    tailwind.css, so it would otherwise render at default input height). */
-.spareinput{height:1.6rem;min-height:0;font-size:.75rem;padding:0 .4rem}
+.spare-empty{font-size:.75rem;font-style:italic;color:#9ca3af;line-height:1.2}
+
+/* Employee / shoulder number columns on person×day rota (H53).
+   Min-widths sized for an 8-digit number + nowrap (no overlap); not sticky (only the name column sticks). */
+.rota .numcol{white-space:nowrap;text-align:center;font-size:.75rem;font-weight:500;padding-left:.35rem;padding-right:.35rem;font-variant-numeric:tabular-nums}
+.rota .numcol-e{min-width:5.5rem}
+.rota .numcol-s{min-width:4.25rem}
+.rota th.numcol{font-size:.65rem;font-weight:600;line-height:1.15}
+/* .stickycol paints the page colour; on the header cell that made white text on white. */
+.rota thead th.stickycol{background:oklch(var(--n));color:oklch(var(--nc))}
+/* One header row (fixed height) so the parking-lot row can freeze directly beneath it. */
+.rota-freeze thead tr:first-child th{height:3.5rem;box-sizing:border-box}
+.rota-freeze thead .unalloc-row td{position:sticky;top:3.5rem;z-index:2;background:oklch(var(--b2))}
+/* Corner cells must sit above the sticky name cells in the body (z-index 5). */
+.rota-freeze thead th.stickycol{z-index:7}
+.rota-freeze thead .unalloc-row td.stickycol{z-index:6}
+.ppl-emp{width:9rem;max-width:100%}
+.ppl-shldr{width:7rem;max-width:100%}
 
 /* Home screen layout — uses prebuilt Tailwind only where available */
 .home-stack{display:flex;flex-direction:column;gap:1.5rem}
@@ -92,6 +145,35 @@ html,body{font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helve
 .home-details[open] summary{border-bottom:1px solid oklch(var(--bc)/.1);margin-bottom:.75rem}
 .home-details-body{font-size:.875rem;opacity:.9;padding-bottom:.75rem}
 
+
+/* Roster drag / parking lot (H47) — plain CSS; vendored Daisy/Tailwind has no drag-chip or drop-dim utilities.
+   Theme colours use Daisy tokens (--p/--su/--er/--b2/--bc). badge-error is not in the vendored subset. */
+.roster-cell-inner{display:flex;align-items:center;justify-content:center;gap:.25rem;min-height:1.75rem}
+.drag-handle{cursor:grab;border:0;background:transparent;font:inherit;font-weight:600;font-size:.875rem;padding:.15rem .25rem;border-radius:.25rem;color:inherit;line-height:1.2}
+.drag-handle:active{cursor:grabbing}
+.drag-handle:focus-visible,.unassign-btn:focus-visible,.unalloc-chip:focus-visible{outline:2px solid oklch(var(--p));outline-offset:1px}
+.role-print-only{display:none}
+.day-print-bar{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin:0 0 .75rem;padding:.5rem .75rem;border:1px solid oklch(var(--bc)/.2);border-radius:var(--rounded-box,.5rem);background:oklch(var(--b2))}
+.day-print-bar-label{font-size:.875rem;font-weight:600;margin-right:.25rem}
+.day-print-btn{flex:0 0 auto}
+.unassign-btn{border:0;background:transparent;cursor:pointer;opacity:.45;font-size:.9rem;line-height:1;padding:.1rem .25rem;border-radius:.25rem}
+.unassign-btn:hover{opacity:1;background:oklch(var(--bc)/.08)}
+.rostercell.cell-sel{outline:2px solid oklch(var(--p));outline-offset:-2px}
+.rostercell.drop-hot,.unalloc-chip.drop-hot{outline:2px solid oklch(var(--su));outline-offset:-2px}
+.unalloc-row td{background:oklch(var(--b2)/.6);vertical-align:top}
+.unalloc-chip{display:inline-block;margin:.1rem;padding:.2rem .45rem;font-size:.7rem;font-weight:600;border-radius:.35rem;border:1px dashed oklch(var(--er)/.55);background:oklch(var(--er)/.12);cursor:grab;color:#1f2937}
+.unalloc-chip:active{cursor:grabbing}
+.unalloc-chip-sel{outline:2px solid oklch(var(--p));outline-offset:1px}
+.drag-source{opacity:.55}
+.drop-dim{opacity:.35}
+.parking-ok{font-size:.65rem;opacity:.55;font-weight:500}
+.parking-empty{vertical-align:middle}
+@media print{
+  .no-print{display:none!important}
+  .role-print-only{display:inline!important}
+  .role-drag,.drag-handle,.unassign-btn,.unalloc-row{display:none!important}
+}
+
 @page{size:A4 landscape;margin:10mm}
 @media print{
   body *{visibility:hidden}
@@ -101,7 +183,20 @@ html,body{font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helve
   #printArea{padding:0!important}
   #printArea h2{font-size:16px!important;margin-bottom:6px!important}
   #printArea h3{margin-top:8px!important;margin-bottom:3px!important;font-size:12px!important}
-  .rota td,.rota th{padding:2px 6px!important;font-size:11px!important}
-  .printScroll{max-height:none!important;overflow:visible!important}
+  /* H57: --pfs / --ppad are set on #printArea from the headcount so the roster fits one page. */
+  .print-only{display:block!important}
+  .rota td,.rota th{padding:var(--ppad,2px) 6px!important;font-size:var(--pfs,11px)!important}
+  .rota td,.rota th{line-height:1.3!important}
+  .rota .spare-empty{font-size:inherit!important;line-height:inherit}
+  .rota tr{break-inside:avoid}
+  .roster-cell-inner{min-height:0!important;line-height:1.25}
+  .rota-freeze thead tr:first-child th{height:auto!important}
+  #printArea img{width:32px!important;height:32px!important}
+  #printArea .mb-4{margin-bottom:4px!important}
+  .rota thead{display:table-header-group}
+  .printScroll{max-height:none!important;min-height:0!important;overflow:visible!important}
   .rota-freeze thead th{position:static!important}
+  /* H59: day briefing sheet — fixed readable size (portrait, fewer columns). */
+  body.print-day-brief #printArea.day-brief .rota td,
+  body.print-day-brief #printArea.day-brief .rota th{padding:4px 8px!important;font-size:11px!important}
 }

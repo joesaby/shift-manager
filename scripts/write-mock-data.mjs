@@ -38,6 +38,7 @@ const roles = defs.map((x, i) => ({
   usedAtNight: !!x[3],
   hard: !!x[4],
   skillRestricted: !!x[5],
+  essential: true,
   sortOrder: i + 1
 }));
 const rn = (n) => roles.find((r) => r.name === n).id;
@@ -62,7 +63,7 @@ const people = names.map((n, i) => {
     return true;
   });
   rs.forEach((r) => personRoles.push({ personId: id, roleId: r.id }));
-  return { id, name: n, active: true, fixedRoleId: n === "Owen Lyons" ? rn("Comms Desk") : null };
+  return { id, name: n, active: true, fixedRoleId: n === "Owen Lyons" ? rn("Comms Desk") : null, employeeNo: String(90000000 + i), shoulderNo: String(1000 + i).padStart(4, "0") };
 });
 const pid = (n) => people.find((p) => p.name === n).id;
 

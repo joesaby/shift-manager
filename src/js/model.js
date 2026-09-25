@@ -212,7 +212,8 @@ function normalizeV2(d) {
   const c = d.blocks.current;
   if (!c.attendance) c.attendance = [];
   if (!c.assignments) c.assignments = [];
-  if (!c.spareNotes) c.spareNotes = [];
+  /* H37: spare notes / HVB deprecated — always clear on open. */
+  c.spareNotes = [];
   if (c.generatedAt === undefined) c.generatedAt = c.assignments.length ? new Date().toISOString() : null;
   if (c.stale == null) c.stale = false;
   d.roles.forEach((r, i) => {
@@ -220,10 +221,13 @@ function normalizeV2(d) {
     if (r.usedAtDay == null) r.usedAtDay = true;
     if (r.usedAtNight == null && r.night != null) r.usedAtNight = !!r.night;
     if (r.skillRestricted == null && r.skill != null) r.skillRestricted = !!r.skill;
+    if (r.essential == null) r.essential = true;
     if (r.sortOrder == null) r.sortOrder = i + 1;
   });
   d.people.forEach((p) => {
     if (p.fixedRoleId === undefined && p.only !== undefined) p.fixedRoleId = p.only || null;
+    if (p.employeeNo == null) p.employeeNo = "";
+    if (p.shoulderNo == null) p.shoulderNo = "";
   });
   d.groups.forEach((g, i) => { if (g.sortOrder == null) g.sortOrder = i + 1; });
   return d;
@@ -250,6 +254,8 @@ export const blockLen = () => (D().settings && D().settings.blockLengthDays) || 
 export const dateOf = (d) => addDays(block().startDate, d);
 export const shiftOf = (d) => block().shifts[d];
 export const rolesForDay = (d) => D().roles.filter((r) => (shiftOf(d) === "Day" ? r.usedAtDay !== false : r.usedAtNight));
+export const essentialRolesForDay = (d) => rolesForDay(d).filter((r) => r.essential !== false);
+export const isEssentialRole = (r) => !r || r.essential !== false;
 export const dayLabels = () => block().shifts.map((s, d) => ({ label: fmt(dateOf(d)), shift: s, iso: dateOf(d) }));
 
 export function statusLabel(statusId) {
@@ -318,7 +324,9 @@ export function markStale() {
   if (hasRoster()) block().stale = true;
 }
 
-/** Day-indexed assign map used by generator and roster UI. */
+/** Day-indexed assign map used by generator and roster UI.
+ * Live holders only: a stored assignment whose person is not Present is vacated
+ * (`assign[roleId] = null`, `former[roleId] = personId`). Returning to Present restores. */
 export function rosterDays() {
   if (!hasRoster()) return null;
   const n = blockLen();
@@ -326,11 +334,64 @@ export function rosterDays() {
   for (let d = 0; d < n; d++) {
     const date = dateOf(d);
     const assign = {};
+    const former = {};
     rolesForDay(d).forEach((r) => { assign[r.id] = null; });
-    block().assignments.filter((a) => a.date === date).forEach((a) => { assign[a.roleId] = a.personId; });
-    out.push({ assign });
+    block().assignments.filter((a) => a.date === date).forEach((a) => {
+      const p = personById(a.personId);
+      if (p && isPresent(p, d)) assign[a.roleId] = a.personId;
+      else {
+        assign[a.roleId] = null;
+        former[a.roleId] = a.personId;
+      }
+    });
+    out.push({ assign, former });
   }
   return out;
+}
+
+/** Vacated essential roles for a day (for Unallocated strip / warnings). */
+export function vacatedEssential(d) {
+  const days = rosterDays();
+  if (!days) return [];
+  const day = days[d];
+  return essentialRolesForDay(d)
+    .filter((r) => !day.assign[r.id])
+    .map((r) => ({
+      roleId: r.id,
+      name: r.name,
+      wasPersonId: day.former[r.id] || null,
+      wasName: day.former[r.id] ? ((personById(day.former[r.id]) || {}).name || "") : ""
+    }));
+}
+
+/**
+ * Rewrite one day's assignment rows from a live assign map, preserving vacated
+ * (non-Present) rows for roles that remain null and were not cleared.
+ * @param {number} d day index
+ * @param {Record<string, string|null>} assign live map
+ * @param {Set<string>|string[]} [clearedRoleIds] roles explicitly unassigned (drop vacated row)
+ */
+export function writeDayAssign(d, assign, clearedRoleIds) {
+  const date = dateOf(d);
+  const cleared = clearedRoleIds instanceof Set ? clearedRoleIds : new Set(clearedRoleIds || []);
+  const keptVacated = block().assignments.filter((a) => {
+    if (a.date !== date) return false;
+    if (assign[a.roleId]) return false;
+    if (cleared.has(a.roleId)) return false;
+    const p = personById(a.personId);
+    return !(p && isPresent(p, d));
+  });
+  block().assignments = block().assignments.filter((a) => a.date !== date);
+  Object.keys(assign).forEach((roleId) => {
+    if (assign[roleId]) {
+      block().assignments.push({ date, roleId, personId: assign[roleId], source: "manual" });
+    }
+  });
+  keptVacated.forEach((a) => {
+    if (!block().assignments.some((x) => x.date === date && x.roleId === a.roleId)) {
+      block().assignments.push(a);
+    }
+  });
 }
 
 export function roleOfPerson(dayAssign, pid) {
@@ -361,23 +422,6 @@ export function writeRoster(days, source) {
   touchMeta();
 }
 
-export function getSpareNote(pid, d) {
-  const date = dateOf(d);
-  const row = (block().spareNotes || []).find((n) => n.personId === pid && n.date === date);
-  return row ? row.text : "";
-}
-
-export function setSpareNote(pid, d, text) {
-  const date = dateOf(d);
-  if (!block().spareNotes) block().spareNotes = [];
-  const rows = block().spareNotes;
-  const i = rows.findIndex((n) => n.personId === pid && n.date === date);
-  const t = String(text || "").trim();
-  if (!t) { if (i >= 0) rows.splice(i, 1); return; }
-  if (i >= 0) rows[i].text = t;
-  else rows.push({ date, personId: pid, text: t });
-}
-
 export function setAssignment(d, rid, pid, source) {
   const date = dateOf(d);
   const rows = block().assignments;
@@ -396,23 +440,14 @@ export function swapOrAssign(d, rid, pid) {
   const days = rosterDays();
   if (!days) return;
   const day = days[d];
-  const holder = day.assign[rid];
+  const holder = day.assign[rid] || null;
   const old = pid ? roleOfPerson(day, pid) : null;
-  day.assign[rid] = pid;
-  if (pid && old) day.assign[old] = holder || null;
-  /* Rewrite that day's assignments from the map. */
-  const date = dateOf(d);
-  block().assignments = block().assignments.filter((a) => a.date !== date);
-  Object.keys(day.assign).forEach((roleId) => {
-    if (day.assign[roleId]) {
-      block().assignments.push({
-        date,
-        roleId,
-        personId: day.assign[roleId],
-        source: "manual"
-      });
-    }
-  });
+  const next = { ...day.assign };
+  next[rid] = pid || null;
+  if (pid && old) next[old] = holder || null;
+  const cleared = new Set([rid]);
+  if (old) cleared.add(old);
+  writeDayAssign(d, next, cleared);
 }
 
 export function touchMeta() {
@@ -430,9 +465,35 @@ export function snapshotBlockForHistory(snap) {
     shifts: b.shifts.slice(),
     attendance: b.attendance.map((a) => ({ ...a })),
     assignments: b.assignments.map((a) => ({ ...a })),
+    spareNotes: [],
     snap,
     records: snap.records
   };
+}
+
+/** Block start on a history row (`startDate` preferred; legacy `start` also matched). */
+export function historyStart(h) {
+  if (!h) return "";
+  return h.startDate || h.start || "";
+}
+
+export function findHistoryIndexForStart(start) {
+  if (!start) return -1;
+  return history().findIndex((h) => historyStart(h) === start);
+}
+
+/** Replace existing history row for this start, or push. Keeps entry.id when replacing. */
+export function upsertHistoryEntry(entry) {
+  const start = historyStart(entry) || block().startDate;
+  const i = findHistoryIndexForStart(start);
+  const rows = history();
+  if (i >= 0) {
+    const prevId = rows[i].id;
+    rows[i] = { ...entry, id: prevId || entry.id, startDate: start };
+    delete rows[i].start;
+  } else {
+    rows.push({ ...entry, startDate: start });
+  }
 }
 
 /** Saved four-day periods from the log, newest first. */
@@ -583,7 +644,10 @@ export function personLoadByMonth(personId, opts) {
     if (a.personId === personId) bump(a.date, a.roleId, null, shiftLookup[a.date]);
   });
 
+  const currentStart = block().startDate;
   history().forEach((h) => {
+    /* Skip saved copy of the live block so Save roster upsert does not double-count. */
+    if (historyStart(h) === currentStart) return;
     const hShifts = shiftMapForEntry(h);
     (h.assignments || []).forEach((a) => {
       if (a.personId === personId) bump(a.date, a.roleId, null, hShifts[a.date] || shiftLookup[a.date]);
@@ -676,4 +740,55 @@ export function teamLoadForMonth(month) {
     };
   }).filter((r) => r.duties > 0 || r.person.active !== false)
     .sort((a, b) => b.duties - a.duties || a.person.name.localeCompare(b.person.name));
+}
+
+/**
+ * Duty stats pivot (H59): one row per person, one column per role, cell = times done that month.
+ * Columns follow the Roles screen (essential first, then list order); a duty that appears in the
+ * log but is no longer in the role list still gets a column at the end so its counts are not lost.
+ * `totals` tallies every column plus the grand total.
+ */
+export function dutyPivot(month) {
+  const team = teamLoadForMonth(month);
+  const seen = new Set();
+  const roles = [];
+  D().roles.slice()
+    .sort((a, b) => ((a.essential !== false ? 0 : 1) - (b.essential !== false ? 0 : 1)) || ((a.sortOrder || 0) - (b.sortOrder || 0)))
+    .forEach((r) => {
+      if (seen.has(r.name)) return;
+      seen.add(r.name);
+      roles.push({ name: r.name, hard: !!r.hard, skill: !!r.skillRestricted, essential: r.essential !== false });
+    });
+  const extra = [];
+  team.forEach((t) => t.roles.forEach((x) => { if (!seen.has(x.name)) { seen.add(x.name); extra.push(x.name); } }));
+  extra.sort((a, b) => a.localeCompare(b, "en-IE"))
+    .forEach((name) => roles.push({ name, hard: false, skill: false, essential: true, retired: true }));
+
+  const rows = team.map((t) => {
+    const counts = {};
+    t.roles.forEach((x) => { counts[x.name] = (counts[x.name] || 0) + x.n; });
+    return { person: t.person, duties: t.duties, hard: t.hard, skill: t.skill, counts };
+  });
+  const totals = { duties: 0, hard: 0, skill: 0, counts: {} };
+  rows.forEach((r) => {
+    totals.duties += r.duties; totals.hard += r.hard; totals.skill += r.skill;
+    Object.keys(r.counts).forEach((k) => { totals.counts[k] = (totals.counts[k] || 0) + r.counts[k]; });
+  });
+  return { roles, rows, totals };
+}
+
+/** Sort pivot rows by "person" | "duties" | "hard" | "skill" | "role:<name>"; ties fall back to name A-Z. */
+export function sortPivotRows(rows, key, dir) {
+  const val = (r) => (key === "duties" ? r.duties : key === "hard" ? r.hard : key === "skill" ? r.skill
+    : key.indexOf("role:") === 0 ? (r.counts[key.slice(5)] || 0) : 0);
+  const byName = (a, b) => a.person.name.localeCompare(b.person.name, "en-IE");
+  const sign = dir === "asc" ? 1 : -1;
+  return rows.slice().sort((a, b) => (key === "person" ? sign * byName(a, b) : (sign * (val(a) - val(b)) || byName(a, b))));
+}
+
+/** Header click: same column flips direction; a new column starts high-to-low (names A-Z). An explicit ▲/▼ press (`dir`) is used as given. */
+export function nextPivotSort(cur, key, dir) {
+  if (dir === "asc" || dir === "desc") return { key, dir };
+  if (cur && cur.key === key) return { key, dir: cur.dir === "desc" ? "asc" : "desc" };
+  return { key, dir: key === "person" ? "asc" : "desc" };
 }

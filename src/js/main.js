@@ -1,13 +1,14 @@
 import { esc } from "./util.js";
-import { S, setRenderer, loadLocal, wireFileInput, applyLoaded, tryLoadMockData, touch, setOnDataChanged } from "./state.js";
+import { S, setRenderer, loadLocal, wireFileInput, applyLoaded, tryLoadMockData, touch, setOnDataChanged, toast } from "./state.js";
 import { shell, vSelModal, vBulk, vConfirm, vNamePrompt } from "./ui-kit.js";
 import { tryRestoreWorkspace, hasWorkspace, readWorkspaceData, writeWorkspaceData } from "./workspace.js";
 import { logAudit } from "./audit.js";
+import { swapPeople, assignParkedRole, canTakeParkedRole, canDropPersonOnPerson } from "./generator.js";
 
 import { vStart, actions as startActions, changes as startChanges } from "./screens/start.js";
 import { vAtt, actions as attActions, changes as attChanges } from "./screens/attendance.js";
-import { vRos, actions as rosActions } from "./screens/roster.js";
-import { vPrt, actions as prtActions, changes as prtChanges } from "./screens/print.js";
+import { vRos, actions as rosActions, changes as rosChanges } from "./screens/roster.js";
+import { actions as prtActions, changes as prtChanges } from "./screens/print.js";
 import { vPpl, actions as pplActions, changes as pplChanges } from "./screens/people.js";
 import { vSkills, actions as sklActions, changes as sklChanges } from "./screens/skills.js";
 import { vRol, actions as rolActions, changes as rolChanges } from "./screens/roles.js";
@@ -16,11 +17,12 @@ import { vHist, actions as histActions, changes as histChanges } from "./screens
 import { vStats, actions as statsActions } from "./screens/stats.js";
 import { actions as appActions } from "./app-actions.js";
 
-const SCREENS = { start: vStart, att: vAtt, ros: vRos, prt: vPrt, ppl: vPpl, skl: vSkills, rol: vRol, log: vLog, hist: vHist, stats: vStats };
+const SCREENS = { start: vStart, att: vAtt, ros: vRos, prt: vRos, ppl: vPpl, skl: vSkills, rol: vRol, log: vLog, hist: vHist, stats: vStats };
 const ACT = { ...appActions, ...startActions, ...attActions, ...rosActions, ...prtActions, ...sklActions, ...rolActions, ...logActions, ...histActions, ...statsActions, ...pplActions };
-const CHANGES = { ...startChanges, ...attChanges, ...pplChanges, ...sklChanges, ...rolChanges, ...histChanges, ...prtChanges };
+const CHANGES = { ...startChanges, ...attChanges, ...pplChanges, ...sklChanges, ...rolChanges, ...histChanges, ...prtChanges, ...rosChanges };
 
 function render() {
+  if (S.ui.screen === "prt" || S.ui.screen === "ros") S.ui.screen = "ros";
   if (S.ui.screen === "help" || !SCREENS[S.ui.screen]) S.ui.screen = "start";
   const active = document.activeElement;
   const keep = active && active.id;
@@ -76,7 +78,7 @@ function isLiveTypingTarget(el) {
   const id = el.id;
   if (id === "unitName" || id === "peopleSearch" || id === "newPerson" || id === "newRole") return true;
   const ch = el.dataset && el.dataset.ch;
-  return ch === "unitName" || ch === "pname" || ch === "peopleQ";
+  return ch === "unitName" || ch === "pname" || ch === "pemp" || ch === "pshldr" || ch === "peopleQ";
 }
 
 /* Every data mutation goes through touch() in state.js; when a workspace folder is
@@ -115,6 +117,87 @@ document.addEventListener("click", (e) => {
   if (result && typeof result.then === "function") result.then(() => render());
 });
 
+document.addEventListener("dragstart", (e) => {
+  const roleChip = e.target.closest("[data-drag-role]");
+  if (roleChip) {
+    S.ui.dragRole = roleChip.dataset.dragRole;
+    S.ui.dragDay = +roleChip.dataset.dragDay;
+    S.ui.dragPid = null;
+    e.dataTransfer.setData("text/plain", "role:" + S.ui.dragRole);
+    e.dataTransfer.effectAllowed = "move";
+    roleChip.classList.add("drag-source");
+    /* Dim invalid person targets without remounting. */
+    document.querySelectorAll("[data-drop-person]").forEach((el) => {
+      const day = +el.dataset.dropDay;
+      if (day !== S.ui.dragDay || !canTakeParkedRole(day, S.ui.dragRole, el.dataset.dropPerson)) {
+        el.classList.add("drop-dim");
+      }
+    });
+    return;
+  }
+  const handle = e.target.closest("[data-drag-person]");
+  if (!handle) return;
+  S.ui.dragPid = handle.dataset.dragPerson;
+  S.ui.dragDay = +handle.dataset.dragDay;
+  S.ui.dragRole = null;
+  e.dataTransfer.setData("text/plain", S.ui.dragPid);
+  e.dataTransfer.effectAllowed = "move";
+  handle.classList.add("drag-source");
+  /* Dim other days and anyone the swap would be refused for, without remounting. */
+  document.querySelectorAll("[data-drop-person]").forEach((el) => {
+    const day = +el.dataset.dropDay;
+    if (el.dataset.dropPerson === S.ui.dragPid) return;
+    if (day !== S.ui.dragDay || !canDropPersonOnPerson(day, S.ui.dragPid, el.dataset.dropPerson)) {
+      el.classList.add("drop-dim");
+    }
+  });
+});
+
+document.addEventListener("dragend", () => {
+  S.ui.dragPid = null;
+  S.ui.dragRole = null;
+  S.ui.dragDay = null;
+  document.querySelectorAll(".drag-source,.drop-hot,.drop-dim").forEach((el) => {
+    el.classList.remove("drag-source", "drop-hot", "drop-dim");
+  });
+});
+
+document.addEventListener("dragover", (e) => {
+  if (S.ui.dragPid == null && S.ui.dragRole == null) return;
+  const drop = e.target.closest("[data-drop-person]");
+  if (!drop) return;
+  const day = drop.dataset.dropDay != null ? +drop.dataset.dropDay : null;
+  if (day != null && day !== +S.ui.dragDay) return;
+  if (S.ui.dragRole && !canTakeParkedRole(day, S.ui.dragRole, drop.dataset.dropPerson)) return;
+  if (S.ui.dragPid && !canDropPersonOnPerson(day, S.ui.dragPid, drop.dataset.dropPerson)) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "move";
+  document.querySelectorAll(".drop-hot").forEach((el) => { if (el !== drop) el.classList.remove("drop-hot"); });
+  drop.classList.add("drop-hot");
+});
+
+document.addEventListener("drop", (e) => {
+  if (S.ui.dragPid == null && S.ui.dragRole == null) return;
+  const drop = e.target.closest("[data-drop-person]");
+  if (!drop) return;
+  e.preventDefault();
+  const fromDay = +S.ui.dragDay;
+  const day = drop.dataset.dropDay != null ? +drop.dataset.dropDay : fromDay;
+  const dragRole = S.ui.dragRole;
+  const fromPid = S.ui.dragPid;
+  S.ui.dragPid = null;
+  S.ui.dragRole = null;
+  S.ui.dragDay = null;
+  if (day !== fromDay) {
+    toast("Only within the same day.");
+    render();
+    return;
+  }
+  if (dragRole) assignParkedRole(day, dragRole, drop.dataset.dropPerson);
+  else if (fromPid) swapPeople(day, fromPid, drop.dataset.dropPerson);
+  render();
+});
+
 document.addEventListener("change", (e) => {
   const el = e.target; const k = el.dataset && el.dataset.ch; if (!k) return;
   const v = el.type === "checkbox" ? el.checked : el.value; const ds = el.dataset;
@@ -140,6 +223,11 @@ document.addEventListener("input", (e) => {
   }
   if (k === "pname") {
     CHANGES.pname(el.value, el.dataset);
+    touch();
+    syncSaveStatus();
+  }
+  if (k === "pemp" || k === "pshldr") {
+    CHANGES[k](el.value, el.dataset);
     touch();
     syncSaveStatus();
   }

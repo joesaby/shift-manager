@@ -58,7 +58,7 @@ If `package.json` has no `test` script yet, add a minimal one when the first aut
 ```text
 H35 day shift skips usedAtDay:false roles
 H33 rest day does not allocate
-H37 spare note round-trips on block.spareNotes
+H37 Unassigned empty cell (no spareNotes)
 ```
 
 Include the H-id in the test name or top comment.

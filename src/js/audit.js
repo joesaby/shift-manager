@@ -18,9 +18,14 @@ export function setSessionUser(name) {
   } catch (e) { /* ignore */ }
 }
 
+let auditTestSink = null;
+export function setAuditTestSink(fn) { auditTestSink = fn || null; }
+
 /* Key milestone events only (not every keystroke) - see logAudit call sites in
-   generator.js/actions. Silently does nothing when no workspace is connected. */
+   generator.js/actions. Silently does nothing when no workspace is connected
+   (except optional auditTestSink for unit tests). */
 export function logAudit(action, detail) {
+  if (typeof auditTestSink === "function") auditTestSink(action, detail);
   if (!hasWorkspace()) return;
   const line = [new Date().toISOString(), "session=" + sessionId, "user=" + (sessionUser || "unknown"), action, detail || ""].join("\t");
   appendAuditLine(line);

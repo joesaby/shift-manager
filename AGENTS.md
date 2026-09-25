@@ -43,7 +43,7 @@ UI pattern: screens return HTML strings; clicks use `data-act="…"`; inputs use
    ```bash
    grep -c '\.CLASSNAME' src/styles/tailwind.css   # 0 = not present, will silently no-op
    ```
-   If it's missing, add plain CSS to `src/styles/app.css` instead (see `.rostergrid` / `.rolecol` / `.personcol` / `.spareinput` for the pattern), or regenerate `tailwind.css` from source with the real Tailwind toolchain — don't assume a class works just because it reads like standard Tailwind.
+   If it's missing, add plain CSS to `src/styles/app.css` instead (see `.rostergrid` / `.rolecol` / `.personcol` / `.spare-empty` for the pattern), or regenerate `tailwind.css` from source with the real Tailwind toolchain — don't assume a class works just because it reads like standard Tailwind.
 
 ## Product source of truth
 

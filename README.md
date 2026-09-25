@@ -25,9 +25,12 @@ Untick **Active** on People when someone leaves long term.
 
 ## Each block
 
-1. **Attendance** — block start date, Day/Night per day, status per person (Present = green; Annual leave / Sick leave / Duty away / Rest day = blue / unavailable), then **Generate roster**.
-2. **Roster** — review and edit the person × role grid (qualified + present only).
-3. **Print rota** — person × day colour layout (A4 landscape); type spare notes if needed; **Print in colour**; **Save to log**.
+1. **Attendance** — block start date, Day/Night per day, status per person (Present = green; Annual leave / Sick leave / Duty away / Rest day = blue / unavailable), then **Generate roster** once.
+2. **Roster** — person × day layout. Drag a **parking-lot** chip onto a person to fill a vacated essential role; drag people to swap. Non-essential roles vacated by sick silently drop for that day. **Save roster**, then **Print** (or **Save & print** if unsaved). Above the grid, **Briefing sheet** has **Print Thu** / **Print Fri** / … — a one-page briefing sheet for that day only, sorted by role (name + employee / shoulder numbers), for parade use; it does not change the saved roster order.
+
+Free-text spare notes ("HVB") are gone: anyone with no role shows **Unassigned**. Notes typed in an older version are cleared from the current block when the file is opened; rotas already saved to the Log keep theirs.
+
+On **Roles and groups**, tick **Essential** for duties that must be filled; leave it unticked for spare work (e.g. Files 1–5). List order among non-essential roles is fill priority.
 
 **Log** (sidebar) holds saved rotas. Folder `logs/` is the file audit trail (not shown in the UI).
 
@@ -37,11 +40,11 @@ Untick **Active** on People when someone leaves long term.
 | --- | --- |
 | Home | Unit, manager, folder, this-block path |
 | 1. Attendance | Dates, shifts, who is working |
-| 2. Roster | Generate and edit assignments |
-| 3. Print rota | Colour print and save to log |
-| People / Skills / Roles and groups | Team setup |
+| 2. Roster | Generate once, edit, Save roster, print; Print day per column |
+| People / Skills / Roles and groups | Team setup (Essential flag on roles) |
 | Log | Saved rotas, CSV |
-| Historic roster / Duty stats | Past blocks and monthly load |
+| Historic roster | Past blocks: same person × day layout as Roster (read-only) |
+| Duty stats | Person × role counts for a month — use ▲ ▼ at the top of any column to sort (e.g. ▼ on a role, to see who did it most); tallies at the end |
 
 ## Develop
 

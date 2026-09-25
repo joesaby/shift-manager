@@ -47,7 +47,7 @@ For each H-id in the change set, mark pass/fail/skip:
 3. People — surname sort, quals, fixed role  
 4. Attendance — statuses including Rest day → Generate  
 5. Roster — edit qualified-only  
-6. Print — person × day, spare note, sticky header on screen, A4 landscape intent in CSS  
+6. Print — person × day, Unassigned empty cells, sticky header on screen, A4 landscape intent in CSS  
 7. Save to log → Log reprint/CSV  
 
 ## Security / supply-chain spot check

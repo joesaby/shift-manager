@@ -27,35 +27,57 @@ function fileControls() {
   return `${chooseBtn}<button class="btn btn-sm btn-ghost" data-act="open">Open file</button><button class="btn btn-sm btn-primary" data-act="save">Save file</button>`;
 }
 
+/* Sidebar: pinned open by default, but Attendance and Roster are wide tables so they start
+   collapsed. An explicit choice (toggleNav) wins everywhere and is remembered per viewer. */
+const NAV_KEY = "sm.navCollapsed";
+const WIDE_SCREENS = ["att", "ros", "hist", "stats"];
+
+export function navCollapsed() {
+  if (S.ui.navCollapsed === undefined) {
+    let v = null;
+    try { v = localStorage.getItem(NAV_KEY); } catch (e) { /* storage unavailable */ }
+    S.ui.navCollapsed = v === "1" ? true : v === "0" ? false : null;
+  }
+  return S.ui.navCollapsed !== null ? S.ui.navCollapsed : WIDE_SCREENS.indexOf(S.ui.screen) >= 0;
+}
+
+export function setNavCollapsed(v) {
+  S.ui.navCollapsed = !!v;
+  try { localStorage.setItem(NAV_KEY, v ? "1" : "0"); } catch (e) { /* storage unavailable */ }
+}
+
 export function shell(inner) {
   const unit = unitName();
+  const collapsed = navCollapsed();
+  const wide = WIDE_SCREENS.indexOf(S.ui.screen) >= 0;
   const menu = NAV.map((n) => (n[2] ? `<li class="menu-title mt-4">${n[2]}</li>` : "") + `<li><a data-act="nav" data-s="${n[0]}" class="gap-3 ${S.ui.screen === n[0] ? "active" : ""}">${icon(n[0])}${n[1]}</a></li>`).join("");
-  return `<div class="drawer lg:drawer-open">
+  return `<div class="drawer${collapsed ? "" : " lg:drawer-open"}">
    <input id="navToggle" type="checkbox" class="drawer-toggle">
    <div class="drawer-content flex flex-col min-w-0">
     <div class="navbar bg-base-100 border-b border-base-300 px-4 sticky top-0 z-30 print:hidden">
-     <div class="flex-none lg:hidden"><label for="navToggle" class="btn btn-square btn-ghost" aria-label="Open menu"><svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></label></div>
+     <div class="flex-none${collapsed ? "" : " lg:hidden"}"><label for="navToggle" class="btn btn-square btn-ghost" aria-label="Open menu"><svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></label></div>
      <div class="flex-1 gap-2">${S.dirty ? '<span id="saveStatus" class="badge badge-warning gap-1">Unsaved changes</span>' : '<span id="saveStatus" class="badge badge-ghost">All changes saved</span>'}${unit ? `<span id="navUnitBadge" class="badge badge-ghost hidden sm:inline-flex">${esc(unit)}</span>` : '<span id="navUnitBadge" class="badge badge-ghost hidden sm:inline-flex" style="display:none"></span>'}</div>
      <div class="flex-none flex gap-2">${fileControls()}</div>
     </div>
-    <main class="p-4 md:p-8 space-y-6 max-w-7xl w-full mx-auto">${inner}</main>
+    <main class="p-4 md:p-8 space-y-6 max-w-7xl w-full mx-auto${wide ? " main-wide" : ""}">${inner}</main>
    </div>
    <div class="drawer-side z-40 print:hidden">
     <label for="navToggle" class="drawer-overlay" aria-label="Close menu"></label>
     <aside class="bg-base-100 border-r border-base-300 w-64 min-h-full flex flex-col">
-     <div class="flex items-center gap-3 px-5 py-5"><img src="${LOGO_DATA_URI}" alt="An Garda Síochána" class="w-10 h-10 object-contain" width="40" height="40"><div><div class="font-bold leading-tight">Shift Manager</div><div id="navUnitLabel" class="text-xs text-base-content/60">${unit ? esc(unit) : "Duty rota"}</div></div></div>
+     <div class="flex items-center gap-3 px-5 py-5"><img src="${LOGO_DATA_URI}" alt="An Garda Síochána" class="w-10 h-10 object-contain" width="40" height="40"><div><div class="font-bold leading-tight">Shift Manager</div><div id="navUnitLabel" class="text-xs text-base-content/60">${unit ? esc(unit) : "Duty rota"}</div></div><button type="button" class="btn btn-ghost btn-xs" style="margin-left:auto" data-act="toggleNav" title="${collapsed ? "Keep the menu open" : "Hide the menu to give tables more room"}">${collapsed ? "Pin" : "Hide"}</button></div>
      <ul class="menu px-3 pb-6 w-full gap-1">${menu}</ul></aside></div></div>`;
 }
 
 export function vSelModal() {
-  const sel = S.ui.sel; const ros = rosterDays(); if (!sel || !hasRoster() || !ros) return "";
+  const sel = S.ui.sel; const ros = rosterDays();
+  if (!sel || !hasRoster() || !ros || !sel.r || sel.kind === "person" || sel.kind === "role") return "";
   const day = ros[sel.d]; const role = roleById(sel.r); if (!role) return "";
   const holderId = day.assign[sel.r]; const holder = holderId ? personById(holderId) : null;
   const present = activePeople().filter((p) => isPresent(p, sel.d));
   const elig = present.filter((p) => canDo(p, sel.r) && p.id !== holderId);
   const items = elig.map((p) => {
     const r2 = roleOfPerson(day, p.id); const r2n = r2 ? (roleById(r2) || { name: "" }).name : "";
-    let blocked = false, sub = r2 ? "Currently " + r2n : "Currently spare";
+    let blocked = false, sub = r2 ? "Currently " + r2n : "Currently unassigned";
     if (r2 && holder) {
       if (!canDo(holder, r2)) { blocked = true; sub = holder.name + " could not cover " + r2n; } else sub = "Swap: " + holder.name + " takes " + r2n;
     }
