@@ -36,14 +36,14 @@ function headerHTML(snap) {
 }
 
 /** Read-only person × day grid matching the unified Roster look (no parking / drag). */
-function personDayScreenHTML(snap) {
+function personDayScreenHTML(snap, showUnfilled) {
   const withNums = (snap.people || []).some((p) =>
     Object.prototype.hasOwnProperty.call(p, "employeeNo")
     || Object.prototype.hasOwnProperty.call(p, "shoulderNo"));
   const head = snap.days.map((d) =>
     `<th class="bg-neutral text-neutral-content text-center p-2 align-bottom"><div>${esc(d.label)}</div><div class="font-normal opacity-80 text-xs">${esc(d.shift)}</div></th>`
   ).join("");
-  const unfBits = (snap.days || []).map((d, i) =>
+  const unfBits = !showUnfilled ? [] : (snap.days || []).map((d, i) =>
     (snap.unfilled && snap.unfilled[i] && snap.unfilled[i].length)
       ? `${d.label}: ${snap.unfilled[i].join(", ")}` : "").filter(Boolean);
   const rows = snap.people.map((p, pi) => {
@@ -130,9 +130,14 @@ export function vHist() {
   const toolbar = `<div class="roster-toolbar no-print"><h1 class="text-xl font-bold tracking-tight">Historic roster</h1>${selectors}${meta}<span class="roster-toolbar-actions">${printBtn}</span></div>`;
 
   if (personDay) {
+    /* Entries saved in the current format carry the unfilled list as it was at the time. Older ones
+       are converted here, and guessing from today's role list could show warnings that were never true. */
+    const native = !!(selected.entry.snap && selected.entry.snap.layout === "person-day" && selected.entry.snap.cells && selected.entry.snap.people);
     return `${toolbar}
-      <div class="text-sm opacity-70 no-print mb-2">Same person × day layout as Roster. Choose a saved block above, then print if needed.</div>
-      <div class="overflow-x-auto">${personDayScreenHTML(personDay)}</div>`;
+      <div class="text-sm opacity-70 no-print mb-2">${native
+        ? "Same person × day layout as Roster. Choose a saved block above, then print if needed."
+        : "Shown in the Roster layout from an older saved layout — unfilled duties are not shown for these. Choose a saved block above, then print if needed."}</div>
+      <div class="overflow-x-auto">${personDayScreenHTML(personDay, native)}</div>`;
   }
 
   return `${toolbar}

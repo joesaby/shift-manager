@@ -44,7 +44,7 @@ On **Roles and groups**, tick **Essential** for duties that must be filled; leav
 | People / Skills / Roles and groups | Team setup (Essential flag on roles) |
 | Log | Saved rotas, CSV |
 | Historic roster | Past blocks: same person × day layout as Roster (read-only) |
-| Duty stats | Person × role counts for a month — use ▲ ▼ at the top of any column to sort (e.g. ▼ on a role, to see who did it most); tallies at the end |
+| Duty stats | Person × role counts over any period (default: everything up to today) — ▲ ▼ on a column sorts it (e.g. ▼ on a role, to see who did it most); tallies at the end. Click a name for a printable report on just that person, with role counts and attendance (sick, annual leave, …) |
 
 ## Develop
 

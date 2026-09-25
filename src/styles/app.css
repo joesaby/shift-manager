@@ -32,6 +32,11 @@ html,body{font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helve
 .stats-pivot .pivot-role{min-width:4.5rem;max-width:6.5rem;text-align:center;white-space:normal;font-size:.7rem;line-height:1.15}
 .stats-pivot .pivot-sort{font:inherit;font-weight:600;background:none;border:0;padding:0;cursor:pointer;color:inherit;line-height:inherit;text-align:inherit}
 .stats-pivot .pivot-sort:hover{text-decoration:underline}
+/* Person report (H62): duties and attendance side by side, printed on its own. */
+.person-report{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:1.25rem;align-items:start}
+.person-report .rota td.pivot-n,.person-report .rota th.pivot-n{text-align:center;width:5rem;font-variant-numeric:tabular-nums}
+.person-report .rota td.pivot-zero{opacity:.3}
+.person-report .pivot-total-row td{border-top:2px solid #6b7280}
 .stats-pivot .pivot-head{display:flex;flex-direction:column;align-items:center;gap:.15rem}
 .stats-pivot th.stickycol .pivot-head{align-items:flex-start}
 .stats-pivot .pivot-arrows{display:flex;gap:.1rem}

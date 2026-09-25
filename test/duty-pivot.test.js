@@ -142,7 +142,7 @@ describe("explicit ascending / descending", () => {
 describe("Duty stats screen", () => {
   it("renders the pivot with sortable headers, a Total column and a Total row, without Day/Night", () => {
     load();
-    S.ui.statsMonth = "2026-09"; S.ui.statsSort = undefined;
+    S.ui.statsFrom = "2026-09-01"; S.ui.statsTo = "2026-09-30"; S.ui.statsSort = undefined;
     const html = vStats();
     assert.ok(html.includes('data-act="statsSort"'));
     assert.ok(html.includes('data-k="role:Escort"'));

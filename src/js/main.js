@@ -14,12 +14,12 @@ import { vSkills, actions as sklActions, changes as sklChanges } from "./screens
 import { vRol, actions as rolActions, changes as rolChanges } from "./screens/roles.js";
 import { vLog, actions as logActions } from "./screens/log.js";
 import { vHist, actions as histActions, changes as histChanges } from "./screens/hist.js";
-import { vStats, actions as statsActions } from "./screens/stats.js";
+import { vStats, actions as statsActions, changes as statsChanges } from "./screens/stats.js";
 import { actions as appActions } from "./app-actions.js";
 
 const SCREENS = { start: vStart, att: vAtt, ros: vRos, prt: vRos, ppl: vPpl, skl: vSkills, rol: vRol, log: vLog, hist: vHist, stats: vStats };
 const ACT = { ...appActions, ...startActions, ...attActions, ...rosActions, ...prtActions, ...sklActions, ...rolActions, ...logActions, ...histActions, ...statsActions, ...pplActions };
-const CHANGES = { ...startChanges, ...attChanges, ...pplChanges, ...sklChanges, ...rolChanges, ...histChanges, ...prtChanges, ...rosChanges };
+const CHANGES = { ...startChanges, ...attChanges, ...pplChanges, ...sklChanges, ...rolChanges, ...histChanges, ...prtChanges, ...rosChanges, ...statsChanges };
 
 function render() {
   if (S.ui.screen === "prt" || S.ui.screen === "ros") S.ui.screen = "ros";
@@ -202,7 +202,7 @@ document.addEventListener("change", (e) => {
   const el = e.target; const k = el.dataset && el.dataset.ch; if (!k) return;
   const v = el.type === "checkbox" ? el.checked : el.value; const ds = el.dataset;
   const fn = CHANGES[k]; if (fn) fn(v, ds);
-  const uiOnly = k === "peopleQ" || k === "peopleFilter" || k === "selPerson";
+  const uiOnly = k === "peopleQ" || k === "peopleFilter" || k === "selPerson" || k === "statsFrom" || k === "statsTo";
   if (!uiOnly) touch();
   render();
 });

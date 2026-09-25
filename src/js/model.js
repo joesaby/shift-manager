@@ -624,6 +624,8 @@ export function personLoadByMonth(personId, opts) {
     const month = String(date).slice(0, 7);
     if (!/^\d{4}-\d{2}$/.test(month)) return;
     if (onlyMonth && month !== onlyMonth) return;
+    if (opts && opts.from && String(date) < opts.from) return;
+    if (opts && opts.to && String(date) > opts.to) return;
     if (!buckets[month]) {
       buckets[month] = { duties: 0, day: 0, night: 0, hard: 0, skill: 0, groups: {}, roles: {} };
     }
@@ -727,29 +729,64 @@ export function loadMonths() {
   return Object.keys(set).sort().reverse();
 }
 
-/** Team rows for one month */
-export function teamLoadForMonth(month) {
+/** First and last day of a "YYYY-MM" month, as ISO dates (the "-31" end still compares correctly). */
+export const monthRange = (month) => ({ from: month + "-01", to: month + "-31" });
+
+/** Earliest date with any recorded duty / attendance (current planned block + log), or null. */
+export function earliestStatsDate() {
+  let min = null;
+  const see = (d) => { if (d && /^\d{4}-\d{2}-\d{2}$/.test(d) && (!min || d < min)) min = d; };
+  const b = block();
+  (b.assignments || []).forEach((a) => see(a.date));
+  if (b.generatedAt) see(b.startDate);
+  history().forEach((h) => {
+    see(historyStart(h));
+    (h.assignments || []).forEach((a) => see(a.date));
+    (h.records || []).forEach((r) => see(r.date));
+  });
+  return min;
+}
+
+/** Resolve the Duty stats period: default is everything from the start of the data up to today. */
+export function statsRange(from, to, today) {
+  const t = today || iso(new Date());
+  let f = from || earliestStatsDate() || t;
+  let e = to || t;
+  if (f > e) { const x = f; f = e; e = x; }
+  return { from: f, to: e };
+}
+
+/** One person's duties across a date range (months summed): { duties, day, night, hard, skill, groups, roles }. */
+export function personLoadForRange(pid, range) {
+  const rows = personLoadByMonth(pid, { from: range.from, to: range.to });
+  const tot = { duties: 0, day: 0, night: 0, hard: 0, skill: 0 };
+  const groups = {}; const roles = {};
+  rows.forEach((r) => {
+    Object.keys(tot).forEach((k) => { tot[k] += r[k] || 0; });
+    (r.groups || []).forEach((g) => { groups[g.name] = (groups[g.name] || 0) + g.n; });
+    (r.roles || []).forEach((x) => { roles[x.name] = (roles[x.name] || 0) + x.n; });
+  });
+  const list = (o) => Object.keys(o).map((name) => ({ name, n: o[name] }))
+    .sort((a, b) => b.n - a.n || a.name.localeCompare(b.name, "en-IE"));
+  return { ...tot, groups: list(groups), roles: list(roles) };
+}
+
+/** Team rows for a date range */
+export function teamLoadForRange(range) {
   return D().people.map((p) => {
-    const rows = personLoadByMonth(p.id, { month });
-    const m = rows[0] || { duties: 0, day: 0, night: 0, hard: 0, skill: 0, groups: [], roles: [] };
-    return {
-      person: p,
-      duties: m.duties, day: m.day || 0, night: m.night || 0,
-      hard: m.hard, skill: m.skill,
-      groups: m.groups || [], roles: m.roles
-    };
+    const m = personLoadForRange(p.id, range);
+    return { person: p, duties: m.duties, day: m.day, night: m.night, hard: m.hard, skill: m.skill, groups: m.groups, roles: m.roles };
   }).filter((r) => r.duties > 0 || r.person.active !== false)
     .sort((a, b) => b.duties - a.duties || a.person.name.localeCompare(b.person.name));
 }
 
-/**
- * Duty stats pivot (H59): one row per person, one column per role, cell = times done that month.
- * Columns follow the Roles screen (essential first, then list order); a duty that appears in the
- * log but is no longer in the role list still gets a column at the end so its counts are not lost.
- * `totals` tallies every column plus the grand total.
- */
-export function dutyPivot(month) {
-  const team = teamLoadForMonth(month);
+/** Team rows for one month */
+export function teamLoadForMonth(month) {
+  return teamLoadForRange(monthRange(month));
+}
+
+/** Role columns in Roles-screen order (essential first); `extraNames` are duties found in the log but no longer in the list. */
+function roleColumns(extraNames) {
   const seen = new Set();
   const roles = [];
   D().roles.slice()
@@ -760,9 +797,67 @@ export function dutyPivot(month) {
       roles.push({ name: r.name, hard: !!r.hard, skill: !!r.skillRestricted, essential: r.essential !== false });
     });
   const extra = [];
-  team.forEach((t) => t.roles.forEach((x) => { if (!seen.has(x.name)) { seen.add(x.name); extra.push(x.name); } }));
+  extraNames.forEach((name) => { if (!seen.has(name)) { seen.add(name); extra.push(name); } });
   extra.sort((a, b) => a.localeCompare(b, "en-IE"))
     .forEach((name) => roles.push({ name, hard: false, skill: false, essential: true, retired: true }));
+  return roles;
+}
+
+/**
+ * Days per attendance status for one person over a date range: { rows: [{ label, n }], days }.
+ * Sources: the current block (only once its roster is generated; unlisted days are Present) and
+ * saved log entries (their per-day records), skipping the saved copy of the live block.
+ */
+export function attendanceForRange(pid, range) {
+  const p = personById(pid);
+  const labels = (D().settings.statuses || defaultStatusesCopy()).map((x) => x.label);
+  const counts = {};
+  labels.forEach((l) => { counts[l] = 0; });
+  const add = (label) => { const l = label || "Present"; counts[l] = (counts[l] || 0) + 1; };
+  const inRange = (date) => !!date && date >= range.from && date <= range.to;
+  if (p) {
+    const b = block();
+    if (b.generatedAt) {
+      for (let d = 0; d < blockLen(); d++) if (inRange(dateOf(d))) add(getStatus(pid, d));
+    }
+    history().forEach((h) => {
+      if (b.generatedAt && historyStart(h) === b.startDate) return;
+      const recs = (h.records || []).filter((r) => r.person === p.name && inRange(r.date));
+      if (recs.length) { recs.forEach((r) => add(r.status)); return; }
+      (h.attendance || []).filter((a) => a.personId === pid && inRange(a.date)).forEach((a) => add(statusLabel(a.statusId)));
+    });
+  }
+  const rows = Object.keys(counts).map((label) => ({ label, n: counts[label] }));
+  return { rows, days: rows.reduce((n, r) => n + r.n, 0) };
+}
+
+/** One person's report over a date range: every role with their count, hard / skill totals, attendance. */
+export function personReport(pid, range) {
+  const person = personById(pid);
+  const load = personLoadForRange(pid, range);
+  const counts = {};
+  load.roles.forEach((x) => { counts[x.name] = x.n; });
+  const att = attendanceForRange(pid, range);
+  return {
+    person, range,
+    roles: roleColumns(load.roles.map((x) => x.name)).map((c) => ({ ...c, n: counts[c.name] || 0 })),
+    duties: load.duties, hard: load.hard, skill: load.skill,
+    attendance: att.rows, attendanceDays: att.days
+  };
+}
+
+/**
+ * Duty stats pivot (H59): one row per person, one column per role, cell = times done in the date range (a "YYYY-MM" month string also works).
+ * Columns follow the Roles screen (essential first, then list order); a duty that appears in the
+ * log but is no longer in the role list still gets a column at the end so its counts are not lost.
+ * `totals` tallies every column plus the grand total.
+ */
+export function dutyPivot(arg) {
+  const range = typeof arg === "string" ? monthRange(arg) : arg;
+  const team = teamLoadForRange(range);
+  const extraNames = [];
+  team.forEach((t) => t.roles.forEach((x) => extraNames.push(x.name)));
+  const roles = roleColumns(extraNames);
 
   const rows = team.map((t) => {
     const counts = {};
