@@ -2,7 +2,7 @@ import { esc, fmt, fmtLong } from "../util.js";
 import { S, toast, askConfirm, render } from "../state.js";
 import {
   D, block, hasRoster, isStale, groupById,
-  personById, isPresent, qual, roleOfPerson, rosterDays, vacatedEssential,
+  personById, isPresent, qual, roleOfPerson, rosterDays, vacatedEssential, openRolesForDay, unassignedReason,
   unitName, activePeople
 } from "../model.js";
 import { buildSnapshot, saveRoster as persistRoster, isRosterUnsaved, printFitStyle, buildDayBrief, dayBriefHTML } from "../snapshot.js";
@@ -30,6 +30,25 @@ function headerHTML(snap) {
 }
 
 /** Interactive person × day roster (unified former Print + Roster). */
+/** Unfilled roles this person can take on day d (essential first), as a screen-only "Add role" select. */
+const NO_OPTION_HINT = {
+  "none-open": "No unfilled role left for anyone today",
+  "not-eligible": "Not marked Present today",
+  "not-qualified": "Not qualified for the roles still open today"
+};
+
+function addRoleSelect(d, pid) {
+  const open = openRolesForDay(d).filter((r) => canTakeParkedRole(d, r.id, pid));
+  if (!open.length) {
+    const hint = NO_OPTION_HINT[unassignedReason(d, pid)] || "";
+    return `<span class="spare-empty" title="${esc(hint)}">Unassigned</span>`;
+  }
+  const opts = open
+    .sort((a, b) => (a.essential !== false ? 0 : 1) - (b.essential !== false ? 0 : 1))
+    .map((r) => `<option value="${r.id}">${esc(r.name)}${r.essential === false ? " (optional)" : ""}</option>`).join("");
+  return `<select class="select select-bordered select-xs no-print" data-ch="addRole" data-d="${d}" data-p="${pid}" aria-label="Add a role for this day"><option value="">Unassigned</option>${opts}</select><span class="spare-empty role-print-only">Unassigned</span>`;
+}
+
 export function vRos() {
   if (!D().people.length) return noPeople();
   if (!hasRoster()) {
@@ -104,7 +123,7 @@ export function vRos() {
         return `<td class="p-1 text-center rostercell ${selected ? "cell-sel" : ""} ${hot ? "drop-hot" : ""} ${dimChip || dimPerson ? "drop-dim" : ""}" data-drop-person="${p.id}" data-drop-day="${d}" style="background:#ffffff">
           <div class="roster-cell-inner">
             <button type="button" class="drag-handle no-print" draggable="true" data-drag-person="${p.id}" data-drag-day="${d}" data-act="pickPerson" data-d="${d}" data-p="${p.id}" title="Drag or click to swap" aria-label="Select ${esc(p.name)}">⋮⋮</button>
-            <span class="spare-empty">Unassigned</span>
+            ${addRoleSelect(d, p.id)}
           </div>
         </td>`;
       }
@@ -257,4 +276,6 @@ export const actions = {
   assign: (a) => { assignRoleToPerson(+a.d, a.r, a.p || null); S.ui.sel = null; }
 };
 
-export const changes = {};
+export const changes = {
+  addRole: (v, ds) => { if (v) assignRoleToPerson(+ds.d, v, ds.p); }
+};

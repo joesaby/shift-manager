@@ -23,7 +23,7 @@ html,body{font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helve
 .printScroll.roster-scroll{max-height:calc(100vh - 14.5rem);max-height:calc(100dvh - 14.5rem);min-height:14rem}
 .roster-compact td{padding-top:.125rem;padding-bottom:.125rem}
 .roster-compact .roster-cell-inner{min-height:1.5rem}
-.parking-chips{max-height:3.6rem;overflow:auto}
+.parking-chips{max-height:9rem;overflow:auto}
 /* Duty stats pivot (H59/H60): person x role counts, sortable headings, tallies at the end. */
 .pivot-scroll{max-height:calc(100vh - 18rem);min-height:12rem;overflow:auto}
 .stats-pivot thead th{position:sticky;top:0;z-index:3;background:oklch(var(--b1));vertical-align:bottom}
