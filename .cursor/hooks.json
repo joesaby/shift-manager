@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeSubmitPrompt": [
+      {
+        "command": "node scripts/hooks/architect-gate.mjs prompt",
+        "timeout": 10
+      }
+    ],
+    "stop": [
+      {
+        "command": "node scripts/hooks/architect-gate.mjs stop",
+        "timeout": 15,
+        "loop_limit": 1
+      }
+    ]
+  }
+}

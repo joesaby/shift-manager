@@ -82,3 +82,19 @@ Skills: **architect**, **tdd**, **verify**.
 3. **verify** — `npm run build` (+ `npm test` if present), PRD/security acceptance before commit  
 
 Typical order for non-trivial behaviour: architect → tdd → implement → verify.
+
+### Hooks (architect gate)
+
+Feature / bug-fix work is gated by hooks shared across Cursor and Claude Code:
+
+| Host | Config | Events |
+| --- | --- | --- |
+| Cursor | [`.cursor/hooks.json`](.cursor/hooks.json) | `beforeSubmitPrompt`, `stop` |
+| Claude Code | [`.claude/settings.json`](.claude/settings.json) | `UserPromptSubmit`, `Stop` |
+
+Both call [`scripts/hooks/architect-gate.mjs`](scripts/hooks/architect-gate.mjs):
+
+- **On prompt** — if the request looks like a feature or bug fix, inject Mode A (read architect skill before coding).
+- **On stop** — if behaviour-relevant files are dirty and no architect pass is visible, block/follow-up for Mode B.
+
+Typos, copy tweaks, and one-line CSS are excluded. If Cursor also loads Claude Code settings as third-party hooks, disable that for this repo so the gate does not fire twice.
