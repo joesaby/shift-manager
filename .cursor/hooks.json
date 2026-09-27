@@ -1,17 +1,38 @@
 {
   "version": 1,
   "hooks": {
+    "sessionStart": [
+      {
+        "command": "node scripts/hooks/architect-gate.mjs session",
+        "timeout": 10
+      }
+    ],
     "beforeSubmitPrompt": [
       {
         "command": "node scripts/hooks/architect-gate.mjs prompt",
         "timeout": 10
       }
     ],
+    "postToolUse": [
+      {
+        "command": "node scripts/hooks/architect-gate.mjs post-read",
+        "matcher": "Read",
+        "timeout": 10
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "node scripts/hooks/architect-gate.mjs pre-write",
+        "matcher": "Write|Edit|StrReplace",
+        "timeout": 10,
+        "failClosed": false
+      }
+    ],
     "stop": [
       {
         "command": "node scripts/hooks/architect-gate.mjs stop",
         "timeout": 15,
-        "loop_limit": 1
+        "loop_limit": 2
       }
     ]
   }
