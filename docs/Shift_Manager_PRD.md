@@ -62,7 +62,7 @@ Shift manager at a desk, last night of a block. Others only see the printed rota
 
 ### Workspace model (units)
 
-**Best practice: one folder per unit** (for example `mill-street/`, `pearse-street/`). Each folder holds that unit’s data file, backups, and file-based audit trail. Switching units = finish saving, then **Change folder** (or Open another file). Do not mix two units in one folder.
+**Best practice: one folder per unit** (for example `cedar-quay/`, `harbour-bridge/` — fictional names in docs only). Each folder holds that unit’s data file, backups, and file-based audit trail. Switching units = finish saving, then **Change folder** (or Open another file). Do not mix two units in one folder.
 
 ---
 
@@ -262,7 +262,7 @@ When serving over `http` next to `data/shift-manager-data.json`, mock may auto-l
   "schemaVersion": 2,
   "meta": {
     "title": "Shift Manager",
-    "unitName": "Mill Street",
+    "unitName": "Cedar Quay",
     "updatedAt": "2026-09-20T14:00:00.000Z",
     "app": "shift-manager-html"
   },
@@ -330,12 +330,12 @@ When serving over `http` next to `data/shift-manager-data.json`, mock may auto-l
       {
         "id": "b_log1",
         "savedAt": "2026-09-17T22:10:00.000Z",
-        "savedBy": "Jose Sebastian",
+        "savedBy": "A. Manager",
         "startDate": "2026-09-13",
         "shifts": ["Day", "Day", "Night", "Night"],
         "attendance": [],
         "assignments": [],
-        "snap": { "layout": "person-role", "unitName": "Mill Street", "savedBy": "Jose Sebastian" },
+        "snap": { "layout": "person-role", "unitName": "Cedar Quay", "savedBy": "A. Manager" },
         "records": []
       }
     ]
