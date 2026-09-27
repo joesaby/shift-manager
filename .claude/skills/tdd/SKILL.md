@@ -51,7 +51,7 @@ If `package.json` has no `test` script yet, add a minimal one when the first aut
 4. **Implement the smallest change** in `src/js/…`.
 5. Run tests — **green**.
 6. Refactor only while green; no behaviour drift.
-7. Run **verify** before commit (build + PRD/security checklist).
+7. Run **tdd-verify** before opening a PR (live + deprecated PRD, daisyUI, `npm test` / build), then **verify** (security / README / release).
 
 ### Test naming
 
@@ -71,6 +71,7 @@ Include the H-id in the test name or top comment.
 
 ## Done when
 
-- [ ] Failing test existed before the fix/feature (or justified why only verify applies)
+- [ ] Failing test existed before the fix/feature (or justified why only verify / tdd-verify applies)
 - [ ] `npm test` passes (if harness present)
 - [ ] PRD IDs listed in the commit/PR summary
+- [ ] Hand off to **tdd-verify** before `gh pr create` (hooks enforce Read of that skill on feature sessions)

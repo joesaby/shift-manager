@@ -92,7 +92,7 @@ export function vStart() {
         <div class="home-status-fields">
           <label class="form-control home-status-unit">
             <span class="label-text font-semibold">Unit name</span>
-            <input id="unitName" class="input input-bordered w-full" placeholder="e.g. Pearse Street" value="${esc(unit)}" data-ch="unitName" autocomplete="organization">
+            <input id="unitName" class="input input-bordered w-full" placeholder="e.g. Cedar Quay" value="${esc(unit)}" data-ch="unitName" autocomplete="organization">
           </label>
           <div class="form-control home-status-unit">
             <span class="label-text font-semibold">Manager name</span>
@@ -135,8 +135,8 @@ export function vStart() {
       <div class="home-folders">
         <div class="home-folders-tree">
           <div class="opacity-60">rotas/</div>
-          <div class="pl-4 mt-1">├── <span class="font-semibold text-primary">unit-a</span> <span class="opacity-50">← this unit’s data</span></div>
-          <div class="pl-4">└── <span class="font-semibold text-primary">unit-b</span> <span class="opacity-50">← other unit</span></div>
+          <div class="pl-4 mt-1">├── <span class="font-semibold text-primary">cedar-quay</span> <span class="opacity-50">← this unit’s data</span></div>
+          <div class="pl-4">└── <span class="font-semibold text-primary">harbour-bridge</span> <span class="opacity-50">← other unit</span></div>
         </div>
         <div class="home-folders-copy space-y-2">
           <p class="mb-0"><b>One folder per unit.</b> People, roles, unit name, and rotas all live in that folder.</p>

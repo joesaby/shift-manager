@@ -43,11 +43,12 @@ Bias toward caution over speed; for trivial typos, use judgment.
 
 For non-trivial behaviour changes, use project skills in order:
 
-1. **architect** (`.cursor/skills/architect/SKILL.md`, also under `.agents/skills/` and `.claude/skills/`) — PRD H-ids, constraints, doc sync  
+1. **architect** (`.cursor/skills/architect/SKILL.md`, also under `.agents/skills/` and `.claude/skills/`) — PRD H-ids, constraints, doc sync; attaches **daisyui** for UI markup (vendored CSS still wins)  
 2. **tdd** (same paths) — failing test mapped to H-ids, then implement  
-3. **verify** (same paths) — build + PRD/security acceptance  
+3. **tdd-verify** (`.agents/skills/tdd-verify/`, symlinked in Cursor/Claude) — pre-PR: live + deprecated PRD, daisyUI, tests/build (hooks block `gh pr create` until Read)  
+4. **verify** (same paths as architect) — security / README / release after tdd-verify  
 
-Hooks enforce architect on feature/bug-fix work (Claude: `.claude/settings.json`; Cursor: `.cursor/hooks.json`). Shared script: `scripts/hooks/architect-gate.mjs` — blocks Write/Edit until the skill is Read (Mode A); Mode B on stop after feature work with dirty behaviour files. See AGENTS.md → Hooks.
+Hooks enforce architect on feature/bug-fix work (Claude: `.claude/settings.json`; Cursor: `.cursor/hooks.json`). Shared script: `scripts/hooks/architect-gate.mjs` — blocks Write/Edit until architect is Read (Mode A); blocks `gh pr create` until tdd-verify is Read; Mode B on stop after feature work with dirty behaviour files. See AGENTS.md → Hooks.
 
 ## Do not
 

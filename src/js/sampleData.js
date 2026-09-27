@@ -13,23 +13,25 @@ export function loadSample() {
     id: uid(), name: x[0], groupId: x[1], usedAtDay: x[5] == null ? true : !!x[5], usedAtNight: !!x[2], hard: !!x[3], skillRestricted: !!x[4], essential: true, sortOrder: i + 1
   }));
   const rn = (n) => roles.find((r) => r.name === n).id;
-  const names = ["Aoife Brennan", "Ciaran Doyle", "Declan Murphy", "Eimear Walsh", "Fionn Kelly", "Grainne Byrne", "Hugh Ryan", "Ita Nolan", "Jack Moran", "Katie Burke", "Liam Duffy", "Maeve Quinn", "Niall Regan", "Owen Lyons", "Padraig Costello", "Roisin Farrell", "Sean Egan", "Tadhg Hayes", "Una Carey", "Vincent Daly", "Willie Fahey", "Yvonne Gill", "Zach Naughton"];
-  const drivers = ["Ciaran Doyle", "Declan Murphy", "Fionn Kelly", "Jack Moran", "Liam Duffy", "Niall Regan", "Sean Egan", "Tadhg Hayes", "Vincent Daly"];
-  const mic = ["Aoife Brennan", "Hugh Ryan", "Katie Burke", "Maeve Quinn", "Padraig Costello", "Roisin Farrell", "Una Carey"];
-  const jailer = ["Ciaran Doyle", "Eimear Walsh", "Grainne Byrne", "Ita Nolan", "Liam Duffy", "Willie Fahey", "Yvonne Gill", "Zach Naughton"];
-  const notq = ["Hugh Ryan|Beat 1", "Zach Naughton|Traffic Unit", "Ita Nolan|Escort Car"];
+  /* Clearly fictional demo names — not real officers. */
+  const names = ["Alex River", "Blair Stone", "Casey Vale", "Dana Frost", "Eden Brooks", "Fran Wells", "Gray Moss", "Harper Lane", "Indy Cole", "Jules Pike", "Kai North", "Logan Reed", "Morgan Dale", "Noel Ash", "Quinn Blake", "Remy Cross", "Sage Flint", "Taylor Wren", "Uri West", "Val Shore", "Wren Hale", "Yasmin Cove", "Zion Park"];
+  const drivers = ["Blair Stone", "Casey Vale", "Eden Brooks", "Indy Cole", "Kai North", "Morgan Dale", "Sage Flint", "Taylor Wren", "Val Shore"];
+  const mic = ["Alex River", "Gray Moss", "Jules Pike", "Logan Reed", "Quinn Blake", "Remy Cross", "Uri West"];
+  const jailer = ["Blair Stone", "Dana Frost", "Fran Wells", "Harper Lane", "Kai North", "Wren Hale", "Yasmin Cove", "Zion Park"];
+  const notq = ["Gray Moss|Beat 1", "Zion Park|Traffic Unit", "Harper Lane|Escort Car"];
+  const fixedPerson = "Noel Ash";
   const personRoles = [];
   const people = names.map((n, i) => {
     const id = uid();
     const rs = roles.filter((r) => {
-      if (n === "Owen Lyons") return r.name === "Comms Desk" || r.name === "Station Duty";
+      if (n === fixedPerson) return r.name === "Comms Desk" || r.name === "Station Duty";
       if (r.name === "Car 1" || r.name === "Car 2") return drivers.indexOf(n) >= 0;
       if (r.name === "Member in Charge") return mic.indexOf(n) >= 0;
       if (r.name === "Jailer") return jailer.indexOf(n) >= 0;
       return notq.indexOf(n + "|" + r.name) < 0;
     });
     rs.forEach((r) => personRoles.push({ personId: id, roleId: r.id }));
-    return { id, name: n, active: true, fixedRoleId: n === "Owen Lyons" ? rn("Comms Desk") : null, employeeNo: String(90000000 + i), shoulderNo: String(1000 + i).padStart(4, "0") };
+    return { id, name: n, active: true, fixedRoleId: n === fixedPerson ? rn("Comms Desk") : null, employeeNo: String(90000000 + i), shoulderNo: String(1000 + i).padStart(4, "0") };
   });
   const pid = (n) => people.find((p) => p.name === n).id;
   const t = new Date(); t.setDate(t.getDate() + 1);
@@ -41,18 +43,18 @@ export function loadSample() {
     if (!statusId) return;
     attendance.push({ date: addDays(start, d), personId: pid(n), statusId });
   };
-  ["Ciaran Doyle", "Grainne Byrne", "Padraig Costello", "Yvonne Gill"].forEach((n) => { setS(n, 0, "Annual leave"); setS(n, 1, "Annual leave"); });
-  setS("Sean Egan", 1, "Sick leave");
-  setS("Zach Naughton", 0, "Rest day");
+  ["Blair Stone", "Fran Wells", "Quinn Blake", "Yasmin Cove"].forEach((n) => { setS(n, 0, "Annual leave"); setS(n, 1, "Annual leave"); });
+  setS("Sage Flint", 1, "Sick leave");
+  setS("Zion Park", 0, "Rest day");
   [2, 3].forEach((d) => {
-    ["Padraig Costello", "Yvonne Gill", "Vincent Daly", "Una Carey"].forEach((n) => setS(n, d, "Annual leave"));
-    setS("Sean Egan", d, "Sick leave");
-    setS("Katie Burke", d, "Duty away");
+    ["Quinn Blake", "Yasmin Cove", "Val Shore", "Uri West"].forEach((n) => setS(n, d, "Annual leave"));
+    setS("Sage Flint", d, "Sick leave");
+    setS("Jules Pike", d, "Duty away");
   });
 
   S.data = {
     schemaVersion: 2,
-    meta: { title: "Shift Manager", unitName: "Sample Unit", updatedAt: new Date().toISOString(), app: "shift-manager-html" },
+    meta: { title: "Shift Manager", unitName: "Demo Unit", updatedAt: new Date().toISOString(), app: "shift-manager-html" },
     settings: {
       statuses: [
         { id: "present", label: "Present", allocates: true, printColor: "#EAF4EC" },
@@ -86,5 +88,5 @@ export function loadSample() {
   generate();
   S.ui.screen = "att";
   S.ui.selPerson = people[0].id;
-  toast("Sample data loaded. All names and most roles are made up.");
+  toast("Sample data loaded. All names are fictional demo data.");
 }

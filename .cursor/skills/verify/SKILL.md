@@ -1,14 +1,16 @@
 ---
 name: verify
 description: >-
-  Verify Shift Manager changes against the PRD, SECURITY/TERMS/THIRD_PARTY docs,
-  offline build, and operator README. Use before commit or push, after
-  implementing a feature, or when the user asks to verify, check, or acceptance-test.
+  Verify Shift Manager changes against SECURITY/TERMS/THIRD_PARTY docs,
+  offline packaging, and operator README. Use after tdd-verify (pre-PR PRD /
+  daisyUI / tests gate), before commit or push, or when the user asks to verify.
 ---
 
 # Verify — Shift Manager
 
-Prove the change matches the docs and still ships as a single offline HTML file.
+Prove the change still ships as a single offline HTML file and that security / operator docs stay true.
+
+**Before this skill on feature work:** run **[tdd-verify](../tdd-verify/SKILL.md)** (live PRD + `PRD_Deprecated` + daisyUI + `npm test` / build). Hooks block `gh pr create` until tdd-verify has been Read in the feature session.
 
 ## Doc map
 

@@ -28,7 +28,7 @@ Untick **Active** on People when someone leaves long term.
 1. **Attendance** — block start date, Day/Night per day, status per person (Present = green; Annual leave / Sick leave / Duty away / Rest day = blue / unavailable), then **Generate roster** once.
 2. **Roster** — person × day layout. Drag a **parking-lot** chip onto a person to fill a vacated essential role; drag people to swap. Non-essential roles vacated by sick silently drop for that day. **Save roster**, then **Print** (or **Save & print** if unsaved). Above the grid, **Briefing sheet** has **Print Thu** / **Print Fri** / … — a one-page briefing sheet for that day only, sorted by role (name + employee / shoulder numbers), for parade use; it does not change the saved roster order.
 
-Free-text spare notes ("HVB") are gone: anyone with no role shows **Unassigned**. Notes typed in an older version are cleared from the current block when the file is opened; rotas already saved to the Log keep theirs.
+Free-text spare notes are gone: anyone with no role shows **Unassigned**. Notes typed in an older version are cleared from the current block when the file is opened; rotas already saved to the Log keep theirs.
 
 On **Roles and groups**, tick **Essential** for duties that must be filled; leave it unticked for spare work (e.g. Files 1–5). List order among non-essential roles is fill priority.
 

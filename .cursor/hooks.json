@@ -26,6 +26,12 @@
         "matcher": "Write|Edit|StrReplace",
         "timeout": 10,
         "failClosed": false
+      },
+      {
+        "command": "node scripts/hooks/architect-gate.mjs pre-pr",
+        "matcher": "Shell",
+        "timeout": 10,
+        "failClosed": false
       }
     ],
     "stop": [
