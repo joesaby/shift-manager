@@ -84,4 +84,4 @@ Unchecked items without justification → fix before commit.
 
 ## After Mode A
 
-Hand off to the **tdd** skill for behaviour changes (failing check first), then implement, then **verify**. For screen/HTML work, keep the **daisyui** skill in play while coding (same vendored-CSS constraint as Mode A).
+Hand off to the **tdd** skill for behaviour changes (failing check first), then implement, then **tdd-verify** (live + deprecated PRD, daisyUI, tests/build — mandatory before PR), then **verify** (security / README / release). For screen/HTML work, keep the **daisyui** skill in play while coding (same vendored-CSS constraint as Mode A).

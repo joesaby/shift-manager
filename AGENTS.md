@@ -76,14 +76,15 @@ Project skills (same content in all three trees):
 - `.agents/skills/`
 - `.claude/skills/`
 
-Skills: **architect**, **tdd**, **verify**, plus **daisyui** (UI markup companion).
+Skills: **architect**, **tdd**, **tdd-verify**, **verify**, plus **daisyui** (UI markup companion).
 
 1. **architect** — map work to PRD H-ids + docs; design brief or fit review. For screen/HTML changes, architect attaches the **daisyui** skill (component guides) while enforcing the vendored `tailwind.css` subset.
-2. **tdd** — failing check first for domain rules (`model` / `generator` / migrations)  
-3. **verify** — `npm run build` (+ `npm test` if present), PRD/security acceptance before commit  
-4. **daisyui** — official daisyUI component docs skill (installed via `skills-lock.json` from `saadeghi/daisyui`). Canonical copy: `.agents/skills/daisyui/`; Cursor/Claude trees symlink to it. Documents daisyUI 5 — always confirm classes exist in our fixed vendored CSS before using them.
+2. **tdd** — failing check first for domain rules (`model` / `generator` / migrations)
+3. **tdd-verify** — mandatory **pre-PR** gate: live PRD + `PRD_Deprecated`, daisyUI/vendored CSS, `npm test` + `npm run build`. Canonical: `.agents/skills/tdd-verify/` (Cursor/Claude symlink). Hooks block `gh pr create` until this skill is Read in a feature session.
+4. **verify** — security / README / THIRD_PARTY / release acceptance after tdd-verify
+5. **daisyui** — official daisyUI component docs skill (installed via `skills-lock.json` from `saadeghi/daisyui`). Canonical copy: `.agents/skills/daisyui/`; Cursor/Claude trees symlink to it. Documents daisyUI 5 — always confirm classes exist in our fixed vendored CSS before using them.
 
-Typical order for non-trivial behaviour: architect → tdd → implement → verify (with daisyui during architect/implement when UI is in scope).
+Typical order for non-trivial behaviour: architect → tdd → implement → **tdd-verify** → verify (with daisyui during architect/implement when UI is in scope).
 
 ### Hooks (architect gate)
 
@@ -96,9 +97,11 @@ Feature / bug-fix work is gated by hooks shared across Cursor and Claude Code:
 
 Both call [`scripts/hooks/architect-gate.mjs`](scripts/hooks/architect-gate.mjs):
 
-- **On prompt** — feature/bug language → require Mode A; inject skill path; latch session state.
+- **On prompt** — feature/bug language → require Mode A; inject skill path; latch session state. PR-intent prompts on a feature session inject **tdd-verify**.
 - **On Read of architect skill** — clear the Mode A latch (edits allowed).
-- **On Write/Edit** — deny while Mode A is required and the skill has not been read.
+- **On Read of tdd-verify skill** — mark pre-PR gate satisfied for this session.
+- **On Write/Edit** — deny while Mode A is required and the architect skill has not been read.
+- **On Shell (`gh pr create`)** — deny on feature sessions until tdd-verify has been Read (or the prompt said `trivial: true` / `tdd-verify not needed`).
 - **On stop** — Mode B follow-up (up to 2) when behaviour files are dirty **and** this session had feature work, without architect evidence.
 - **Leftover dirty trees** alone do not Mode-B block unrelated Q&A in a fresh session.
 
