@@ -1,44 +1,14 @@
 # Shift Manager – HTML App PRD
 
-2026-09-25 · HTML / offline JSON edition (updated to match shipped UI)
+2026-09-27 · HTML / offline JSON edition (updated to match shipped UI)
 
 This PRD describes the single-file HTML app (`shift-manager.html` / `shift-manager-offline.zip`). It replaces Excel / Power Apps front-end assumptions from the original PRD while keeping the same business rules. The JSON document (plus optional workspace folder) is the system of record.
 
 **Deprecated / retired requirements** are not kept here as current Must/Should/Could — move them to [`PRD_Deprecated.md`](PRD_Deprecated.md) and leave a one-line pointer if needed.
 
-### 2026-09-25 — Essential roles + unified Roster (planned → shipping)
+### Shipped highlights (2026-09)
 
-Stakeholder session: essential vs spare (non-essential) roles; keep the roster after someone goes sick; one person × day working screen; same-day drag/click swap; **Save upsert + print only what is saved**.
-
-1. **Essential flag on roles** (H19, H43): Roles screen gains an Essential checkbox. Ticked = must be filled; unticked = optional work for spare people (e.g. Files 1–5). Schema stays v2 additive: `essential` boolean on each role; migrate-on-open defaults missing values to `true` so existing data behaves identically. JSON impact: every role gains `essential` after open/save; no schemaVersion bump. Older builds that do not know the field ignore it.
-2. **Generate two-pass** (H6, H44): Fill essential roles first (current skill/hard/fixed logic unchanged). Remaining Present people fill non-essential roles in `sortOrder`. Roles that cannot be filled stay blank (like ×): non-essential shortage never fails strict mode; unfilled essentials warn only. Expect more roles than Present so people are not left Unassigned after Generate. No auto-promotion from non-essential into a vacated essential role — the manager does that manually.
-3. **Attendance change without regenerate** (H13, H45): Marking someone Sick / leave / Rest day / Duty away does **not** set `stale` and does not push regenerate. Vacated roles are **derived** (not stored). Vacated **essential** roles appear in the **parking lot** (pinned Unallocated row under the frozen day header; chips per day, e.g. `<role> — was: <person>`). Vacated **non-essential** roles are silently dropped for that day (no chip, no warning); the person’s cell still shows `<status> (was: <role>)`. Returning to Present restores the stored assignment. Role-catalogue and Day↔Night shift changes still set `stale`. Snapshot `unfilled` counts vacated essentials only.
-4. **Unified Roster screen** (H12, H14, H36, H46): Retire the person × role edit grid. The post-generate working screen **is** the person × day layout (former Print). Nav label **Roster**; actions include **Save roster** and Print. Present people with no role show an empty **Unassigned** cell (H37) primed for chip drop / person swap. Persist `S.ui.screen` values `prt` and `ros` both open this screen. Old log snapshot layouts (`person-role`, legacy) still render read-only.
-5. **Same-day moves** (H12, H47): Primary gesture is dragging a **parking-lot chip onto a person** (click chip then click person as fallback). Person↔person swaps use drag handles. Drop matrix (same day only): chip→unassigned takes it; chip→person on non-essential → they take the essential and the non-essential is **dropped for that day** (no parking chip; toast e.g. “Files 1 dropped for Thu”); chip→person on essential → they take the parked role and their old essential moves into the parking lot; essential↔essential and non-essential↔non-essential person drags **swap**; person→unassigned hands over; **person’s essential → person on non-essential = swap** (not replace — nobody loses a duty accidentally). Reject / dim non-Present, unqualified (skill), and fixed-role-invalid targets. Cross-day rejected. After every move, toast what happened.
-6. **Attendance headcount** (H40): Per-day “x present, y roles” counts **essential** roles only for `y`.
-7. **Save / Print model** (H15, H48–H52): Generate is first-time primary; once a roster exists it is secondary **Start over / Regenerate** with confirm (reshuffles everyone, discards manual edits) — no banner suggesting it for attendance. **Save roster** upserts `blocks.history[]` by block start date (`start` or `startDate`); writes a folder audit line each save; previous log version for that start is replaced (not versioned). Print only prints a saved roster; **unsaved** is derived by comparing live `buildSnapshot()` to the last saved entry for this block (ignore stamp fields; include attendance + employee/shoulder numbers when present on the snap). Unsaved → badge + **Save & print**; saved → Print uses `#printArea`. Changing block start after a save creates a **new** log entry (no special handling). Pre-existing duplicate history rows from old push behaviour are left alone (no cleanup migration).
-8. **Employee / shoulder numbers** (H53): Optional string fields on each person (`employeeNo`, `shoulderNo`) so leading zeros survive. People detail edits them; search matches numbers as well as names. Roster/print show a grouped “Employee / Shoulder no.” header with two narrow cells after Name (blank when unset). Snapshots store the numbers as of save; old log snaps without them render as before. CSV export unchanged. Additive on schema v2 — no version bump.
-9. **Roster layout + print fit + collapsible sidebar** (H14, H36, H38, H39, H54–H58): Full-width Roster (no `max-w-7xl` cap); one compact toolbar row; logo / “Duty rota …” / “Prepared by” print-only on screen; table fills remaining viewport height with frozen day header + parking lot + sticky name column; compact on-screen rows; parking-lot height capped. Print scales to fit one A4 landscape page (employee/shoulder columns included; parking/drag chrome still not printed). Sidebar collapsible with per-viewer `localStorage` memory (default collapsed on narrow viewports, expanded otherwise); hamburger always available. Layout-only — no schema change.
-10. **Duty stats pivot** (H25, H59, H60): the team table becomes person × role counts (Excel pivot style) with every heading sortable — click a role to see who did it most — plus Hard / Skill / Total tallies at the end and a Total row at the bottom. Day / Night and duty-type columns removed.
-11. **Duty stats period + person report** (H61, H62): Duty stats defaults to everything up to today with a From / To selector and presets, and clicking a name opens a printable report for that person — role counts plus attendance (Sick leave, Annual leave, …).
-
-Also from earlier the same day: Attendance polish (H41–H42) below.
-
-### 2026-09-25 — Attendance polish
-
-1. **Unavailable = blue:** Present keeps its green cell colour; Annual leave, Sick leave, Duty away, and Rest day all use the same blue on the Attendance screen and on the Roster (print) view, so blue means “not available” at a glance (H41). Role-group colours on Roster/print are unchanged.
-2. **Attendance freeze panes:** the day / shift header row stays pinned while scrolling the person list, same idea as the Roster screen (H42).
-
-### 2026-09-22 — PM feedback round
-
-1. **Rest day** added as an attendance status alongside Present / Annual leave / Sick leave / Duty away (H33).
-2. **People** screen list now sorts by surname instead of first name (H34).
-3. Roles gain a **Used by day** flag to pair with **Used at night**, so a role can be restricted to one shift type only (for example, Public Office is night-only) (H35).
-4. Print/Roster layout changed from person × role grid to **person × day**: one column per day, the cell holds the duty type (or status) as coloured text, matching whichever role group or status it belongs to (H36).
-5. People present with no role (**Unassigned** — blank white cell, italic light-grey label) after × / a role moves to the parking lot, or in rare edge cases, are drop/swap targets (skill rules still apply). Free-text spare notes / HVB are removed (H37). **Operating assumption:** the role catalogue has **more roles than Present people** for each day/shift, so Generate should not leave surplus people empty. Roles that cannot be filled stay blank (same as after manual unassign): vacated essentials in the parking lot; never-filled essentials warn as unfilled; non-essentials silently empty.
-6. The Roster day header row is frozen (stays visible) while scrolling through the person list, before printing (H38).
-7. Printing uses **A4 landscape** (H39).
-8. Attendance screen's per-day cards now show the **date large** and the **present headcount small**, reversing the previous sizing so the headcount is not mistaken for the date (H40).
+Essential vs non-essential roles; attendance changes without regenerate + parking lot for vacated essentials; unified person × day **Roster**; Save roster upsert / print only what is saved; employee & shoulder numbers; print scale-to-fit + collapsible sidebar; Duty stats person × role pivot + person report; per-day briefing sheets. Detailed session notes live in git history — not restated below.
 
 ---
 
@@ -108,7 +78,7 @@ Shift manager at a desk, last night of a block. Others only see the printed rota
 | H34 | People screen list is sorted by **surname** (last word of the person's name), not first name |
 | H35 | Roles have both **Used by day** and **Used at night** flags; a role can be restricted to only one shift type (day fills roles marked used-by-day, night fills roles marked used-at-night) |
 | H36 | **Roster** (interactive, post-generate) renders **person × day**: person name leftmost, each day a column, duty-type/status text coloured per role group / status. Print is an action on this screen, not a separate nav screen. Persisted UI screen ids `prt` and `ros` both open Roster. Layout: full-width main (H54), compact toolbar (H55), viewport-sized scroll body (H56) |
-| H37 | On Roster (and print), a Present person with no role shows a blank white day cell with italic light-grey **Unassigned** — primed for parking-chip drop or person swap (skill / Present / fixed-role rules still apply). Typical causes: × unassign or role moved to parking lot. **Assumption:** managers keep **more roles than Present** for each day/shift so Generate does not leave surplus people empty. Former free-text spare notes / HVB → [`PRD_Deprecated.md`](PRD_Deprecated.md); `blocks.current.spareNotes` cleared on migrate-on-open; new snapshots omit the field. **Add role selector (screen-only):** when at least one role for that day (essential or non-essential) is unfilled and this person is Present and qualified for it, the Unassigned cell shows an inline `<select>` listing those roles (essential first, non-essential marked "(optional)") instead of the plain label, so a last-minute non-essential fill does not require the parking lot. Choosing one calls the same `assignRoleToPerson` path as other assign gestures. When no such role exists, the plain "Unassigned" label keeps a tooltip explaining why: nothing unfilled for anyone that day, this person isn't Present, or they aren't qualified for what's left. Not printed |
+| H37 | On Roster (and print), a Present person with no role shows a blank white day cell with italic light-grey **Unassigned** — primed for parking-chip drop or person swap (skill / Present / fixed-role rules still apply). Typical causes: × unassign or role moved to parking lot. **Assumption:** managers keep **more roles than Present** for each day/shift so Generate does not leave surplus people empty. Former free-text spare notes → [`PRD_Deprecated.md`](PRD_Deprecated.md); `blocks.current.spareNotes` cleared on migrate-on-open; new snapshots omit the field. **Add role selector (screen-only):** when at least one role for that day (essential or non-essential) is unfilled and this person is Present and qualified for it, the Unassigned cell shows an inline `<select>` listing those roles (essential first, non-essential marked "(optional)") instead of the plain label, so a last-minute non-essential fill does not require the parking lot. Choosing one calls the same `assignRoleToPerson` path as other assign gestures. When no such role exists, the plain "Unassigned" label keeps a tooltip explaining why: nothing unfilled for anyone that day, this person isn't Present, or they aren't qualified for what's left. Not printed |
 | H38 | On Roster, while scrolling the person list: the **day header row**, the **parking-lot row**, and the **Person (name) column** stay frozen/visible. Employee / Shoulder number columns scroll with the body (not sticky). Do not break this when sizing the scroll region to the viewport (H56) |
 | H39 | Print output uses **A4 landscape** with ~10mm margins. Prefer **one page**: scale font/padding so Name + number columns + four day columns fit; readable floor ≈ 8–9px. Beyond what scale can keep readable, a second page is allowed. Safety: `tr { break-inside: avoid }`; `thead` repeats on a second page. Parking lot, drag handles, and × unassign are not printed |
 | H40 | Attendance screen's per-day card shows the date prominently (large) and the present / roles headcount smaller; the roles count (`y` in “x present, y roles”) counts **essential** roles only for that shift |
@@ -282,7 +252,7 @@ When serving over `http` next to `data/shift-manager-data.json`, mock may auto-l
   ],
   "roles": [
     {
-      "id": "r_gs101",
+      "id": "r_car1",
       "name": "Car 1",
       "groupId": "g_car",
       "usedAtDay": true,
@@ -295,8 +265,8 @@ When serving over `http` next to `data/shift-manager-data.json`, mock may auto-l
   ],
   "people": [
     {
-      "id": "p_owen",
-      "name": "Owen Lyons",
+      "id": "p_demo1",
+      "name": "Alex River",
       "active": true,
       "fixedRoleId": null,
       "employeeNo": "00012345",
@@ -304,7 +274,7 @@ When serving over `http` next to `data/shift-manager-data.json`, mock may auto-l
     }
   ],
   "personRoles": [
-    { "personId": "p_owen", "roleId": "r_gs101" }
+    { "personId": "p_demo1", "roleId": "r_car1" }
   ],
   "blocks": {
     "current": {
@@ -314,13 +284,13 @@ When serving over `http` next to `data/shift-manager-data.json`, mock may auto-l
       "stale": false,
       "generatedAt": null,
       "attendance": [
-        { "date": "2026-09-21", "personId": "p_owen", "statusId": "present" }
+        { "date": "2026-09-21", "personId": "p_demo1", "statusId": "present" }
       ],
       "assignments": [
         {
           "date": "2026-09-21",
-          "roleId": "r_gs101",
-          "personId": "p_owen",
+          "roleId": "r_car1",
+          "personId": "p_demo1",
           "source": "generated"
         }
       ],
@@ -425,9 +395,6 @@ Source is modular under `src/js/` and bundled to one HTML via `npm run build`:
 9. Attendance status dropdown offers Rest day; People screen lists the team sorted by surname.
 10. A role with Used by day off and Used at night on (for example Public Office) is offered by Generate and manual assign only on night shifts.
 11. Roster shows one column per day with duty type / status text coloured per person; an unassigned Present person's cell is blank white with italic light-grey “Unassigned”; vacated **essential** roles appear in the parking lot (`<role> — was: <person>`); vacated non-essentials do not; a non-Present person with a former role shows `<status> (was: <role>)`; the day header (incl. parking lot) and name column stay visible while scrolling; parking lot is not printed; Print uses A4 landscape of the **saved** roster (or Save & print when unsaved), scaled to prefer one page.
-20. Roster is full-width with a single compact toolbar; on-screen print header is hidden; table body scrolls within the remaining viewport; ~30 compact rows fit 1080p without scrolling when chrome is minimal; parking-lot chips wrap/scroll inside a height cap.
-21. Print preview at 20 / 28 / 35 / 45 people: one page down to the readable minimum scale; second page only beyond that; `thead` repeats; rows do not split mid-row.
-22. Sidebar collapses/expands via hamburger at all widths; choice persists per viewer in `localStorage` when available; default collapsed on narrow, expanded on wide.
 12. On Attendance and Roster, Present cells are green; Annual leave, Sick leave, Duty away, and Rest day cells are the same blue; assigned roles still use their role-group colours on Roster/print.
 13. On Attendance, scrolling the person list keeps the day / shift header row visible (and the Person column still sticks when scrolling sideways).
 14. Roles screen shows an Essential checkbox; essential roles list above non-essential; Generate fills essentials before non-essentials; Attendance “x present, y roles” uses essential-only `y`.
@@ -436,10 +403,13 @@ Source is modular under `src/js/` and bundled to one HTML via `npm run build`:
 17. Snapshot / warn `unfilled` counts vacated essential roles only. Generate and Print are never blocked by unfilled essentials.
 18. After first Generate, regenerate is secondary **Start over / Regenerate** with confirm. Save roster twice for the same start leaves one history entry. Unsaved badge appears after edits/attendance/employee-or-shoulder-number changes; Print becomes Save & print until saved.
 19. People without `employeeNo` / `shoulderNo` open with blank strings; People detail can edit both; search finds by number; Roster/print show Employee / Shoulder no. columns after Name (blank when unset); a saved snap carries the numbers; an old snap without them renders with no number columns; CSV export columns unchanged.
+20. Roster is full-width with a single compact toolbar; on-screen print header is hidden; table body scrolls within the remaining viewport; ~30 compact rows fit 1080p without scrolling when chrome is minimal; parking-lot chips wrap/scroll inside a height cap.
+21. Print preview at 20 / 28 / 35 / 45 people: one page down to the readable minimum scale; second page only beyond that; `thead` repeats; rows do not split mid-row.
+22. Sidebar collapses/expands via hamburger at all widths; choice persists per viewer in `localStorage` when available; default collapsed on narrow, expanded on wide.
 23. Roster **Briefing sheet** bar offers one Print button per day (e.g. Print Thu): portrait sheet lists that day’s Present+assigned people sorted by role `sortOrder`, with Role / Name / Employee / Shoulder and group colours; leave and Unassigned omitted; live roster (no Save); full-block Print unchanged. (H61)
 24. Duty stats shows a person × role table with counts; the ▲ / ▼ at the top of a role column sorts by that role (▼ = most first), clicking the heading name toggles; Person sorts A–Z / Z–A; Hard / Skill / Total columns and a Total row tally at the end; there are no Day / Night columns.
 25. Duty stats opens on **All time** (earliest data to today); choosing This year / This month or entering From / To dates changes the table and tiles; clicking a name opens a report with every role's count and the person's attendance counts (Present / Annual leave / Sick leave / Duty away / Rest day) for the same period, and Print this report prints only that person.
-25. Historic roster shows the same person × day grid as Roster for saved person-day snaps (and rebuilds one when possible); read-only with Print in colour; year / month / period selectors retained. (H24)
+26. Historic roster shows the same person × day grid as Roster for saved person-day snaps (and rebuilds one when possible); read-only with Print in colour; year / month / period selectors retained. (H24)
 
 ---
 
@@ -450,12 +420,9 @@ Source is modular under `src/js/` and bundled to one HTML via `npm run build`:
 3. Whether to add an in-app Audit viewer for `logs/**/audit_log.txt` (H29).
 4. Shared network folder: is last-write-wins enough, or warn on `meta.updatedAt` conflicts?
 5. **Non-essential vs H10:** Should the non-essential generate pass skip the no-repeat rule, or apply it loosely? (**Assumption to confirm: skip or loose — prefer skip so Files 1–5 absorb whoever is left.**)
-6. ~~**Save to log duplicates:**~~ **Resolved (H15 / H49):** Save roster upserts by block start; no new duplicates. Pre-existing duplicate history rows are left alone (no migration).
-7. ~~Should Generate refuse to run while `stale === true`?~~ **Resolved for attendance:** attendance no longer sets `stale`. For catalogue/shift `stale`: keep warn-only. Regenerate is confirmed Start over (H48), not suggested for attendance.
-8. **Block start date after Save:** Changing `blocks.current.startDate` after a Save roster creates a **new** log entry on the next save (different start). No special merge or rename of the old entry — managers treat it as a new block.
-9. ~~**Bulk entry for employee/shoulder numbers:**~~ **Out of scope for H53** — managers edit numbers on the People detail panel (and search by number). No Paste-many comma format and no “Edit numbers” table for now.
-10. **Top-bar nav:** A possible future option is moving primary nav into the top bar (and retiring the sidebar). **Not in scope for H58** — keep the collapsible DaisyUI drawer/sidebar.
-11. **Typical unit headcount:** Used to tune compact-row height and print scale thresholds (H56–H57). Mock/sample data ships **12** people. Real unit size to confirm with operators before locking thresholds.
+6. **Block start date after Save:** Changing `blocks.current.startDate` after a Save roster creates a **new** log entry on the next save (different start). No special merge or rename of the old entry — managers treat it as a new block.
+7. **Top-bar nav:** A possible future option is moving primary nav into the top bar (and retiring the sidebar). **Not in scope for H58** — keep the collapsible DaisyUI drawer/sidebar.
+8. **Typical unit headcount:** Used to tune compact-row height and print scale thresholds (H56–H57). Mock/sample data ships **12** people. Real unit size to confirm with operators before locking thresholds.
 
 ### Assumptions challenged (Phase 1)
 
@@ -469,9 +436,8 @@ Source is modular under `src/js/` and bundled to one HTML via `npm run build`:
 
 ### Docs outside this PRD
 
-- **SECURITY.md**: note that employee/shoulder numbers sit in the unit JSON, workspace folder (incl. backups), and saved rotas (H53 posture change). **docs/THIRD_PARTY.md**: no change expected (still offline, local JSON, no new deps or network).
-- **README.md**: update operator flow (Attendance → Generate → Roster) in Phase 2 when behaviour ships.
-
+- **SECURITY.md** / **docs/THIRD_PARTY.md** — keep aligned when storage or packaging changes (employee/shoulder numbers already noted in SECURITY for H53).
+- **README.md** — operator flow is Attendance → Generate → Roster (shipped).
 
 ---
 
@@ -484,4 +450,4 @@ Source is modular under `src/js/` and bundled to one HTML via `npm run build`:
 | Front end | Sheets / Power Apps | Offline HTML (Home-first UX) |
 | Shared future | — | v2 JSON remains the contract |
 
-The HTML app is the shipping path. Older Design Spec / PDF PRDs are historical.
+The HTML app is the shipping path. Older Design Spec markdown under `docs/` is historical. Do not redistribute legacy PDF PRDs.
