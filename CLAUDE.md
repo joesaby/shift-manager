@@ -43,7 +43,7 @@ Bias toward caution over speed; for trivial typos, use judgment.
 
 For non-trivial behaviour changes, use project skills in order:
 
-1. **architect** (`.cursor/skills/architect/SKILL.md`, also under `.agents/skills/` and `.claude/skills/`) — PRD H-ids, constraints, doc sync  
+1. **architect** (`.cursor/skills/architect/SKILL.md`, also under `.agents/skills/` and `.claude/skills/`) — PRD H-ids, constraints, doc sync; attaches **daisyui** for UI markup (vendored CSS still wins)  
 2. **tdd** (same paths) — failing test mapped to H-ids, then implement  
 3. **verify** (same paths) — build + PRD/security acceptance  
 

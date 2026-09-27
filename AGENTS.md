@@ -76,13 +76,14 @@ Project skills (same content in all three trees):
 - `.agents/skills/`
 - `.claude/skills/`
 
-Skills: **architect**, **tdd**, **verify**.
+Skills: **architect**, **tdd**, **verify**, plus **daisyui** (UI markup companion).
 
-1. **architect** — map work to PRD H-ids + docs; design brief or fit review  
+1. **architect** — map work to PRD H-ids + docs; design brief or fit review. For screen/HTML changes, architect attaches the **daisyui** skill (component guides) while enforcing the vendored `tailwind.css` subset.
 2. **tdd** — failing check first for domain rules (`model` / `generator` / migrations)  
 3. **verify** — `npm run build` (+ `npm test` if present), PRD/security acceptance before commit  
+4. **daisyui** — official daisyUI component docs skill (installed via `skills-lock.json` from `saadeghi/daisyui`). Canonical copy: `.agents/skills/daisyui/`; Cursor/Claude trees symlink to it. Documents daisyUI 5 — always confirm classes exist in our fixed vendored CSS before using them.
 
-Typical order for non-trivial behaviour: architect → tdd → implement → verify.
+Typical order for non-trivial behaviour: architect → tdd → implement → verify (with daisyui during architect/implement when UI is in scope).
 
 ### Hooks (architect gate)
 

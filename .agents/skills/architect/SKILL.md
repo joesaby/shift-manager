@@ -22,8 +22,11 @@ Ground designs in the product docs so work reuses what exists, stays offline, an
 | [`TERMS.md`](../../../TERMS.md) | No-warranty / org responsibility framing |
 | [`docs/THIRD_PARTY.md`](../../../docs/THIRD_PARTY.md) | Tailwind/DaisyUI/esbuild packaging |
 | [`README.md`](../../../README.md) | Operator-facing behaviour |
+| [`daisyui` skill](../daisyui/SKILL.md) | Component class names / markup when the change touches UI HTML |
 
 Do **not** run this for typos, copy tweaks, or one-line CSS with no product surface.
+
+**UI / DaisyUI:** if Mode A designs new or changed screen markup (buttons, forms, alerts, nav, tables chrome, badges, dialogs, etc.), **Read the [`daisyui` skill](../daisyui/SKILL.md)** and the applicable component guides before choosing classes. Prefer daisyUI components that already exist in the **vendored** `src/styles/tailwind.css` subset. The official skill documents daisyUI 5; this app ships an older fixed subset — do not assume Daisy 5-only classes (`fieldset`, `status`, `filter`, `badge-soft`, …) work unless `grep` confirms them, otherwise use present Daisy classes or plain CSS in `app.css` (AGENTS hard constraint #7). Do **not** add a Daisy CDN or regenerate CSS as part of ordinary feature work.
 
 **PRD deprecation rule:** any requirement (H-id or named product surface) that is deprecated, retired, or superseded **must** be moved into [`docs/PRD_Deprecated.md`](../../../docs/PRD_Deprecated.md). Leave only a one-line pointer in the live PRD (or remove the row). Never leave deprecated behaviour documented as current Must/Should/Could.
 
@@ -39,6 +42,7 @@ Do **not** run this for typos, copy tweaks, or one-line CSS with no product surf
    - Schema: migrate-on-open in `model.js`; keep old log layouts readable
    - Escape user text with `esc()`; no fake in-app auth
    - New Tailwind utility classes: `src/styles/tailwind.css` is a fixed vendored subset, not regenerated at build time — confirm the class is actually in that file before designing around it, or plan plain CSS in `app.css` instead
+   - UI markup: follow the **daisyui** skill discovery protocol (candidate components → read guides → pick best), then verify each chosen class against the vendored CSS
 4. **Security / third-party.** If storage, network, or build packaging changes → plan updates to `SECURITY.md` / `THIRD_PARTY.md` as part of done.
 5. **Alternatives.** If 2+ approaches matter, list them with one-line tradeoffs and a recommendation; ask before coding when the choice is non-obvious.
 6. **Doc sync plan.** Which PRD rows (H-ids), README bits, or security docs change? Record that before implementation. If an old requirement is retired, **move it to `docs/PRD_Deprecated.md`** (do not leave it as current in the live PRD).
@@ -50,6 +54,7 @@ Do **not** run this for typos, copy tweaks, or one-line CSS with no product surf
 - PRD: H… (quote requirement in one line)
 - Modules: …
 - Approach: …
+- DaisyUI / UI: n/a | skill read + components … (classes confirmed in vendored CSS | app.css fallback)
 - Alternatives considered: …
 - Schema / migration: none | …
 - Docs to update: … (incl. PRD_Deprecated.md if retiring an H-id)
@@ -71,6 +76,7 @@ Run against the **diff**, not a re-debug of every line:
 - [ ] `SECURITY.md` / `THIRD_PARTY.md` / `README.md` / PRD updated when posture or operator steps change
 - [ ] No drive-by refactors outside the request
 - [ ] Any new Tailwind utility class checked against `src/styles/tailwind.css` (vendored, fixed subset), not just assumed to work
+- [ ] If UI markup changed: daisyUI skill was consulted; component choices fit the intent; every new Daisy/Tailwind class exists in the vendored CSS (or plain CSS was added to `app.css` instead); no Daisy CDN / Daisy 5-only APIs introduced without a packaging plan
 
 Unchecked items without justification → fix before commit.
 
@@ -78,4 +84,4 @@ Unchecked items without justification → fix before commit.
 
 ## After Mode A
 
-Hand off to the **tdd** skill for behaviour changes (failing check first), then implement, then **verify**.
+Hand off to the **tdd** skill for behaviour changes (failing check first), then implement, then **verify**. For screen/HTML work, keep the **daisyui** skill in play while coding (same vendored-CSS constraint as Mode A).
