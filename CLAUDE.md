@@ -47,7 +47,7 @@ For non-trivial behaviour changes, use project skills in order:
 2. **tdd** (same paths) — failing test mapped to H-ids, then implement  
 3. **verify** (same paths) — build + PRD/security acceptance  
 
-Hooks enforce architect on feature/bug-fix work (Claude: `.claude/settings.json`; Cursor: `.cursor/hooks.json`). Shared script: `scripts/hooks/architect-gate.mjs`. See AGENTS.md → Hooks.
+Hooks enforce architect on feature/bug-fix work (Claude: `.claude/settings.json`; Cursor: `.cursor/hooks.json`). Shared script: `scripts/hooks/architect-gate.mjs` — blocks Write/Edit until the skill is Read (Mode A); Mode B on stop after feature work with dirty behaviour files. See AGENTS.md → Hooks.
 
 ## Do not
 
