@@ -49,6 +49,7 @@ UI pattern: screens return HTML strings; clicks use `data-act="…"`; inputs use
 
 - Operator docs: `README.md`
 - Requirements: `docs/Shift_Manager_PRD.md`
+- Deprecated requirements: `docs/PRD_Deprecated.md` (move retired H-ids / surfaces here; do not leave them as current in the live PRD)
 - Licence / terms: `LICENSE`, `TERMS.md`
 - Security / third-party: `SECURITY.md`, `docs/THIRD_PARTY.md`
 
@@ -89,12 +90,15 @@ Feature / bug-fix work is gated by hooks shared across Cursor and Claude Code:
 
 | Host | Config | Events |
 | --- | --- | --- |
-| Cursor | [`.cursor/hooks.json`](.cursor/hooks.json) | `beforeSubmitPrompt`, `stop` |
-| Claude Code | [`.claude/settings.json`](.claude/settings.json) | `UserPromptSubmit`, `Stop` |
+| Cursor | [`.cursor/hooks.json`](.cursor/hooks.json) | `sessionStart`, `beforeSubmitPrompt`, `postToolUse` (Read), `preToolUse` (Write/Edit), `stop` |
+| Claude Code | [`.claude/settings.json`](.claude/settings.json) | `SessionStart`, `UserPromptSubmit`, `PostToolUse` (Read), `PreToolUse` (Write/Edit), `Stop` |
 
 Both call [`scripts/hooks/architect-gate.mjs`](scripts/hooks/architect-gate.mjs):
 
-- **On prompt** — if the request looks like a feature or bug fix, inject Mode A (read architect skill before coding).
-- **On stop** — if behaviour-relevant files are dirty and no architect pass is visible, block/follow-up for Mode B.
+- **On prompt** — feature/bug language → require Mode A; inject skill path; latch session state.
+- **On Read of architect skill** — clear the Mode A latch (edits allowed).
+- **On Write/Edit** — deny while Mode A is required and the skill has not been read.
+- **On stop** — Mode B follow-up (up to 2) when behaviour files are dirty **and** this session had feature work, without architect evidence.
+- **Leftover dirty trees** alone do not Mode-B block unrelated Q&A in a fresh session.
 
-Typos, copy tweaks, and one-line CSS are excluded. If Cursor also loads Claude Code settings as third-party hooks, disable that for this repo so the gate does not fire twice.
+Typos / copy / one-line CSS: say `trivial: true` (or use those words) to skip. If Cursor also loads Claude Code settings as third-party hooks, disable that for this repo so the gate does not fire twice.

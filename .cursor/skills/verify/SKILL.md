@@ -15,6 +15,7 @@ Prove the change matches the docs and still ships as a single offline HTML file.
 | Doc | Verify against |
 | --- | --- |
 | [`docs/Shift_Manager_PRD.md`](../../../docs/Shift_Manager_PRD.md) | H-ids, business rules, acceptance tone |
+| [`docs/PRD_Deprecated.md`](../../../docs/PRD_Deprecated.md) | Retired requirements must not be treated as current |
 | [`README.md`](../../../README.md) | Operator steps still accurate |
 | [`SECURITY.md`](../../../SECURITY.md) | No new network/telemetry; storage claims true |
 | [`TERMS.md`](../../../TERMS.md) | No false warranty/support promises in UI copy |
