@@ -49,6 +49,7 @@ UI pattern: screens return HTML strings; clicks use `data-act="…"`; inputs use
 
 - Operator docs: `README.md`
 - Requirements: `docs/Shift_Manager_PRD.md`
+- Deprecated requirements: `docs/PRD_Deprecated.md` (move retired H-ids / surfaces here; do not leave them as current in the live PRD)
 - Licence / terms: `LICENSE`, `TERMS.md`
 - Security / third-party: `SECURITY.md`, `docs/THIRD_PARTY.md`
 

@@ -48,7 +48,7 @@ const ARCHITECT_DONE_RE =
 const ARCHITECT_PATH_RE = /skills\/architect\/SKILL\.md/;
 
 const BEHAVIOUR_PATH_RE =
-  /^(src\/js\/|src\/styles\/app\.css|docs\/Shift_Manager_PRD\.md|SECURITY\.md|docs\/THIRD_PARTY\.md|README\.md|AGENTS\.md|CLAUDE\.md|build\.mjs)/;
+  /^(src\/js\/|src\/styles\/app\.css|docs\/Shift_Manager_PRD\.md|docs\/PRD_Deprecated\.md|SECURITY\.md|docs\/THIRD_PARTY\.md|README\.md|AGENTS\.md|CLAUDE\.md|build\.mjs)/;
 
 const STATE_DIR = join(tmpdir(), 'shift-manager-architect');
 

@@ -4,6 +4,8 @@
 
 This PRD describes the single-file HTML app (`shift-manager.html` / `shift-manager-offline.zip`). It replaces Excel / Power Apps front-end assumptions from the original PRD while keeping the same business rules. The JSON document (plus optional workspace folder) is the system of record.
 
+**Deprecated / retired requirements** are not kept here as current Must/Should/Could — move them to [`PRD_Deprecated.md`](PRD_Deprecated.md) and leave a one-line pointer if needed.
+
 ### 2026-09-25 — Essential roles + unified Roster (planned → shipping)
 
 Stakeholder session: essential vs spare (non-essential) roles; keep the roster after someone goes sick; one person × day working screen; same-day drag/click swap; **Save upsert + print only what is saved**.
@@ -106,7 +108,7 @@ Shift manager at a desk, last night of a block. Others only see the printed rota
 | H34 | People screen list is sorted by **surname** (last word of the person's name), not first name |
 | H35 | Roles have both **Used by day** and **Used at night** flags; a role can be restricted to only one shift type (day fills roles marked used-by-day, night fills roles marked used-at-night) |
 | H36 | **Roster** (interactive, post-generate) renders **person × day**: person name leftmost, each day a column, duty-type/status text coloured per role group / status. Print is an action on this screen, not a separate nav screen. Persisted UI screen ids `prt` and `ros` both open Roster. Layout: full-width main (H54), compact toolbar (H55), viewport-sized scroll body (H56) |
-| H37 | On Roster (and print), a Present person with no role shows a blank white day cell with italic light-grey **Unassigned** — primed for parking-chip drop or person swap (skill / Present / fixed-role rules still apply). Typical causes: × unassign or role moved to parking lot. **Assumption:** managers keep **more roles than Present** for each day/shift so Generate does not leave surplus people empty. No free-text spare notes (HVB deprecated). `blocks.current.spareNotes` cleared on migrate-on-open; new snapshots omit the field |
+| H37 | On Roster (and print), a Present person with no role shows a blank white day cell with italic light-grey **Unassigned** — primed for parking-chip drop or person swap (skill / Present / fixed-role rules still apply). Typical causes: × unassign or role moved to parking lot. **Assumption:** managers keep **more roles than Present** for each day/shift so Generate does not leave surplus people empty. Former free-text spare notes / HVB → [`PRD_Deprecated.md`](PRD_Deprecated.md); `blocks.current.spareNotes` cleared on migrate-on-open; new snapshots omit the field. **Add role selector (screen-only):** when at least one role for that day (essential or non-essential) is unfilled and this person is Present and qualified for it, the Unassigned cell shows an inline `<select>` listing those roles (essential first, non-essential marked "(optional)") instead of the plain label, so a last-minute non-essential fill does not require the parking lot. Choosing one calls the same `assignRoleToPerson` path as other assign gestures. When no such role exists, the plain "Unassigned" label keeps a tooltip explaining why: nothing unfilled for anyone that day, this person isn't Present, or they aren't qualified for what's left. Not printed |
 | H38 | On Roster, while scrolling the person list: the **day header row**, the **parking-lot row**, and the **Person (name) column** stay frozen/visible. Employee / Shoulder number columns scroll with the body (not sticky). Do not break this when sizing the scroll region to the viewport (H56) |
 | H39 | Print output uses **A4 landscape** with ~10mm margins. Prefer **one page**: scale font/padding so Name + number columns + four day columns fit; readable floor ≈ 8–9px. Beyond what scale can keep readable, a second page is allowed. Safety: `tr { break-inside: avoid }`; `thead` repeats on a second page. Parking lot, drag handles, and × unassign are not printed |
 | H40 | Attendance screen's per-day card shows the date prominently (large) and the present / roles headcount smaller; the roles count (`y` in “x present, y roles”) counts **essential** roles only for that shift |
@@ -115,7 +117,7 @@ Shift manager at a desk, last night of a block. Others only see the printed rota
 | H43 | Roles have an **Essential** flag (`essential: boolean`). Roles screen: Essential checkbox column; list groups essential roles first, then non-essential. Default `true` on migrate when the field is missing |
 | H44 | Generate **two-pass**: (1) essential roles with current allocation logic; (2) non-essential roles in `sortOrder` from remaining free Present people. Roles that cannot be filled stay **blank** (same as after ×): never fail strict mode for non-essential shortage; unfilled essentials warn (H13) but do not block. List order among non-essential = fill/drop priority. **No** auto-promotion of a non-essential holder into a vacated essential role. Catalogue is expected to have enough roles that every Present person can be assigned |
 | H45 | Vacated roles are **derived**, not stored. **Parking lot:** pinned row under the frozen day header listing vacated **essential** roles only (chips: `<role> — was: <person>` when known; slim “all essential roles covered” when empty so layout does not jump; not printed). Vacated **non-essential** roles create **no** chip and **no** warning — silently empty for that day; the sick person's cell shows the status with a small **screen-only** second line `was: <role>` (never printed and not stored in the saved snapshot text). Returning to Present restores the assignment. Snapshot `unfilled` counts vacated essentials only |
-| H46 | Single post-generate working screen: person × day **Roster** (**Save roster** + Print actions). The former person × role grid screen is removed. Keep roster warnings and swap behaviour on the new screen. Historic/log snaps with older layouts still render |
+| H46 | Single post-generate working screen: person × day **Roster** (**Save roster** + Print actions). Former person × role grid / Print rota nav → [`PRD_Deprecated.md`](PRD_Deprecated.md). Keep roster warnings and swap behaviour on the new screen. Historic/log snaps with older layouts still render |
 | H47 | Same-day moves on Roster. **Primary:** drag parking-lot chip onto a person (click chip → click person fallback). **Person drag** via cell handle. Matrix: chip→unassigned takes role; chip→non-essential holder → they take essential, non-essential **dropped for that day** (no parking, toast); chip→essential holder → they take parked role, old essential enters parking lot; essential↔essential and non-essential↔non-essential **swap**; person→unassigned hands over; **essential holder → non-essential holder = swap** (not replace). Reject/dim non-Present, skill-unqualified, fixed-role-invalid; cross-day rejected. Toast after every move. Unassign available (role to parking lot; person cell becomes Unassigned) |
 | H48 | **Generate once per block:** before a roster exists, Generate is the primary action. After a roster exists, it is a secondary **Start over / Regenerate** with confirmation (“reshuffles everyone and discards manual edits”). No banner suggests regenerate for attendance changes |
 | H49 | **Save roster** upserts by block start (`start` / `startDate`); Log, Historic roster, and Duty stats must not double-count the same block after repeated saves |
@@ -154,9 +156,10 @@ Shift manager at a desk, last night of a block. Others only see the printed rota
 | --- | --- |
 | H28 | Fairness weighted by **historical** assignments across older blocks (today: within current block only) |
 | H29 | In-app screen to read folder audit text files |
-| H30 | Multiple units inside one JSON (`unitId` on entities) — superseded in practice by one folder per unit |
 | H31 | Qualification expiry / notes on person–role links |
 | H32 | Cell-level audit of every manual swap (who/when/old/new) in JSON |
+
+~~H30~~ (multi-unit JSON) → [`PRD_Deprecated.md`](PRD_Deprecated.md).
 
 ---
 
@@ -187,7 +190,7 @@ Roles → People → Skills →      (person × day: edit, swap,
 | **Historic roster** | View of a saved period (person × day when snap is current layout; older layouts still render) |
 | **Duty stats** | Person × role pivot over a chosen period (default: everything up to today): counts per role, sortable headings, tallies at the end; click a name for a printable per-person report with attendance |
 
-The former separate **Print rota** nav item and the person × role **Roster** grid are retired; Print is an action on Roster.
+Retired surfaces (**Print rota** nav, person × role Roster grid) → [`PRD_Deprecated.md`](PRD_Deprecated.md). Print is an action on Roster.
 
 ### Two meanings of “log”
 
@@ -346,7 +349,7 @@ Notes:
 - `meta.unitName` is the unit shown in UI and print.
 - `blocks.history[].savedBy` / `snap.savedBy` stamp the manager at Save roster time.
 - `audit[]` in JSON is reserved; the live audit trail for milestones is the folder `audit_log.txt` files.
-- `blocks.current.spareNotes[]` is **deprecated** (former free-text / HVB notes). On migrate-on-open it is always cleared to `[]`. New snapshots omit `spareNotes`. Present people with no role use an Unassigned cell (H37), not notes.
+- `blocks.current.spareNotes[]` — deprecated; see [`PRD_Deprecated.md`](PRD_Deprecated.md). On migrate-on-open always cleared to `[]`. New snapshots omit `spareNotes`. Present people with no role use an Unassigned cell (H37).
 - `roles[].essential` — `true` = must be filled preferentially; `false` = non-essential (spare work). **Additive on schema v2:** if the field is missing on open, `normalizeV2` sets `essential: true` (existing catalogues unchanged in behaviour). After save, the field is written. No `schemaVersion` bump. **Older builds that do not know the field ignore it** when reading JSON written by newer builds.
 - `people[].employeeNo` / `people[].shoulderNo` — optional strings (not numbers) so leading zeros survive. **Additive on schema v2:** if missing on open, `normalizeV2` sets each to `""`. No `schemaVersion` bump. Sample/mock data may use obviously fake values only.
 - Vacated roles are **not** a stored collection: they are derived from `assignments` + `attendance` (non-Present holder ⇒ role unfilled for warnings / Unallocated strip; Present again ⇒ same assignment row is live again).

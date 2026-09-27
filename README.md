@@ -71,4 +71,5 @@ Every push to `main` publishes a patch release and keeps only the **latest 3** G
 | [`TERMS.md`](TERMS.md) | Plain-language use terms; MIT / no warranty |
 | [`docs/THIRD_PARTY.md`](docs/THIRD_PARTY.md) | Tailwind, DaisyUI, esbuild |
 | [`docs/Shift_Manager_PRD.md`](docs/Shift_Manager_PRD.md) | Product requirements |
+| [`docs/PRD_Deprecated.md`](docs/PRD_Deprecated.md) | Retired / superseded requirements |
 | [`LICENSE`](LICENSE) | MIT |

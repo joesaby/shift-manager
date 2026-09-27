@@ -15,7 +15,8 @@ Ground designs in the product docs so work reuses what exists, stays offline, an
 
 | Doc | Use for |
 | --- | --- |
-| [`docs/Shift_Manager_PRD.md`](../../../docs/Shift_Manager_PRD.md) | Requirements (H1…), business rules, schema |
+| [`docs/Shift_Manager_PRD.md`](../../../docs/Shift_Manager_PRD.md) | Active requirements (H1…), business rules, schema |
+| [`docs/PRD_Deprecated.md`](../../../docs/PRD_Deprecated.md) | Retired / superseded requirements (do not implement as current) |
 | [`AGENTS.md`](../../../AGENTS.md) | Module map, hard constraints, release |
 | [`SECURITY.md`](../../../SECURITY.md) | Offline posture, data stores, deployment trust |
 | [`TERMS.md`](../../../TERMS.md) | No-warranty / org responsibility framing |
@@ -23,6 +24,8 @@ Ground designs in the product docs so work reuses what exists, stays offline, an
 | [`README.md`](../../../README.md) | Operator-facing behaviour |
 
 Do **not** run this for typos, copy tweaks, or one-line CSS with no product surface.
+
+**PRD deprecation rule:** any requirement (H-id or named product surface) that is deprecated, retired, or superseded **must** be moved into [`docs/PRD_Deprecated.md`](../../../docs/PRD_Deprecated.md). Leave only a one-line pointer in the live PRD (or remove the row). Never leave deprecated behaviour documented as current Must/Should/Could.
 
 ---
 
@@ -38,7 +41,7 @@ Do **not** run this for typos, copy tweaks, or one-line CSS with no product surf
    - New Tailwind utility classes: `src/styles/tailwind.css` is a fixed vendored subset, not regenerated at build time — confirm the class is actually in that file before designing around it, or plan plain CSS in `app.css` instead
 4. **Security / third-party.** If storage, network, or build packaging changes → plan updates to `SECURITY.md` / `THIRD_PARTY.md` as part of done.
 5. **Alternatives.** If 2+ approaches matter, list them with one-line tradeoffs and a recommendation; ask before coding when the choice is non-obvious.
-6. **Doc sync plan.** Which PRD rows (H-ids), README bits, or security docs change? Record that before implementation.
+6. **Doc sync plan.** Which PRD rows (H-ids), README bits, or security docs change? Record that before implementation. If an old requirement is retired, **move it to `docs/PRD_Deprecated.md`** (do not leave it as current in the live PRD).
 
 ### Output template (Mode A)
 
@@ -49,7 +52,7 @@ Do **not** run this for typos, copy tweaks, or one-line CSS with no product surf
 - Approach: …
 - Alternatives considered: …
 - Schema / migration: none | …
-- Docs to update: …
+- Docs to update: … (incl. PRD_Deprecated.md if retiring an H-id)
 - Open questions: …
 ```
 
@@ -60,6 +63,7 @@ Do **not** run this for typos, copy tweaks, or one-line CSS with no product surf
 Run against the **diff**, not a re-debug of every line:
 
 - [ ] Every behaviour change maps to a PRD H-id or an agreed doc update
+- [ ] Deprecated / superseded requirements were moved to `docs/PRD_Deprecated.md` (not left as current Must/Should/Could)
 - [ ] No new runtime network / CDN / telemetry
 - [ ] `file://` + single-file build still valid
 - [ ] JSON compatibility: migration or additive fields only; legacy snaps still render if print/log touched
