@@ -153,7 +153,12 @@ document.addEventListener("dragstart", (e) => {
   });
 });
 
-document.addEventListener("dragend", () => {
+document.addEventListener("dragend", (e) => {
+  /* drop clears dragPid/dragRole first, so leftovers + dropEffect "none" means the target was refused. */
+  const refused = (S.ui.dragPid != null || S.ui.dragRole != null) && e.dataTransfer && e.dataTransfer.dropEffect === "none";
+  if (refused) toast(S.ui.dragRole
+    ? "Can't assign there — pick a highlighted person on the same day who has the skill."
+    : "Can't swap there — pick a highlighted person on the same day.");
   S.ui.dragPid = null;
   S.ui.dragRole = null;
   S.ui.dragDay = null;

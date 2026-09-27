@@ -349,6 +349,27 @@ export function rosterDays() {
   return out;
 }
 
+/** All unfilled roles for a day, essential and non-essential (H37 extension — Roster "Add role" selector). */
+export function openRolesForDay(d) {
+  const days = rosterDays();
+  if (!days) return [];
+  const assign = days[d].assign;
+  return rolesForDay(d).filter((r) => !assign[r.id]);
+}
+
+/**
+ * H37 extension: why an Unassigned cell offers no "Add role" option for this person.
+ * Returns null when at least one open role is offered, otherwise "none-open" (nothing
+ * unfilled for anyone that day) or "not-eligible" (not Present) / "not-qualified".
+ */
+export function unassignedReason(d, pid) {
+  const open = openRolesForDay(d);
+  if (!open.length) return "none-open";
+  const p = personById(pid);
+  if (!p || !isPresent(p, d)) return "not-eligible";
+  return open.some((r) => canDo(p, r.id)) ? null : "not-qualified";
+}
+
 /** Vacated essential roles for a day (for Unallocated strip / warnings). */
 export function vacatedEssential(d) {
   const days = rosterDays();
