@@ -1,4 +1,4 @@
-import { esc, NAV, icon } from "./util.js";
+import { esc, NAV, icon, STAT } from "./util.js";
 import { S } from "./state.js";
 import { activePeople, canDo, isPresent, roleOfPerson, roleById, personById, dayLabels, hasRoster, rosterDays, unitName } from "./model.js";
 import { supportsWorkspace, hasWorkspace, workspaceName } from "./workspace.js";
@@ -44,6 +44,41 @@ export function navCollapsed() {
 export function setNavCollapsed(v) {
   S.ui.navCollapsed = !!v;
   try { localStorage.setItem(NAV_KEY, v ? "1" : "0"); } catch (e) { /* storage unavailable */ }
+}
+
+/* H65: optional black grid lines on printed rosters; off by default. Remembered per viewer. */
+const PB_KEY = "sm.printBorders";
+
+export function printBorders() {
+  if (S.ui.printBorders === undefined) {
+    let v = null;
+    try { v = localStorage.getItem(PB_KEY); } catch (e) { /* storage unavailable */ }
+    S.ui.printBorders = v === "1";
+  }
+  return S.ui.printBorders;
+}
+
+export function setPrintBorders(v) {
+  S.ui.printBorders = !!v;
+  try { localStorage.setItem(PB_KEY, v ? "1" : "0"); } catch (e) { /* storage unavailable */ }
+}
+
+/* H66: which attendance statuses the Roster tally row counts; none by default. Remembered per viewer. */
+const TALLY_KEY = "sm.rosterTally";
+
+export function tallyLabels() {
+  if (!S.ui.tally) {
+    let v = [];
+    try { v = JSON.parse(localStorage.getItem(TALLY_KEY) || "[]"); } catch (e) { /* storage unavailable */ }
+    S.ui.tally = Array.isArray(v) ? v.filter((l) => STAT.indexOf(l) >= 0) : [];
+  }
+  return S.ui.tally;
+}
+
+export function toggleTallyLabel(label) {
+  const cur = tallyLabels();
+  S.ui.tally = cur.indexOf(label) >= 0 ? cur.filter((l) => l !== label) : cur.concat(label);
+  try { localStorage.setItem(TALLY_KEY, JSON.stringify(S.ui.tally)); } catch (e) { /* storage unavailable */ }
 }
 
 export function shell(inner) {

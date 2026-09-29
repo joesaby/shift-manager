@@ -1,4 +1,4 @@
-import { iso, addDays, fmt, fmtLong } from "./util.js";
+import { iso, addDays, fmt, fmtLong, STAT } from "./util.js";
 import { S } from "./state.js";
 
 export const DEFAULT_STATUSES = [
@@ -281,6 +281,12 @@ export function setStatus(pid, d, label) {
   else if (statusId === "present") { /* default — omit row */ }
   else if (i >= 0) rows[i].statusId = statusId;
   else rows.push({ date, personId: pid, statusId });
+}
+
+/** H66: active people on day d per attendance status, in Attendance order (zero counts kept). */
+export function statusCountsForDay(d) {
+  const ppl = activePeople();
+  return STAT.map((label) => ({ label, n: ppl.filter((p) => getStatus(p.id, d) === label).length }));
 }
 
 export const isPresent = (p, d) => p.active !== false && getStatus(p.id, d) === "Present";

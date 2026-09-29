@@ -1,9 +1,9 @@
 import { esc } from "./util.js";
 import { S, setRenderer, loadLocal, wireFileInput, applyLoaded, tryLoadMockData, touch, setOnDataChanged, toast } from "./state.js";
-import { shell, vSelModal, vBulk, vConfirm, vNamePrompt } from "./ui-kit.js";
+import { shell, vSelModal, vBulk, vConfirm, vNamePrompt, printBorders } from "./ui-kit.js";
 import { tryRestoreWorkspace, hasWorkspace, readWorkspaceData, writeWorkspaceData } from "./workspace.js";
 import { logAudit } from "./audit.js";
-import { swapPeople, assignParkedRole, canTakeParkedRole, canDropPersonOnPerson } from "./generator.js";
+import { swapPeople, assignParkedRole, canTakeParkedRole, canDropPersonOnPerson, adjacentPersonId } from "./generator.js";
 
 import { vStart, actions as startActions, changes as startChanges } from "./screens/start.js";
 import { vAtt, actions as attActions, changes as attChanges } from "./screens/attendance.js";
@@ -16,6 +16,7 @@ import { vLog, actions as logActions } from "./screens/log.js";
 import { vHist, actions as histActions, changes as histChanges } from "./screens/hist.js";
 import { vStats, actions as statsActions, changes as statsChanges } from "./screens/stats.js";
 import { actions as appActions } from "./app-actions.js";
+import { fitRosterColumns } from "./colfit.js";
 
 const SCREENS = { start: vStart, att: vAtt, ros: vRos, prt: vRos, ppl: vPpl, skl: vSkills, rol: vRol, log: vLog, hist: vHist, stats: vStats };
 const ACT = { ...appActions, ...startActions, ...attActions, ...rosActions, ...prtActions, ...sklActions, ...rolActions, ...logActions, ...histActions, ...statsActions, ...pplActions };
@@ -30,6 +31,8 @@ function render() {
   const keepEnd = keep && typeof active.selectionEnd === "number" ? active.selectionEnd : null;
   document.getElementById("app").innerHTML = shell(SCREENS[S.ui.screen]()) + vSelModal() + vBulk() + vConfirm() + vNamePrompt() +
     (S.ui.toast ? `<div class="toast toast-end print:hidden"><div class="alert alert-success"><span>${esc(S.ui.toast)}</span></div></div>` : "");
+  fitRosterColumns(document.getElementById("app"));
+  document.body.classList.toggle("print-black-borders", printBorders());
   if (keep) {
     const el = document.getElementById(keep);
     if (el) {
@@ -100,6 +103,7 @@ setOnDataChanged(() => {
 });
 
 document.addEventListener("click", (e) => {
+  if (S.ui.tallyOpen && !e.target.closest("#tallyMenu, [data-act='toggleTallyMenu']")) { S.ui.tallyOpen = false; render(); }
   if (S.ui.peoplePickerOpen) {
     const inside = e.target.closest("#peopleSearch, #peoplePickerList, [data-act='togglePeoplePicker']");
     if (!inside) {
@@ -249,10 +253,21 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && e.target.id === "newPerson") { ACT.addPerson(); render(); }
   if (e.key === "Enter" && e.target.id === "newRole") { ACT.addRole(); render(); }
   if (e.key === "Enter" && e.target.id === "sessionUserInput") { ACT.submitSessionUser(); }
+  /* H64: with a Roster row highlighted, ↑/↓ move the highlight to the row above / below. */
+  if ((e.key === "ArrowUp" || e.key === "ArrowDown") && S.ui.rowSel && S.ui.screen === "ros" &&
+      !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.target.closest("input, select, textarea")) {
+    const dir = e.key === "ArrowUp" ? -1 : 1;
+    e.preventDefault();
+    S.ui.rowSel = adjacentPersonId(S.ui.rowSel, dir) || S.ui.rowSel;
+    render();
+    const row = document.querySelector("tr.row-sel");
+    if (row && row.scrollIntoView) row.scrollIntoView({ block: "nearest" });
+    return;
+  }
   if (e.key === "Escape" && S.ui.peoplePickerOpen) {
     S.ui.peoplePickerOpen = false; S.ui.peopleQ = ""; render(); return;
   }
-  if (e.key === "Escape" && (S.ui.sel || S.ui.confirm || S.ui.bulk)) { S.ui.sel = null; S.ui.confirm = null; S.ui.bulk = null; render(); }
+  if (e.key === "Escape" && (S.ui.sel || S.ui.rowSel || S.ui.tallyOpen || S.ui.confirm || S.ui.bulk)) { S.ui.sel = null; S.ui.rowSel = null; S.ui.tallyOpen = false; S.ui.confirm = null; S.ui.bulk = null; render(); }
 });
 
 window.addEventListener("beforeunload", (e) => { if (S.dirty) { e.preventDefault(); e.returnValue = ""; } });

@@ -1,13 +1,13 @@
-import { esc, fmt, fmtLong } from "../util.js";
+import { esc, fmt, fmtLong, STAT, SBG } from "../util.js";
 import { S, toast, askConfirm, render } from "../state.js";
 import {
   D, block, hasRoster, isStale, groupById,
   personById, isPresent, qual, roleOfPerson, rosterDays, vacatedEssential, openRolesForDay, unassignedReason,
-  unitName, activePeople
+  unitName, activePeople, statusCountsForDay
 } from "../model.js";
 import { buildSnapshot, saveRoster as persistRoster, isRosterUnsaved, printFitStyle, buildDayBrief, dayBriefHTML } from "../snapshot.js";
 import { generate as generateRoster, swapPeople, assignRoleToPerson, assignParkedRole, unassignPerson, canTakeParkedRole, canDropPersonOnPerson } from "../generator.js";
-import { ph, noPeople } from "../ui-kit.js";
+import { ph, noPeople, printBorders, setPrintBorders, tallyLabels, toggleTallyLabel } from "../ui-kit.js";
 import { logAudit } from "../audit.js";
 import { LOGO_DATA_URI } from "../../assets/logo.js";
 
@@ -58,6 +58,8 @@ export function vRos() {
   const snap = buildSnapshot();
   const ros = rosterDays();
   const sel = S.ui.sel;
+  if (S.ui.rowSel && !snap.people.some((p) => p.id === S.ui.rowSel)) S.ui.rowSel = null;
+  const rowSel = S.ui.rowSel;
   const dragPid = S.ui.dragPid || null;
   const dragRole = S.ui.dragRole || null;
   const dragDay = S.ui.dragDay;
@@ -71,7 +73,19 @@ export function vRos() {
   const printBtn = unsaved
     ? `<button class="btn btn-sm btn-primary" data-act="saveAndPrint">Save &amp; print</button>`
     : `<button class="btn btn-sm btn-primary" data-act="print">Print in colour</button>`;
-  const actionsBar = `${unsavedBadge}${genBtn}<button class="btn btn-sm btn-outline btn-primary" data-act="saveRoster">Save roster</button>${printBtn}`;
+  const bordersToggle = `<label class="label cursor-pointer gap-2 py-0" title="Print black grid lines around every cell"><input type="checkbox" class="checkbox checkbox-sm" data-act="togglePrintBorders"${printBorders() ? " checked" : ""}><span class="label-text text-sm">Black borders</span></label>`;
+  const tally = tallyLabels();
+  const tallyMenu = `<span class="tally-wrap"><button type="button" class="btn btn-sm btn-outline" data-act="toggleTallyMenu" aria-expanded="${!!S.ui.tallyOpen}">Tally${tally.length ? " (" + tally.length + ")" : ""} ▾</button>${S.ui.tallyOpen
+    ? `<div id="tallyMenu" class="tally-menu" role="group" aria-label="Attendance counts to show under each day">${STAT.map((l) =>
+      `<label class="label cursor-pointer justify-start gap-2 py-1"><input type="checkbox" class="checkbox checkbox-sm" data-act="toggleTally" data-l="${esc(l)}"${tally.indexOf(l) >= 0 ? " checked" : ""}><span class="label-text text-sm">${esc(l)}</span></label>`).join("")}</div>`
+    : ""}</span>`;
+  const tallyRow = tally.length
+    ? `<tfoot><tr class="tally-row"><td class="p-2 text-xs font-semibold stickycol">Tally</td><td class="numcol" colspan="2"></td>${snap.days.map((day, d) => {
+      const c = Object.fromEntries(statusCountsForDay(d).map((x) => [x.label, x.n]));
+      return `<td class="p-1 text-center text-xs">${tally.map((l) => `<div class="tally-line" style="background:${SBG[l]}"><span>${esc(l)}</span> <b>${c[l] || 0}</b></div>`).join("")}</td>`;
+    }).join("")}</tr></tfoot>`
+    : "";
+  const actionsBar = `${unsavedBadge}${genBtn}<button class="btn btn-sm btn-outline btn-primary" data-act="saveRoster">Save roster</button>${tallyMenu}${bordersToggle}${printBtn}`;
 
   const unit = (unitName() || "").trim();
   const firstDay = snap.days[0]; const lastDay = snap.days[snap.days.length - 1];
@@ -137,8 +151,8 @@ export function vRos() {
         </div>
       </td>`;
     }).join("");
-    return `<tr>
-      <td class="p-2 font-semibold whitespace-nowrap stickycol">${esc(p.name)}</td>
+    return `<tr class="${p.id === rowSel ? "row-sel" : ""}">
+      <td class="p-2 font-semibold whitespace-nowrap stickycol rowpick" data-act="pickRow" data-p="${p.id}" title="Click to highlight this row; ↑ ↓ change row, Esc or click again to clear" aria-selected="${p.id === rowSel}">${esc(p.name)}</td>
       <td class="numcol numcol-e">${esc(p.employeeNo || "")}</td>
       <td class="numcol numcol-s">${esc(p.shoulderNo || "")}</td>
       ${cells}
@@ -172,6 +186,7 @@ export function vRos() {
             ${parkingRow}
           </thead>
           <tbody>${rows}</tbody>
+          ${tallyRow}
         </table></div>
       </div>
     </div>`;
@@ -272,6 +287,10 @@ export const actions = {
   },
   unassign: (a) => { unassignPerson(+a.d, a.p); S.ui.sel = null; },
   clearSel: () => { S.ui.sel = null; },
+  pickRow: (a) => { S.ui.rowSel = S.ui.rowSel === a.p ? null : a.p; },
+  toggleTallyMenu: () => { S.ui.tallyOpen = !S.ui.tallyOpen; },
+  toggleTally: (a) => toggleTallyLabel(a.l),
+  togglePrintBorders: () => setPrintBorders(!printBorders()),
   closeSel: () => { S.ui.sel = null; },
   assign: (a) => { assignRoleToPerson(+a.d, a.r, a.p || null); S.ui.sel = null; }
 };

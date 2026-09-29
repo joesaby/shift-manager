@@ -4,6 +4,15 @@ import {
   roleOfPerson, writeRoster, rosterDays, writeDayAssign, dayLabels
 } from "./model.js";
 
+/** H64: id of the visible row above (-1) / below (+1) this person, or null. Selection only — never reorders. */
+export function adjacentPersonId(pid, dir) {
+  const people = D().people;
+  const i = people.findIndex((p) => p.id === pid);
+  if (i < 0) return null;
+  for (let j = i + dir; j >= 0 && j < people.length; j += dir) if (people[j].active !== false) return people[j].id;
+  return null;
+}
+
 function fillPass(roleIds, free, assign, strict, last, prev, d, softConstraints) {
   const cand = (r) => free.filter((id) => qual(personById(id), r));
   const skilled = roleIds.filter((r) => roleById(r).skillRestricted).sort((a, b) => cand(a).length - cand(b).length);
