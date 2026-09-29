@@ -9,7 +9,7 @@ stubLocalStorage();
 globalThis.window = globalThis.window || {};
 
 const { S } = await import("../src/js/state.js");
-const { migrateToV2, dutyPivot, sortPivotRows, nextPivotSort } = await import("../src/js/model.js");
+const { migrateToV2, dutyPivot, sortPivotRows, nextPivotSort, setStatus } = await import("../src/js/model.js");
 const { vStats } = await import("../src/js/screens/stats.js");
 
 const role = (id, name, o = {}) => ({
@@ -100,9 +100,9 @@ describe("sorting", () => {
   const rows = () => dutyPivot("2026-09").rows;
   const names = (rs) => rs.map((r) => r.person.name);
 
-  it("sorts by a role column, most first, ties by name", () => {
+  it("sorts by a role column, most first, ties by surname", () => {
     load();
-    assert.deepEqual(names(sortPivotRows(rows(), "role:Escort", "desc")), ["Ann One", "Bob Two", "Cal Three"]);
+    assert.deepEqual(names(sortPivotRows(rows(), "role:Escort", "desc")), ["Ann One", "Cal Three", "Bob Two"]); /* Bob and Cal tie on 0: surname Three before Two */
     assert.deepEqual(names(sortPivotRows(rows(), "role:Scene", "desc")), ["Bob Two", "Ann One", "Cal Three"]);
   });
 
@@ -113,7 +113,9 @@ describe("sorting", () => {
 
   it("sorts by person name and by total", () => {
     load();
-    assert.deepEqual(names(sortPivotRows(rows(), "person", "desc")), ["Cal Three", "Bob Two", "Ann One"]);
+    /* Person sorts by SURNAME (One, Three, Two), not first name. */
+    assert.deepEqual(names(sortPivotRows(rows(), "person", "asc")), ["Ann One", "Cal Three", "Bob Two"]);
+    assert.deepEqual(names(sortPivotRows(rows(), "person", "desc")), ["Bob Two", "Cal Three", "Ann One"]);
     assert.deepEqual(names(sortPivotRows(rows(), "duties", "desc")), ["Ann One", "Bob Two", "Cal Three"]);
   });
 
@@ -146,12 +148,54 @@ describe("Duty stats screen", () => {
     const html = vStats();
     assert.ok(html.includes('data-act="statsSort"'));
     assert.ok(html.includes('data-k="role:Escort"'));
-    for (const key of ["person", "role:Escort", "hard", "skill", "duties"]) {
+    for (const key of ["person", "role:Escort", "att:Annual leave", "att:Sick leave", "duties"]) {
       assert.ok(html.includes(`data-k="${key}" data-d="asc"`), "ascending button on " + key);
       assert.ok(html.includes(`data-k="${key}" data-d="desc"`), "descending button on " + key);
     }
     assert.ok(/<th[^>]*>[\s\S]*Total/.test(html), "Total column header");
     assert.ok(html.includes("pivot-total-row"), "Total row");
     assert.ok(!html.includes(">Day<") && !html.includes(">Night<"), "no Day / Night columns");
+    assert.ok(!html.includes('data-k="hard"') && !html.includes('data-k="skill"'), "no Hard / Skill columns");
+    assert.ok(!html.includes('stat-title">Hard') && !html.includes('stat-title">Skill'), "no Hard / Skill tiles");
+  });
+});
+
+describe("Duty stats: surname sort and Annual / Sick leave columns", () => {
+  const nm = (rs) => rs.map((r) => r.person.name);
+
+  it("sorts people by surname, then given name, whatever the first names are", () => {
+    load();
+    S.data.people = [person("a", "Zoe Adams"), person("b", "Amy Brown"), person("c", "Bill Adams")];
+    const rs = ["a", "b", "c"].map((id) => ({ person: S.data.people.find((p) => p.id === id), duties: 0, hard: 0, skill: 0, counts: {}, att: {} }));
+    assert.deepEqual(nm(sortPivotRows(rs, "person", "asc")), ["Bill Adams", "Zoe Adams", "Amy Brown"]);
+    assert.deepEqual(nm(sortPivotRows(rs, "person", "desc")), ["Amy Brown", "Zoe Adams", "Bill Adams"]);
+  });
+
+  it("ties on a numeric column fall back to surname order", () => {
+    load();
+    S.data.people = [person("a", "Zoe Adams"), person("b", "Amy Brown")];
+    const rs = S.data.people.map((p) => ({ person: p, duties: 1, hard: 0, skill: 0, counts: {}, att: {} }));
+    assert.deepEqual(nm(sortPivotRows(rs, "duties", "desc")), ["Zoe Adams", "Amy Brown"]);
+  });
+
+  it("counts each person's Annual leave and Sick leave days in the period", () => {
+    load();
+    setStatus("p1", 0, "Annual leave");
+    setStatus("p1", 1, "Annual leave");
+    setStatus("p2", 2, "Sick leave");
+    const pv = dutyPivot({ from: "2026-09-01", to: "2026-09-30" });
+    const by = Object.fromEntries(pv.rows.map((r) => [r.person.name, r.att]));
+    assert.equal(by["Ann One"]["Annual leave"], 2);
+    assert.equal(by["Ann One"]["Sick leave"], 0);
+    assert.equal(by["Bob Two"]["Sick leave"], 1);
+    assert.equal(pv.totals.att["Annual leave"], 2);
+    assert.equal(pv.totals.att["Sick leave"], 1);
+  });
+
+  it("sorts by an attendance column, most first", () => {
+    load();
+    setStatus("p2", 0, "Sick leave"); setStatus("p2", 1, "Sick leave"); setStatus("p3", 0, "Sick leave");
+    const pv = dutyPivot({ from: "2026-09-01", to: "2026-09-30" });
+    assert.deepEqual(nm(sortPivotRows(pv.rows, "att:Sick leave", "desc")).slice(0, 2), ["Bob Two", "Cal Three"]);
   });
 });

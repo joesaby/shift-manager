@@ -192,7 +192,7 @@ html,body{font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helve
 .unalloc-chip-sel{outline:2px solid oklch(var(--p));outline-offset:1px}
 .drag-source{opacity:.55}
 .drop-dim{opacity:.35}
-.parking-ok{font-size:.65rem;opacity:.55;font-weight:500}
+.parking-ok{font-size:.8rem;opacity:.55;font-weight:500}
 .parking-empty{vertical-align:middle}
 @media print{
   .no-print{display:none!important}

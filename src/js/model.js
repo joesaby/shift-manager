@@ -936,21 +936,35 @@ export function dutyPivot(arg) {
   const rows = team.map((t) => {
     const counts = {};
     t.roles.forEach((x) => { counts[x.name] = (counts[x.name] || 0) + x.n; });
-    return { person: t.person, duties: t.duties, hard: t.hard, skill: t.skill, counts };
+    /* Annual leave / Sick leave days in the same period (from the current block and saved rosters). */
+    const att = {};
+    attendanceForRange(t.person.id, range).rows.forEach((a) => { att[a.label] = a.n; });
+    return { person: t.person, duties: t.duties, hard: t.hard, skill: t.skill, counts, att };
   });
-  const totals = { duties: 0, hard: 0, skill: 0, counts: {} };
+  const totals = { duties: 0, hard: 0, skill: 0, counts: {}, att: {} };
   rows.forEach((r) => {
     totals.duties += r.duties; totals.hard += r.hard; totals.skill += r.skill;
     Object.keys(r.counts).forEach((k) => { totals.counts[k] = (totals.counts[k] || 0) + r.counts[k]; });
+    Object.keys(r.att).forEach((k) => { totals.att[k] = (totals.att[k] || 0) + r.att[k]; });
   });
   return { roles, rows, totals };
 }
 
-/** Sort pivot rows by "person" | "duties" | "hard" | "skill" | "role:<name>"; ties fall back to name A-Z. */
+/** Last word of a name, for surname ordering. */
+export const surnameOf = (name) => {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  return parts.length ? parts[parts.length - 1] : "";
+};
+
+/**
+ * Sort pivot rows by "person" (surname, then given name) | "duties" | "hard" | "skill" | "role:<name>" |
+ * "att:<status label>"; ties fall back to surname order.
+ */
 export function sortPivotRows(rows, key, dir) {
   const val = (r) => (key === "duties" ? r.duties : key === "hard" ? r.hard : key === "skill" ? r.skill
-    : key.indexOf("role:") === 0 ? (r.counts[key.slice(5)] || 0) : 0);
-  const byName = (a, b) => a.person.name.localeCompare(b.person.name, "en-IE");
+    : key.indexOf("role:") === 0 ? (r.counts[key.slice(5)] || 0)
+    : key.indexOf("att:") === 0 ? ((r.att && r.att[key.slice(4)]) || 0) : 0);
+  const byName = (a, b) => surnameOf(a.person.name).localeCompare(surnameOf(b.person.name), "en-IE") || a.person.name.localeCompare(b.person.name, "en-IE");
   const sign = dir === "asc" ? 1 : -1;
   return rows.slice().sort((a, b) => (key === "person" ? sign * byName(a, b) : (sign * (val(a) - val(b)) || byName(a, b))));
 }

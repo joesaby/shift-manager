@@ -52,6 +52,16 @@ function revealRow(row) {
   sc.scrollTop += revealDelta(r.top, r.bottom, Math.max(c.top, 0) + (head ? head.offsetHeight : 0), Math.min(c.bottom, window.innerHeight) - hBar - (foot ? foot.offsetHeight : 0));
 }
 
+/* The redraw replaces every element, so a dropdown you just changed loses focus (Tab then restarts from
+   the top of the page). Remember a form control by its data-* attributes and focus its twin afterwards. */
+const FOCUS_ATTRS = ["ch", "act", "p", "d", "r", "l", "k"];
+function focusSelector(el) {
+  if (!el || !el.dataset || !/^(SELECT|INPUT|TEXTAREA)$/.test(el.tagName)) return null;
+  if (el.dataset.ch === undefined && el.dataset.act === undefined) return null;
+  return el.tagName.toLowerCase() + FOCUS_ATTRS.filter((k) => el.dataset[k] !== undefined)
+    .map((k) => `[data-${k}="${CSS.escape(el.dataset[k])}"]`).join("");
+}
+
 function render() {
   if (S.ui.screen === "prt" || S.ui.screen === "ros") S.ui.screen = "ros";
   if (S.ui.screen === "hist") S.ui.screen = "log"; /* Historic roster was merged into Log (H24 → deprecated) */
@@ -59,12 +69,14 @@ function render() {
   const scroll = lastScreen === S.ui.screen ? captureScroll() : null;
   const active = document.activeElement;
   const keep = active && active.id;
+  const keepSel = keep ? null : focusSelector(active);
   const keepStart = keep && typeof active.selectionStart === "number" ? active.selectionStart : null;
   const keepEnd = keep && typeof active.selectionEnd === "number" ? active.selectionEnd : null;
   document.getElementById("app").innerHTML = shell(SCREENS[S.ui.screen]()) + vSelModal() + vBulk() + vConfirm() + vNamePrompt() +
     (S.ui.toast ? `<div class="toast toast-end print:hidden"><div class="alert alert-success"><span>${esc(S.ui.toast)}</span></div></div>` : "");
   fitRosterColumns(document.getElementById("app"));
   if (scroll) restoreScroll(scroll);
+  if (keepSel) { const twin = document.querySelector(keepSel); if (twin) twin.focus({ preventScroll: true }); }
   lastScreen = S.ui.screen;
   document.body.classList.toggle("print-black-borders", printBorders());
   if (keep) {

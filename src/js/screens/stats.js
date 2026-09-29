@@ -81,6 +81,8 @@ function vPersonReport(pid, range) {
     </div>`;
 }
 
+/* Attendance columns shown after the roles (days in the period). */
+const LEAVE = ["Annual leave", "Sick leave"];
 const DEFAULT_SORT = { key: "duties", dir: "desc" };
 
 export function vStats() {
@@ -120,15 +122,15 @@ export function vStats() {
   const body = rows.map((r) => `<tr class="hover">
       <td class="stickycol font-medium whitespace-nowrap"><button type="button" class="link link-primary font-medium" data-act="statsPerson" data-p="${r.person.id}">${esc(r.person.name)}</button></td>
       ${pivot.roles.map((c) => cell(r.counts[c.name] || 0)).join("")}
-      ${cell(r.hard)}${cell(r.skill)}
+      ${LEAVE.map((l) => cell((r.att && r.att[l]) || 0)).join("")}
       <td class="pivot-n pivot-total font-bold">${r.duties}</td>
     </tr>`).join("");
 
-  /* Tally at the end: one total per role, then Hard / Skill / grand total. */
+  /* Tally at the end: one total per role, then Annual / Sick leave days and the grand total. */
   const totalRow = `<tr class="pivot-total-row">
       <td class="stickycol whitespace-nowrap">Total</td>
       ${pivot.roles.map((c) => `<td class="pivot-n">${totals.counts[c.name] || 0}</td>`).join("")}
-      <td class="pivot-n">${totals.hard}</td><td class="pivot-n">${totals.skill}</td>
+      ${LEAVE.map((l) => `<td class="pivot-n">${totals.att[l] || 0}</td>`).join("")}
       <td class="pivot-n pivot-total">${totals.duties}</td>
     </tr>`;
 
@@ -153,8 +155,6 @@ export function vStats() {
     <div class="stats stats-vertical lg:stats-horizontal shadow-sm border border-base-300 bg-base-100 w-full">
       <div class="stat"><div class="stat-title">Period</div><div class="stat-value text-lg">${esc(fmtLong(range.from))} – ${esc(fmtLong(range.to))}</div><div class="stat-desc">${periodNote} · current roster + saved log</div></div>
       <div class="stat"><div class="stat-title">Duties</div><div class="stat-value text-3xl">${totals.duties}</div></div>
-      <div class="stat"><div class="stat-title">Hard</div><div class="stat-value text-3xl">${totals.hard}</div></div>
-      <div class="stat"><div class="stat-title">Skill</div><div class="stat-value text-3xl">${totals.skill}</div></div>
     </div>
     <div class="card bg-base-100 shadow-sm border border-base-300">
       <div class="pivot-scroll">
@@ -162,8 +162,7 @@ export function vStats() {
           <thead><tr>
             <th class="stickycol"${ariaSort("person")}>${sortBtn("person", "Person")}</th>
             ${roleHeads}
-            <th class="pivot-role"${ariaSort("hard")} title="Duties on hard roles">${sortBtn("hard", "Hard")}</th>
-            <th class="pivot-role"${ariaSort("skill")} title="Duties on roles that need a skill">${sortBtn("skill", "Skill")}</th>
+            ${LEAVE.map((l) => `<th class="pivot-role"${ariaSort("att:" + l)} title="Days of ${esc(l.toLowerCase())} in this period">${sortBtn("att:" + l, l)}</th>`).join("")}
             <th class="pivot-role pivot-total"${ariaSort("duties")} title="All duties in this period">${sortBtn("duties", "Total")}</th>
           </tr></thead>
           <tbody>${body ? body + totalRow : '<tr><td colspan="' + (pivot.roles.length + 4) + '" class="opacity-70 p-4">No duties in this period.</td></tr>'}</tbody>
