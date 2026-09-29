@@ -144,7 +144,41 @@ const data = {
   audit: []
 };
 
-const json = JSON.stringify(data, null, 2) + "\n";
+/* Fill the Log with saved rosters (a few past, a few planned) by running the app's own Generate and
+   Save code, so the entries are exactly what the app would have written. The working block is left
+   for you to Generate. */
+const store = Object.create(null);
+globalThis.localStorage = { getItem: (k) => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: (k) => { delete store[k]; } };
+globalThis.window = globalThis.window || {};
+const { S } = await import("../src/js/state.js");
+const model = await import("../src/js/model.js");
+const { generate } = await import("../src/js/generator.js");
+const { saveRoster } = await import("../src/js/snapshot.js");
+
+S.data = model.migrateToV2(JSON.parse(JSON.stringify(data)));
+/* [start offset in days from today, people on leave / sick per day pattern] */
+const SAVED = [-12, -8, -4, 5, 9];
+const AWAY = ["Annual leave", "Sick leave", "Duty away", "Rest day"];
+SAVED.forEach((offset, k) => {
+  const b = S.data.blocks.current;
+  b.startDate = addDays(iso(new Date()), offset);
+  b.shifts = shifts.slice();
+  b.attendance = []; b.assignments = []; b.generatedAt = null; b.stale = false;
+  for (let j = 0; j < 4; j++) {
+    const p = S.data.people[(k * 5 + j * 3) % S.data.people.length];
+    model.setStatus(p.id, (k + j) % 4, AWAY[(k + j) % AWAY.length]);
+  }
+  generate();
+  saveRoster();
+});
+/* Working block: tomorrow, attendance only (like the plain demo) — generate it in the app. */
+const cur = S.data.blocks.current;
+cur.startDate = start; cur.shifts = shifts.slice(); cur.attendance = attendance.map((a) => ({ ...a })); cur.assignments = []; cur.generatedAt = null; cur.stale = false;
+S.data.audit = [];
+S.data.meta.updatedAt = new Date().toISOString();
+const out = S.data;
+
+const json = JSON.stringify(out, null, 2) + "\n";
 const targets = [
   join(root, "data"),
   join(root, "dist", "data")
@@ -157,4 +191,5 @@ for (const dir of targets) {
 }
 console.log("People:", people.length, "| Roles:", roles.length, "| night:", roles.filter((r) => r.usedAtNight).length, "| skill:", roles.filter((r) => r.skillRestricted).length);
 console.log("Attendance rows:", attendance.length);
+console.log("Saved rosters in Log:", out.blocks.history.map((h) => h.startDate).join(", "));
 console.log("Load via Open file, or serve HTML over http next to data/.");
