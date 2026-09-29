@@ -2,6 +2,14 @@
 export const STAT = ["Present", "Annual leave", "Sick leave", "Duty away", "Rest day"];
 /* Present = green; every other attendance status = same blue (unavailable). Used by Attendance + Print. */
 export const SBG = { "Present": "#EAF4EC", "Annual leave": "#BBDEFB", "Sick leave": "#BBDEFB", "Duty away": "#BBDEFB", "Rest day": "#BBDEFB" };
+/** How far to scroll so a row [top, bottom] sits inside the visible band [viewTop, viewBottom]; 0 if it already does. */
+export const revealDelta = (top, bottom, viewTop, viewBottom) => (top < viewTop ? top - viewTop : bottom > viewBottom ? bottom - viewBottom : 0);
+/** Pixels to scroll per tick while dragging at pointer y: negative = up, positive = down, 0 mid-table. */
+export const edgeScrollSpeed = (y, top, bottom, zone, max) => {
+  if (y < top + zone) return -max * Math.min(1, (top + zone - y) / zone);
+  if (y > bottom - zone) return max * Math.min(1, (y - (bottom - zone)) / zone);
+  return 0;
+};
 export const LKEY = "shiftManager.v2";
 export const LKEY_LEGACY = "shiftManager.v1";
 

@@ -27,7 +27,15 @@ const defs = [
   ["Beat 1", "g_beat", 1, 1, 1, 0],
   ["Beat 2", "g_beat", 1, 1, 0, 0],
   ["Traffic Unit", "g_car", 1, 1, 1, 0],
-  ["Station Duty", "g_inside", 1, 1, 0, 0]
+  ["Station Duty", "g_inside", 1, 1, 0, 0],
+  ["Beat 3", "g_beat", 1, 0, 0, 0],
+  ["Beat 4", "g_beat", 1, 0, 0, 0],
+  ["Patrol Support", "g_beat", 1, 0, 0, 0],
+  ["Escort Car", "g_car", 1, 0, 0, 0],
+  ["Scene Support", "g_beat", 1, 0, 0, 0],
+  ["Admin Support", "g_inside", 1, 0, 0, 0],
+  ["Public Office (Day)", "g_inside", 1, 0, 0, 0],
+  ["Front Counter", "g_inside", 1, 1, 0, 0]
 ];
 
 const roles = defs.map((x, i) => ({
@@ -46,11 +54,15 @@ const rn = (n) => roles.find((r) => r.name === n).id;
 const names = [
   "Aoife Brennan", "Ciaran Doyle", "Declan Murphy", "Eimear Walsh",
   "Fionn Kelly", "Grainne Byrne", "Hugh Ryan", "Katie Burke",
-  "Liam Duffy", "Maeve Quinn", "Owen Lyons", "Sean Egan"
+  "Liam Duffy", "Maeve Quinn", "Owen Lyons", "Sean Egan",
+  "Tadhg Nolan", "Una Farrell", "Vincent Hayes", "Aisling Corrigan",
+  "Brendan Whelan", "Cara Mullen", "Dermot Kane", "Emer Boyle",
+  "Finbar Regan", "Gemma Tierney", "Ivor Slattery", "Jenna Costello",
+  "Kevin Delaney", "Lorna Fitzgerald", "Micheal Coughlan", "Niamh Purcell"
 ];
-const drivers = ["Ciaran Doyle", "Declan Murphy", "Fionn Kelly", "Liam Duffy", "Sean Egan"];
-const mic = ["Aoife Brennan", "Hugh Ryan", "Katie Burke", "Maeve Quinn"];
-const jailer = ["Ciaran Doyle", "Eimear Walsh", "Grainne Byrne", "Liam Duffy"];
+const drivers = ["Ciaran Doyle", "Declan Murphy", "Fionn Kelly", "Liam Duffy", "Sean Egan", "Tadhg Nolan", "Brendan Whelan", "Finbar Regan", "Kevin Delaney"];
+const mic = ["Aoife Brennan", "Hugh Ryan", "Katie Burke", "Maeve Quinn", "Una Farrell", "Dermot Kane", "Gemma Tierney"];
+const jailer = ["Ciaran Doyle", "Eimear Walsh", "Grainne Byrne", "Liam Duffy", "Vincent Hayes", "Cara Mullen", "Ivor Slattery", "Niamh Purcell"];
 
 const personRoles = [];
 const people = names.map((n, i) => {
@@ -83,6 +95,14 @@ setS("Grainne Byrne", 0, "Rest day");
 setS("Katie Burke", 2, "Duty away");
 setS("Katie Burke", 3, "Duty away");
 setS("Owen Lyons", 2, "Annual leave");
+setS("Tadhg Nolan", 1, "Sick leave");
+setS("Una Farrell", 0, "Annual leave");
+setS("Una Farrell", 1, "Annual leave");
+setS("Emer Boyle", 2, "Rest day");
+setS("Finbar Regan", 3, "Duty away");
+setS("Jenna Costello", 1, "Annual leave");
+setS("Micheal Coughlan", 2, "Sick leave");
+setS("Micheal Coughlan", 3, "Sick leave");
 
 const data = {
   schemaVersion: 2,

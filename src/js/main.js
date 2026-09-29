@@ -1,4 +1,4 @@
-import { esc } from "./util.js";
+import { esc, revealDelta, edgeScrollSpeed } from "./util.js";
 import { S, setRenderer, loadLocal, wireFileInput, applyLoaded, tryLoadMockData, touch, setOnDataChanged, toast } from "./state.js";
 import { shell, vSelModal, vBulk, vConfirm, vNamePrompt, printBorders } from "./ui-kit.js";
 import { tryRestoreWorkspace, hasWorkspace, readWorkspaceData, writeWorkspaceData } from "./workspace.js";
@@ -22,9 +22,41 @@ const SCREENS = { start: vStart, att: vAtt, ros: vRos, prt: vRos, ppl: vPpl, skl
 const ACT = { ...appActions, ...startActions, ...attActions, ...rosActions, ...prtActions, ...sklActions, ...rolActions, ...logActions, ...histActions, ...statsActions, ...pplActions };
 const CHANGES = { ...startChanges, ...attChanges, ...pplChanges, ...sklChanges, ...rolChanges, ...histChanges, ...prtChanges, ...rosChanges, ...statsChanges };
 
+/* Re-rendering replaces the whole screen, which resets scroll containers to the top. Keep the
+   position of the tables (and the page) when the same screen is redrawn, e.g. after clicking a cell. */
+let lastScreen = null;
+const SCROLLERS = ".printScroll, .attScroll";
+
+function captureScroll() {
+  const page = document.scrollingElement;
+  return {
+    y: page ? page.scrollTop : 0,
+    els: Array.from(document.querySelectorAll(SCROLLERS)).map((el) => [el.scrollTop, el.scrollLeft])
+  };
+}
+
+function restoreScroll(pos) {
+  document.querySelectorAll(SCROLLERS).forEach((el, i) => {
+    if (pos.els[i]) { el.scrollTop = pos.els[i][0]; el.scrollLeft = pos.els[i][1]; }
+  });
+  if (document.scrollingElement) document.scrollingElement.scrollTop = pos.y;
+}
+
+/* Scroll the table's own container so `row` sits between the frozen header and the pinned tally
+   footer (scrollIntoView ignores those, leaving the row hidden underneath). */
+function revealRow(row) {
+  const sc = row && row.closest(".printScroll");
+  if (!sc) return;
+  const head = sc.querySelector("thead"); const foot = sc.querySelector("tfoot");
+  const c = sc.getBoundingClientRect(); const r = row.getBoundingClientRect();
+  const hBar = sc.offsetHeight - sc.clientHeight; /* horizontal scrollbar, if any */
+  sc.scrollTop += revealDelta(r.top, r.bottom, Math.max(c.top, 0) + (head ? head.offsetHeight : 0), Math.min(c.bottom, window.innerHeight) - hBar - (foot ? foot.offsetHeight : 0));
+}
+
 function render() {
   if (S.ui.screen === "prt" || S.ui.screen === "ros") S.ui.screen = "ros";
   if (S.ui.screen === "help" || !SCREENS[S.ui.screen]) S.ui.screen = "start";
+  const scroll = lastScreen === S.ui.screen ? captureScroll() : null;
   const active = document.activeElement;
   const keep = active && active.id;
   const keepStart = keep && typeof active.selectionStart === "number" ? active.selectionStart : null;
@@ -32,6 +64,8 @@ function render() {
   document.getElementById("app").innerHTML = shell(SCREENS[S.ui.screen]()) + vSelModal() + vBulk() + vConfirm() + vNamePrompt() +
     (S.ui.toast ? `<div class="toast toast-end print:hidden"><div class="alert alert-success"><span>${esc(S.ui.toast)}</span></div></div>` : "");
   fitRosterColumns(document.getElementById("app"));
+  if (scroll) restoreScroll(scroll);
+  lastScreen = S.ui.screen;
   document.body.classList.toggle("print-black-borders", printBorders());
   if (keep) {
     const el = document.getElementById(keep);
@@ -157,7 +191,27 @@ document.addEventListener("dragstart", (e) => {
   });
 });
 
+/* Auto-scroll the roster while dragging. The browser's own edge-scroll never reaches the top
+   because the frozen header covers it, so scroll the table ourselves while the pointer is near
+   (or over) either end of its visible band. */
+let dragY = null, dragX = null, dragTimer = null;
+function edgeScrollTick() {
+  const sc = document.querySelector(".printScroll");
+  if (!sc || dragY == null) return;
+  const c = sc.getBoundingClientRect();
+  if (dragX < c.left || dragX > c.right) return;
+  const head = sc.querySelector("thead"); const foot = sc.querySelector("tfoot");
+  /* The table can extend below the window; only its on-screen part counts as its edge. */
+  const speed = edgeScrollSpeed(dragY, Math.max(c.top, 0) + (head ? head.offsetHeight : 0), Math.min(c.bottom, window.innerHeight) - (foot ? foot.offsetHeight : 0), 48, 22);
+  if (speed) sc.scrollTop += speed;
+}
+function stopEdgeScroll() {
+  if (dragTimer) clearInterval(dragTimer);
+  dragTimer = null; dragY = null; dragX = null;
+}
+
 document.addEventListener("dragend", (e) => {
+  stopEdgeScroll();
   /* drop clears dragPid/dragRole first, so leftovers + dropEffect "none" means the target was refused. */
   const refused = (S.ui.dragPid != null || S.ui.dragRole != null) && e.dataTransfer && e.dataTransfer.dropEffect === "none";
   if (refused) toast(S.ui.dragRole
@@ -173,6 +227,8 @@ document.addEventListener("dragend", (e) => {
 
 document.addEventListener("dragover", (e) => {
   if (S.ui.dragPid == null && S.ui.dragRole == null) return;
+  dragX = e.clientX; dragY = e.clientY;
+  if (!dragTimer) dragTimer = setInterval(edgeScrollTick, 16);
   const drop = e.target.closest("[data-drop-person]");
   if (!drop) return;
   const day = drop.dataset.dropDay != null ? +drop.dataset.dropDay : null;
@@ -186,6 +242,7 @@ document.addEventListener("dragover", (e) => {
 });
 
 document.addEventListener("drop", (e) => {
+  stopEdgeScroll();
   if (S.ui.dragPid == null && S.ui.dragRole == null) return;
   const drop = e.target.closest("[data-drop-person]");
   if (!drop) return;
@@ -260,8 +317,7 @@ document.addEventListener("keydown", (e) => {
     e.preventDefault();
     S.ui.rowSel = adjacentPersonId(S.ui.rowSel, dir) || S.ui.rowSel;
     render();
-    const row = document.querySelector("tr.row-sel");
-    if (row && row.scrollIntoView) row.scrollIntoView({ block: "nearest" });
+    revealRow(document.querySelector("tr.row-sel"));
     return;
   }
   if (e.key === "Escape" && S.ui.peoplePickerOpen) {

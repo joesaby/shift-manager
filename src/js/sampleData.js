@@ -14,10 +14,10 @@ export function loadSample() {
   }));
   const rn = (n) => roles.find((r) => r.name === n).id;
   /* Clearly fictional demo names — not real officers. */
-  const names = ["Alex River", "Blair Stone", "Casey Vale", "Dana Frost", "Eden Brooks", "Fran Wells", "Gray Moss", "Harper Lane", "Indy Cole", "Jules Pike", "Kai North", "Logan Reed", "Morgan Dale", "Noel Ash", "Quinn Blake", "Remy Cross", "Sage Flint", "Taylor Wren", "Uri West", "Val Shore", "Wren Hale", "Yasmin Cove", "Zion Park"];
-  const drivers = ["Blair Stone", "Casey Vale", "Eden Brooks", "Indy Cole", "Kai North", "Morgan Dale", "Sage Flint", "Taylor Wren", "Val Shore"];
-  const mic = ["Alex River", "Gray Moss", "Jules Pike", "Logan Reed", "Quinn Blake", "Remy Cross", "Uri West"];
-  const jailer = ["Blair Stone", "Dana Frost", "Fran Wells", "Harper Lane", "Kai North", "Wren Hale", "Yasmin Cove", "Zion Park"];
+  const names = ["Alex River", "Blair Stone", "Casey Vale", "Dana Frost", "Eden Brooks", "Fran Wells", "Gray Moss", "Harper Lane", "Indy Cole", "Jules Pike", "Kai North", "Logan Reed", "Morgan Dale", "Noel Ash", "Quinn Blake", "Remy Cross", "Sage Flint", "Taylor Wren", "Uri West", "Val Shore", "Wren Hale", "Yasmin Cove", "Zion Park", "Avery Holt", "Bryn Cassidy", "Cleo Marsh", "Drew Alder", "Ezra Quill", "Fiona Baird", "Hollis Grant", "Ines Rowan"];
+  const drivers = ["Blair Stone", "Casey Vale", "Eden Brooks", "Indy Cole", "Kai North", "Morgan Dale", "Sage Flint", "Taylor Wren", "Val Shore", "Avery Holt", "Drew Alder"];
+  const mic = ["Alex River", "Gray Moss", "Jules Pike", "Logan Reed", "Quinn Blake", "Remy Cross", "Uri West", "Cleo Marsh"];
+  const jailer = ["Blair Stone", "Dana Frost", "Fran Wells", "Harper Lane", "Kai North", "Wren Hale", "Yasmin Cove", "Zion Park", "Bryn Cassidy", "Hollis Grant"];
   const notq = ["Gray Moss|Beat 1", "Zion Park|Traffic Unit", "Harper Lane|Escort Car"];
   const fixedPerson = "Noel Ash";
   const personRoles = [];
@@ -46,6 +46,9 @@ export function loadSample() {
   ["Blair Stone", "Fran Wells", "Quinn Blake", "Yasmin Cove"].forEach((n) => { setS(n, 0, "Annual leave"); setS(n, 1, "Annual leave"); });
   setS("Sage Flint", 1, "Sick leave");
   setS("Zion Park", 0, "Rest day");
+  setS("Ezra Quill", 1, "Sick leave");
+  setS("Fiona Baird", 0, "Duty away");
+  setS("Ines Rowan", 1, "Annual leave");
   [2, 3].forEach((d) => {
     ["Quinn Blake", "Yasmin Cove", "Val Shore", "Uri West"].forEach((n) => setS(n, d, "Annual leave"));
     setS("Sage Flint", d, "Sick leave");
