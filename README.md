@@ -21,7 +21,7 @@ Data stays in that folder (`shift-manager-data.json`, `backups/`, `logs/`). You 
 | People, qualifications, optional fixed role | People |
 | Skill matrix (roles marked Needs a skill) | Skills |
 
-Untick **Active** on People when someone leaves long term.
+Untick **Active** on People when someone leaves. For a long sickness, tick **Long-term sick** on that person (with a From date and an optional To date): every Attendance day in that period is Sick leave automatically, in every block. Change a single day on Attendance to override it.
 
 ## Each block
 
@@ -32,7 +32,7 @@ Free-text spare notes are gone: anyone with no role shows **Unassigned**. Notes 
 
 On **Roles and groups**, tick **Essential** for duties that must be filled; leave it unticked for spare work (e.g. Files 1–5). List order among non-essential roles is fill priority.
 
-**Log** (sidebar) holds saved rotas. Folder `logs/` is the file audit trail (not shown in the UI).
+**Log** (sidebar) holds saved rotas, past and planned. **View** shows one, **Edit** reopens it on the Roster screen to correct it (you are asked to save your current roster first if it has unsaved changes), and Save roster then replaces that entry. A roster whose four days have passed can be corrected but not regenerated. Folder `logs/` is the file audit trail (not shown in the UI).
 
 ## Screens
 
@@ -42,8 +42,7 @@ On **Roles and groups**, tick **Essential** for duties that must be filled; leav
 | 1. Attendance | Dates, shifts, who is working |
 | 2. Roster | Generate once, edit, Save roster, print; Print day per column |
 | People / Skills / Roles and groups | Team setup (Essential flag on roles) |
-| Log | Saved rotas, CSV |
-| Historic roster | Past blocks: same person × day layout as Roster (read-only) |
+| Log | Saved rotas, View / Edit, CSV |
 | Duty stats | Person × role counts over any period (default: everything up to today) — ▲ ▼ on a column sorts it (e.g. ▼ on a role, to see who did it most); tallies at the end. Click a name for a printable report on just that person, with role counts and attendance (sick, annual leave, …) |
 
 ## Develop

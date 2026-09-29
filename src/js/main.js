@@ -13,14 +13,13 @@ import { vPpl, actions as pplActions, changes as pplChanges } from "./screens/pe
 import { vSkills, actions as sklActions, changes as sklChanges } from "./screens/skills.js";
 import { vRol, actions as rolActions, changes as rolChanges } from "./screens/roles.js";
 import { vLog, actions as logActions } from "./screens/log.js";
-import { vHist, actions as histActions, changes as histChanges } from "./screens/hist.js";
 import { vStats, actions as statsActions, changes as statsChanges } from "./screens/stats.js";
 import { actions as appActions } from "./app-actions.js";
 import { fitRosterColumns } from "./colfit.js";
 
-const SCREENS = { start: vStart, att: vAtt, ros: vRos, prt: vRos, ppl: vPpl, skl: vSkills, rol: vRol, log: vLog, hist: vHist, stats: vStats };
-const ACT = { ...appActions, ...startActions, ...attActions, ...rosActions, ...prtActions, ...sklActions, ...rolActions, ...logActions, ...histActions, ...statsActions, ...pplActions };
-const CHANGES = { ...startChanges, ...attChanges, ...pplChanges, ...sklChanges, ...rolChanges, ...histChanges, ...prtChanges, ...rosChanges, ...statsChanges };
+const SCREENS = { start: vStart, att: vAtt, ros: vRos, prt: vRos, ppl: vPpl, skl: vSkills, rol: vRol, log: vLog, stats: vStats };
+const ACT = { ...appActions, ...startActions, ...attActions, ...rosActions, ...prtActions, ...sklActions, ...rolActions, ...logActions, ...statsActions, ...pplActions };
+const CHANGES = { ...startChanges, ...attChanges, ...pplChanges, ...sklChanges, ...rolChanges, ...prtChanges, ...rosChanges, ...statsChanges };
 
 /* Re-rendering replaces the whole screen, which resets scroll containers to the top. Keep the
    position of the tables (and the page) when the same screen is redrawn, e.g. after clicking a cell. */
@@ -55,6 +54,7 @@ function revealRow(row) {
 
 function render() {
   if (S.ui.screen === "prt" || S.ui.screen === "ros") S.ui.screen = "ros";
+  if (S.ui.screen === "hist") S.ui.screen = "log"; /* Historic roster was merged into Log (H24 → deprecated) */
   if (S.ui.screen === "help" || !SCREENS[S.ui.screen]) S.ui.screen = "start";
   const scroll = lastScreen === S.ui.screen ? captureScroll() : null;
   const active = document.activeElement;

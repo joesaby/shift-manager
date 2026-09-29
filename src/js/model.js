@@ -266,10 +266,30 @@ export function statusIdForLabel(label) {
   return LABEL_TO_STATUS[label] || "present";
 }
 
+/** H67: is this person's long-term sick period (people[].longTermSick {from, to?}) covering `date`? */
+function longTermSickOn(p, date) {
+  const l = p && p.longTermSick;
+  return !!(l && l.from && date >= l.from && (!l.to || date <= l.to));
+}
+
+/** H67: set a long-term sick period (inclusive dates, `to` empty = open-ended). False if the dates are invalid. */
+export function setLongTermSick(pid, from, to) {
+  const p = personById(pid);
+  if (!p || !from || (to && to < from)) return false;
+  p.longTermSick = { from, to: to || "" };
+  return true;
+}
+
+export function clearLongTermSick(pid) {
+  const p = personById(pid);
+  if (p) delete p.longTermSick;
+}
+
 export function getStatus(pid, d) {
   const date = dateOf(d);
   const row = block().attendance.find((a) => a.personId === pid && a.date === date);
-  return row ? statusLabel(row.statusId) : "Present";
+  if (row) return statusLabel(row.statusId);
+  return longTermSickOn(personById(pid), date) ? statusLabel("sick_leave") : "Present";
 }
 
 export function setStatus(pid, d, label) {
@@ -277,9 +297,10 @@ export function setStatus(pid, d, label) {
   const statusId = statusIdForLabel(label);
   const rows = block().attendance;
   const i = rows.findIndex((a) => a.personId === pid && a.date === date);
-  if (statusId === "present" && i >= 0) rows.splice(i, 1);
-  else if (statusId === "present") { /* default — omit row */ }
-  else if (i >= 0) rows[i].statusId = statusId;
+  /* H67: on a day a long-term sick period covers, Present must be stored to override it. */
+  if (statusId === "present" && !longTermSickOn(personById(pid), date)) {
+    if (i >= 0) rows.splice(i, 1);
+  } else if (i >= 0) rows[i].statusId = statusId;
   else rows.push({ date, personId: pid, statusId });
 }
 
@@ -510,6 +531,32 @@ export function findHistoryIndexForStart(start) {
 }
 
 /** Replace existing history row for this start, or push. Keeps entry.id when replacing. */
+/** H69: has this block's last day passed? (`today` is injectable for tests.) */
+export function isPastBlock(today = iso(new Date())) {
+  return dateOf(blockLen() - 1) < today;
+}
+
+/** H69: a block that already has a roster is never regenerated once it has passed; a first Generate is always allowed. */
+export const canRegenerate = (today) => !(hasRoster() && isPastBlock(today));
+
+/** H68: does a log entry carry its own dates, shifts, attendance and assignments (i.e. can it be reopened)? */
+export const canEditHistory = (h) => !!(h && historyStart(h) && Array.isArray(h.shifts) && Array.isArray(h.attendance) && Array.isArray(h.assignments));
+
+/** H68: copy a saved log entry into the working block (deep copy — the log entry is never touched). */
+export function loadHistoryForEdit(id) {
+  const h = history().find((x) => x.id === id);
+  if (!canEditHistory(h)) return false;
+  const c = block();
+  c.startDate = historyStart(h);
+  c.shifts = h.shifts.slice();
+  c.attendance = h.attendance.map((a) => ({ ...a }));
+  c.assignments = h.assignments.map((a) => ({ ...a }));
+  c.generatedAt = h.savedAt || new Date().toISOString();
+  c.stale = false;
+  c.spareNotes = [];
+  return true;
+}
+
 export function upsertHistoryEntry(entry) {
   const start = historyStart(entry) || block().startDate;
   const i = findHistoryIndexForStart(start);

@@ -96,6 +96,7 @@ html,body{font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helve
 /* Corner cells must sit above the sticky name cells in the body (z-index 5). */
 .rota-freeze thead th.stickycol{z-index:7}
 .rota-freeze thead .unalloc-row td.stickycol{z-index:6}
+.lts-box{padding:.5rem .75rem;border:1px solid #d1d5db;border-radius:.5rem}
 .ppl-emp{width:9rem;max-width:100%}
 .ppl-shldr{width:7rem;max-width:100%}
 

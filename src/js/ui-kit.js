@@ -30,7 +30,7 @@ function fileControls() {
 /* Sidebar: pinned open by default, but Attendance and Roster are wide tables so they start
    collapsed. An explicit choice (toggleNav) wins everywhere and is remembered per viewer. */
 const NAV_KEY = "sm.navCollapsed";
-const WIDE_SCREENS = ["att", "ros", "hist", "stats"];
+const WIDE_SCREENS = ["att", "ros", "stats"];
 
 export function navCollapsed() {
   if (S.ui.navCollapsed === undefined) {

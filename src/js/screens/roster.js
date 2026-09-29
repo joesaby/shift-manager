@@ -3,7 +3,7 @@ import { S, toast, askConfirm, render } from "../state.js";
 import {
   D, block, hasRoster, isStale, groupById,
   personById, isPresent, qual, roleOfPerson, rosterDays, vacatedEssential, openRolesForDay, unassignedReason,
-  unitName, activePeople, statusCountsForDay
+  unitName, activePeople, statusCountsForDay, canRegenerate
 } from "../model.js";
 import { buildSnapshot, saveRoster as persistRoster, isRosterUnsaved, printFitStyle, buildDayBrief, dayBriefHTML } from "../snapshot.js";
 import { generate as generateRoster, swapPeople, assignRoleToPerson, assignParkedRole, unassignPerson, canTakeParkedRole, canDropPersonOnPerson } from "../generator.js";
@@ -68,7 +68,10 @@ export function vRos() {
   const unfBits = snap.days.map((d, i) => (snap.unfilled[i] && snap.unfilled[i].length) ? `${d.label}: ${snap.unfilled[i].join(", ")}` : "").filter(Boolean);
   const unsaved = isRosterUnsaved();
 
-  const genBtn = `<button class="btn btn-ghost btn-sm" data-act="askRegenerate" title="Reshuffles everyone and discards manual edits">Start over / Regenerate</button>`;
+  const regenOk = canRegenerate();
+  const genBtn = regenOk
+    ? `<button class="btn btn-ghost btn-sm" data-act="askRegenerate" title="Reshuffles everyone and discards manual edits">Start over / Regenerate</button>`
+    : `<span class="badge badge-neutral no-print" title="This block has passed. Cells can be corrected, but the roster can't be regenerated.">Past roster · corrections only</span>`;
   const unsavedBadge = unsaved ? `<span class="badge badge-warning no-print">Unsaved changes</span>` : `<span class="badge badge-ghost no-print">Saved</span>`;
   const printBtn = unsaved
     ? `<button class="btn btn-sm btn-primary" data-act="saveAndPrint">Save &amp; print</button>`
@@ -193,6 +196,7 @@ export function vRos() {
 }
 
 function runGenerate() {
+  if (!canRegenerate()) { toast("This block has passed — you can correct it but not regenerate it."); return; }
   if (!activePeople().length || !D().roles.length) { toast("Add roles and people first."); return; }
   generateRoster(); S.ui.screen = "ros"; S.ui.sel = null;
   logAudit("ROSTER_GENERATED", "block_start=" + block().startDate);

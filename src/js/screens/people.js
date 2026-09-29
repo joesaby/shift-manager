@@ -1,7 +1,7 @@
 import { esc, uid } from "../util.js";
-import { S } from "../state.js";
+import { S, toast } from "../state.js";
 import {
-  D, personById, roleById, groupById, qual, qualCount, setQual,
+  D, block, personById, setLongTermSick, clearLongTermSick, roleById, groupById, qual, qualCount, setQual,
   removePersonEverywhere, markStale, personLoadByMonth, currentMonthKey, monthLabel, personRoleIds
 } from "../model.js";
 import { ph } from "../ui-kit.js";
@@ -53,6 +53,7 @@ function filteredPeople() {
 function personMeta(p) {
   const bits = [];
   if (p.active === false) bits.push("Inactive");
+  if (p.longTermSick) bits.push("Long-term sick");
   if (p.fixedRoleId) {
     const r = roleById(p.fixedRoleId);
     bits.push("Only " + ((r && r.name) || "?"));
@@ -163,7 +164,16 @@ export function vPpl() {
         <label class="form-control ppl-emp"><span class="label-text font-semibold">Employee no.</span><input class="input input-bordered" value="${esc(sel.employeeNo || "")}" data-ch="pemp" data-p="${sel.id}" inputmode="numeric" autocomplete="off"></label>
         <label class="form-control ppl-shldr"><span class="label-text font-semibold">Shoulder no.</span><input class="input input-bordered" value="${esc(sel.shoulderNo || "")}" data-ch="pshldr" data-p="${sel.id}" inputmode="numeric" autocomplete="off"></label>
       </div>
-      <label class="flex items-center gap-3"><input type="checkbox" class="toggle toggle-primary" ${sel.active !== false ? "checked" : ""} data-ch="pactive" data-p="${sel.id}"><span>Active (untick when someone leaves or is away long term)</span></label>
+      <label class="flex items-center gap-3"><input type="checkbox" class="toggle toggle-primary" ${sel.active !== false ? "checked" : ""} data-ch="pactive" data-p="${sel.id}"><span>Active (untick when someone leaves; use Long-term sick below for a long absence)</span></label>
+      <div class="lts-box">
+        <label class="flex items-center gap-3"><input type="checkbox" class="toggle toggle-primary" ${sel.longTermSick ? "checked" : ""} data-ch="plts" data-p="${sel.id}"><span>Long-term sick</span></label>
+        <div class="text-sm opacity-70 mt-1">Every day in this period is Sick leave on Attendance, in every block, so you don't have to set it daily. Change a single day on Attendance to override it.</div>
+        ${sel.longTermSick ? `<div class="flex flex-wrap gap-3 items-end mt-2">
+          <label class="form-control"><span class="label-text text-xs mb-1">From</span><input type="date" class="input input-bordered input-sm" value="${esc(sel.longTermSick.from)}" data-ch="pltsFrom" data-p="${sel.id}"></label>
+          <label class="form-control"><span class="label-text text-xs mb-1">To (optional)</span><input type="date" class="input input-bordered input-sm" value="${esc(sel.longTermSick.to || "")}" data-ch="pltsTo" data-p="${sel.id}"></label>
+          <span class="text-xs opacity-60 pb-2">Leave “To” empty until they return.</span>
+        </div>` : ""}
+      </div>
       <div><div class="font-semibold">Roles this person is qualified for</div><div class="text-sm opacity-70 mb-2">Only ticked roles are ever offered to them. Skill roles also appear on the Skills screen.</div>
         ${D().roles.length ? `<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">${tog}</div>` : `<div class="alert">Add roles first on the Roles and groups screen.</div>`}</div>
       <label class="form-control max-w-sm"><span class="label-text font-semibold">Only do this role</span><span class="label-text-alt opacity-70 mb-1">If set, they always get this role when present.</span><select class="select select-bordered" data-ch="ponly" data-p="${sel.id}">${onlyOpts}</select></label>
@@ -207,5 +217,8 @@ export const changes = {
   pname: (v, ds) => { if (v.trim()) personById(ds.p).name = v.trim(); },
   pemp: (v, ds) => { personById(ds.p).employeeNo = String(v || ""); },
   pshldr: (v, ds) => { personById(ds.p).shoulderNo = String(v || ""); },
+  plts: (v, ds) => { if (v) setLongTermSick(ds.p, block().startDate, ""); else clearLongTermSick(ds.p); },
+  pltsFrom: (v, ds) => { const l = personById(ds.p).longTermSick; if (l && !setLongTermSick(ds.p, v, l.to)) toast("Start date is missing or after the end date."); },
+  pltsTo: (v, ds) => { const l = personById(ds.p).longTermSick; if (l && !setLongTermSick(ds.p, l.from, v)) toast("End date can't be before the start date."); },
   pactive: (v, ds) => { personById(ds.p).active = v; markStale(); }
 };

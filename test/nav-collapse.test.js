@@ -65,7 +65,7 @@ describe("sidebar collapse", () => {
   it("Roster, Attendance, Historic, and Duty stats use the wide main; other screens keep the capped width", () => {
     S.ui.screen = "ros";
     assert.ok(shell("x").includes("main-wide"));
-    S.ui.screen = "hist";
+    S.ui.screen = "stats";
     assert.ok(shell("x").includes("main-wide"));
     S.ui.screen = "ppl";
     assert.ok(!shell("x").includes("main-wide"));

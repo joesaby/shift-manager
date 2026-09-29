@@ -1,5 +1,5 @@
 import { esc, STAT, SBG } from "../util.js";
-import { D, block, dayLabels, activePeople, essentialRolesForDay, isPresent, getStatus, statusCountsForDay, setStatus, roleById, personById, markStale } from "../model.js";
+import { D, block, dayLabels, activePeople, essentialRolesForDay, isPresent, getStatus, statusCountsForDay, canRegenerate, setStatus, roleById, personById, markStale } from "../model.js";
 import { ph, noPeople, unitBanner } from "../ui-kit.js";
 import { logAudit } from "../audit.js";
 
@@ -15,7 +15,7 @@ export function vAtt() {
     return `<td class="min-w-40"><select class="select select-bordered select-sm w-full" style="background:${SBG[v]}" data-ch="status" data-p="${p.id}" data-d="${i}" aria-label="${esc(p.name)}, ${esc(d.label)}">${STAT.map((x) => `<option${x === v ? " selected" : ""}>${x}</option>`).join("")}</select></td>`;
   }).join("") + "</tr>").join("");
   const short = info.filter((x) => x.pc < x.need);
-  return `${ph("1. Attendance", "Set who is working each day. Only people marked Present get a role.", `<label class="form-control"><span class="label-text text-xs mb-1">Block starts</span><input type="date" class="input input-bordered input-sm" value="${block().startDate}" data-ch="start"></label><button class="btn btn-primary" data-act="generate">Generate roster</button>`)}
+  return `${ph("1. Attendance", "Set who is working each day. Only people marked Present get a role.", `<label class="form-control"><span class="label-text text-xs mb-1">Block starts</span><input type="date" class="input input-bordered input-sm" value="${block().startDate}" data-ch="start"></label><button class="btn btn-primary" data-act="generate"${canRegenerate() ? "" : ' disabled title="This block has passed and already has a roster — edit it on the Roster screen"'}>Generate roster</button>`)}
    ${unitBanner()}
    ${short.length ? `<div role="alert" class="alert alert-error"><span>Not enough people present: ${short.map((x) => esc(x.d.label) + " has " + x.pc + " for " + x.need + " essential roles").join("; ")}.</span></div>` : ""}
    <div class="card bg-base-100 shadow-sm border border-base-300"><div class="attScroll"><table class="table att-freeze"><thead><tr><th class="stickycol">Person</th>${heads}</tr></thead><tbody>${rows}</tbody></table></div></div>`;

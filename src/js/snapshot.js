@@ -3,11 +3,11 @@ import {
   block, dayLabels, activePeople, roleById, groupById, getStatus, isPresent, roleOfPerson,
   roleOfPersonOnDay, rosterDays, rolesForDay, unitName, vacatedEssential,
   findHistoryIndexForStart, history, upsertHistoryEntry, snapshotBlockForHistory,
-  historicRosterModel, personById
+  historicRosterModel, personById, canEditHistory, historyStart, loadHistoryForEdit
 } from "./model.js";
 import { LOGO_DATA_URI } from "../assets/logo.js";
 import { getSessionUser, logAudit } from "./audit.js";
-import { touch } from "./state.js";
+import { touch, toast, askConfirm, S } from "./state.js";
 
 /** Person × day snapshot: one cell per person per day, the duty type / status as text. */
 export function buildSnapshot() {
@@ -373,4 +373,24 @@ export function csvOf(entries) {
     records.forEach((r) => lines.push([start, r.date, r.shift, r.person, r.status, r.role].map(q).join(",")));
   });
   return lines.join("\r\n");
+}
+
+/** H68: reopen a saved roster in the Roster editor; saving first when the working block has unsaved work. */
+export function editSavedRoster(id) {
+  const h = history().find((x) => x.id === id);
+  if (!canEditHistory(h)) { toast("This older saved rota can only be viewed."); return; }
+  const c = block();
+  const goRoster = () => { S.ui.screen = "ros"; S.ui.sel = null; S.ui.rowSel = null; S.ui.viewLog = null; };
+  if (historyStart(h) === c.startDate) { goRoster(); return; }
+  const open = () => {
+    if (!loadHistoryForEdit(id)) return;
+    logAudit("ROSTER_EDIT_OPENED", "block_start=" + c.startDate);
+    touch();
+    goRoster();
+  };
+  if (c.generatedAt && isRosterUnsaved()) {
+    askConfirm("Save your current roster first?", "The roster you are working on has unsaved changes. It will be saved, then the other roster opens for editing.", "Save & open", () => { saveRoster(); open(); });
+  } else if (!c.generatedAt && c.attendance.length) {
+    askConfirm("Replace the block you are planning?", "Attendance entered for the block starting " + c.startDate + " has no roster yet and is not saved. It will be lost.", "Open anyway", open);
+  } else open();
 }
