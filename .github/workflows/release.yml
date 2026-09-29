@@ -25,6 +25,10 @@ jobs:
 
       - name: Resolve next version
         id: version
+        env:
+          # Passed as data, not pasted into the script: quotes, backticks or $() in a commit message
+          # must never be run by the shell.
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
           set -euo pipefail
           git fetch --tags --force
@@ -39,7 +43,7 @@ jobs:
             IFS=. read -r major minor patch <<< "${ver}"
           fi
 
-          msg="${{ github.event.head_commit.message }}"
+          msg="${COMMIT_MSG}"
           if printf '%s' "${msg}" | grep -q '#major'; then
             major=$((major + 1))
             minor=0
