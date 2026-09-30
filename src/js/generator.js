@@ -1,5 +1,5 @@
 import { S, touch, toast } from "./state.js";
-import { hardRules, softRules } from "./rules.js";
+import { RULES, hardRules, softRules } from "./rules.js";
 import {
   D, activePeople, rolesForDay, isPresent, qual, canDo, personById, roleById, shiftOf,
   roleOfPerson, writeRoster, rosterDays, writeDayAssign, dayLabels, historicRoleCounts
@@ -74,7 +74,7 @@ function fillEssential(roleIds, free, assign, count, prev, d, used) {
     const soft = free.map((id) => judge("essential", ruleCtx(id, role, prev, d, used)));
     const base = Math.min(...free.filter((_, j) => soft[j] != null).map((id) => count(id, r)), 0);
     const row = free.map((id, j) => (soft[j] == null ? FORBID
-      : count(id, r) - base + soft[j] * SOFT + Math.random() * 1e-3));
+      : count(id, r) - base + soft[j] * SOFT + Math.random() * 1e-7));
     for (let k = 0; k < n; k++) row.push(k === cost.length ? EMPTY : FORBID);
     cost.push(row);
   });
@@ -104,7 +104,11 @@ function fillNonEssential(roleIds, free, assign, count, prev, d, used) {
 export function generate() {
   const people = activePeople();
   const counts = historicRoleCounts();
-  const count = (id, r) => counts[id + "|" + r] || 0;
+  const totals = {};
+  Object.keys(counts).forEach((k) => { const id = k.split("|")[0]; totals[id] = (totals[id] || 0) + counts[k]; });
+  /* H28 objective from RULES (share of the person's own duties); name kept short for the fill passes. */
+  const score = RULES.find((x) => x.kind === "objective").score;
+  const count = (id, r) => score({ count: counts[id + "|" + r] || 0, total: totals[id] || 0 });
   const out = []; const used = {}; let prev = {};
   const n = D().blocks.current.shifts.length;
   for (let d = 0; d < n; d++) {
@@ -125,7 +129,7 @@ export function generate() {
     prev = {};
     Object.keys(assign).forEach((r) => {
       const id = assign[r]; if (!id) return;
-      prev[id] = r; counts[id + "|" + r] = count(id, r) + 1;
+      prev[id] = r; counts[id + "|" + r] = (counts[id + "|" + r] || 0) + 1; totals[id] = (totals[id] || 0) + 1;
       const ro = roleById(r); if (ro && ro.oncePerBlock) used[id + "|" + ro.groupId] = true;
     });
     out.push({ assign });

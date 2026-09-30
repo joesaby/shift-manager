@@ -4,7 +4,7 @@ import { D, hasRoster, unitName } from "../model.js";
 import { ph } from "../ui-kit.js";
 import { hasWorkspace, workspaceName, supportsWorkspace } from "../workspace.js";
 import { getSessionUser } from "../audit.js";
-import { RULES, helpHtml } from "../rules.js";
+import { RULES, helpHtml, LOOKBACK_MONTHS } from "../rules.js";
 
 function setupStep(done, label, screen, hint) {
   const go = screen ? `type="button" data-act="nav" data-s="${screen}"` : "";
@@ -148,7 +148,7 @@ export function vStart() {
         <ol class="list-decimal ml-5 space-y-2">
           ${RULES.map((r) => `<li>${helpHtml(r.help)}</li>`).join("\n          ")}
         </ol>
-        <p class="text-xs opacity-60 mt-2 mb-0">Over time the counts on <b>Duty stats</b> even out. Leave and sickness mean they won't always match exactly. Only rosters saved to the Log are counted, so press <b>Save roster</b> every block.</p>
+        <p class="text-xs opacity-60 mt-2 mb-0">Over time the counts on <b>Duty stats</b> even out. Leave and sickness mean they won't always match exactly. Only rosters saved to the Log in the last ${LOOKBACK_MONTHS} months are counted, so press <b>Save roster</b> every block.</p>
       </div>
     </details>
     <details class="home-details">

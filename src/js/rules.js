@@ -14,6 +14,10 @@ import { esc } from "./util.js";
  * breaks(ctx): ctx = { role, prevRole, qualified, usedGroup, night, prevNight } for one person × role × day.
  * help: one plain-English line; **bold** becomes <b> on Home and stays bold in the PRD.
  */
+
+/** H28: how far back Generate looks in the Log (months before the block starts). */
+export const LOOKBACK_MONTHS = 12;
+
 export const RULES = [
   { key: "present", id: "H6", kind: "structural",
     help: "Only people marked **Present** that day get a role." },
@@ -25,7 +29,9 @@ export const RULES = [
   { key: "essentialFirst", id: "H44", kind: "structural",
     help: "**Essential** roles are filled before the others. Non-essential roles are filled from whoever is left, in the order listed on Roles and groups." },
   { key: "leastDone", id: "H28", kind: "objective",
-    help: "Each role goes to whoever has done it **least often overall**: every roster saved to the Log, plus the earlier days of this block. Ties are picked at random." },
+    help: "Each role goes to whoever has done it **least, as a share of their own duties**, over the last " + LOOKBACK_MONTHS + " months of rosters saved to the Log plus the earlier days of this block. Only days they were Present count. Ties are picked at random.",
+    /* Share, not raw count, so a new starter or someone back from long leave is not picked for the same role for months. */
+    score: (c) => (c.total > 0 ? c.count / c.total : 0) },
   { key: "sameGroup", id: "H71", kind: "soft", essential: "soft", nonEssential: "hard",
     help: "Nobody gets a role from the same group (e.g. Car) two days running when someone else can cover.",
     breaks: (c) => !!(c.prevRole && c.prevRole.groupId === c.role.groupId) },

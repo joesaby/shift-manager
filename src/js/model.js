@@ -1,5 +1,6 @@
 import { iso, addDays, fmt, fmtLong, STAT } from "./util.js";
 import { S } from "./state.js";
+import { LOOKBACK_MONTHS } from "./rules.js";
 
 export const DEFAULT_STATUSES = [
   { id: "present", label: "Present", allocates: true, printColor: "#EAF4EC" },
@@ -753,22 +754,33 @@ export function personLoadByMonth(personId, opts) {
 }
 
 /**
- * H28: how many times each person has done each role across every saved rota, keyed "personId|roleId".
- * Counts what Duty stats counts (assignments, else Present records by name) and skips the
- * saved copy of the block being generated so a regenerate does not count its own old roster.
+ * H28: how many times each person did each role in saved rotas, keyed "personId|roleId".
+ * Window: the LOOKBACK_MONTHS before the block being generated starts (older and later-dated
+ * saved blocks are ignored, as is the saved copy of this block). Only days the person was
+ * Present count — a saved assignment on a leave / sick day is not a duty done.
  */
 export function historicRoleCounts() {
   const counts = {};
   const bump = (pid, rid) => { const k = pid + "|" + rid; counts[k] = (counts[k] || 0) + 1; };
   const currentStart = block().startDate;
+  const from = new Date(currentStart + "T12:00:00");
+  from.setMonth(from.getMonth() - LOOKBACK_MONTHS);
+  const inWindow = (date) => !!date && date >= iso(from) && date < currentStart;
+  const presentOn = (h, pid, date) => {
+    const row = (h.attendance || []).find((a) => a.personId === pid && a.date === date);
+    if (row) return row.statusId === "present";
+    return !longTermSickOn(personById(pid), date);
+  };
   history().forEach((h) => {
     if (historyStart(h) === currentStart) return;
     if (h.assignments && h.assignments.length) {
-      h.assignments.forEach((a) => { if (a.personId && a.roleId) bump(a.personId, a.roleId); });
+      h.assignments.forEach((a) => {
+        if (a.personId && a.roleId && inWindow(a.date) && presentOn(h, a.personId, a.date)) bump(a.personId, a.roleId);
+      });
       return;
     }
     (h.records || []).forEach((r) => {
-      if (!r.role || r.role === "Spare" || r.status !== "Present") return;
+      if (!r.role || r.role === "Spare" || r.status !== "Present" || !inWindow(r.date)) return;
       const role = D().roles.find((x) => x.name === r.role);
       const p = D().people.find((x) => x.name === r.person);
       if (role && p) bump(p.id, role.id);
