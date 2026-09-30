@@ -683,7 +683,7 @@ export function historicRosterModel(entry) {
 
 /**
  * Month-by-month duty load for one person from the current block + saved log.
- * Returns [{ month, label, duties, day, night, hard, skill, groups: [{ name, n }], roles: [{ name, n }] }]
+ * Returns [{ month, label, duties, day, night, hard, groups: [{ name, n }], roles: [{ name, n }] }]
  */
 export function personLoadByMonth(personId, opts) {
   const person = personById(personId);
@@ -701,7 +701,7 @@ export function personLoadByMonth(personId, opts) {
     if (opts && opts.from && String(date) < opts.from) return;
     if (opts && opts.to && String(date) > opts.to) return;
     if (!buckets[month]) {
-      buckets[month] = { duties: 0, day: 0, night: 0, hard: 0, skill: 0, groups: {}, roles: {} };
+      buckets[month] = { duties: 0, day: 0, night: 0, hard: 0, groups: {}, roles: {} };
     }
     const b = buckets[month];
     b.duties += 1;
@@ -710,7 +710,6 @@ export function personLoadByMonth(personId, opts) {
     const role = roleId ? roleById(roleId) : (roleName ? D().roles.find((x) => x.name === roleName) : null);
     const name = (role && role.name) || roleName || "Role";
     if (role && role.hard) b.hard += 1;
-    if (role && role.skillRestricted) b.skill += 1;
     const gName = role ? (groupById(role.groupId).name || "Other") : "Other";
     b.groups[gName] = (b.groups[gName] || 0) + 1;
     b.roles[name] = (b.roles[name] || 0) + 1;
@@ -748,9 +747,34 @@ export function personLoadByMonth(personId, opts) {
     return {
       month, label,
       duties: b.duties, day: b.day, night: b.night,
-      hard: b.hard, skill: b.skill, groups, roles
+      hard: b.hard, groups, roles
     };
   });
+}
+
+/**
+ * H28: how many times each person has done each role across every saved rota, keyed "personId|roleId".
+ * Counts what Duty stats counts (assignments, else Present records by name) and skips the
+ * saved copy of the block being generated so a regenerate does not count its own old roster.
+ */
+export function historicRoleCounts() {
+  const counts = {};
+  const bump = (pid, rid) => { const k = pid + "|" + rid; counts[k] = (counts[k] || 0) + 1; };
+  const currentStart = block().startDate;
+  history().forEach((h) => {
+    if (historyStart(h) === currentStart) return;
+    if (h.assignments && h.assignments.length) {
+      h.assignments.forEach((a) => { if (a.personId && a.roleId) bump(a.personId, a.roleId); });
+      return;
+    }
+    (h.records || []).forEach((r) => {
+      if (!r.role || r.role === "Spare" || r.status !== "Present") return;
+      const role = D().roles.find((x) => x.name === r.role);
+      const p = D().people.find((x) => x.name === r.person);
+      if (role && p) bump(p.id, role.id);
+    });
+  });
+  return counts;
 }
 
 function shiftMapForEntry(h) {
@@ -830,10 +854,10 @@ export function statsRange(from, to, today) {
   return { from: f, to: e };
 }
 
-/** One person's duties across a date range (months summed): { duties, day, night, hard, skill, groups, roles }. */
+/** One person's duties across a date range (months summed): { duties, day, night, hard, groups, roles }. */
 export function personLoadForRange(pid, range) {
   const rows = personLoadByMonth(pid, { from: range.from, to: range.to });
-  const tot = { duties: 0, day: 0, night: 0, hard: 0, skill: 0 };
+  const tot = { duties: 0, day: 0, night: 0, hard: 0 };
   const groups = {}; const roles = {};
   rows.forEach((r) => {
     Object.keys(tot).forEach((k) => { tot[k] += r[k] || 0; });
@@ -849,7 +873,7 @@ export function personLoadForRange(pid, range) {
 export function teamLoadForRange(range) {
   return D().people.map((p) => {
     const m = personLoadForRange(p.id, range);
-    return { person: p, duties: m.duties, day: m.day, night: m.night, hard: m.hard, skill: m.skill, groups: m.groups, roles: m.roles };
+    return { person: p, duties: m.duties, day: m.day, night: m.night, hard: m.hard, groups: m.groups, roles: m.roles };
   }).filter((r) => r.duties > 0 || r.person.active !== false)
     .sort((a, b) => b.duties - a.duties || a.person.name.localeCompare(b.person.name));
 }
@@ -868,12 +892,12 @@ function roleColumns(extraNames) {
     .forEach((r) => {
       if (seen.has(r.name)) return;
       seen.add(r.name);
-      roles.push({ name: r.name, hard: !!r.hard, skill: !!r.skillRestricted, essential: r.essential !== false });
+      roles.push({ name: r.name, hard: !!r.hard, essential: r.essential !== false });
     });
   const extra = [];
   extraNames.forEach((name) => { if (!seen.has(name)) { seen.add(name); extra.push(name); } });
   extra.sort((a, b) => a.localeCompare(b, "en-IE"))
-    .forEach((name) => roles.push({ name, hard: false, skill: false, essential: true, retired: true }));
+    .forEach((name) => roles.push({ name, hard: false, essential: true, retired: true }));
   return roles;
 }
 
@@ -905,7 +929,7 @@ export function attendanceForRange(pid, range) {
   return { rows, days: rows.reduce((n, r) => n + r.n, 0) };
 }
 
-/** One person's report over a date range: every role with their count, hard / skill totals, attendance. */
+/** One person's report over a date range: every role with their count, hard total, attendance. */
 export function personReport(pid, range) {
   const person = personById(pid);
   const load = personLoadForRange(pid, range);
@@ -915,7 +939,7 @@ export function personReport(pid, range) {
   return {
     person, range,
     roles: roleColumns(load.roles.map((x) => x.name)).map((c) => ({ ...c, n: counts[c.name] || 0 })),
-    duties: load.duties, hard: load.hard, skill: load.skill,
+    duties: load.duties, hard: load.hard,
     attendance: att.rows, attendanceDays: att.days
   };
 }
@@ -939,11 +963,11 @@ export function dutyPivot(arg) {
     /* Annual leave / Sick leave days in the same period (from the current block and saved rosters). */
     const att = {};
     attendanceForRange(t.person.id, range).rows.forEach((a) => { att[a.label] = a.n; });
-    return { person: t.person, duties: t.duties, hard: t.hard, skill: t.skill, counts, att };
+    return { person: t.person, duties: t.duties, hard: t.hard, counts, att };
   });
-  const totals = { duties: 0, hard: 0, skill: 0, counts: {}, att: {} };
+  const totals = { duties: 0, hard: 0, counts: {}, att: {} };
   rows.forEach((r) => {
-    totals.duties += r.duties; totals.hard += r.hard; totals.skill += r.skill;
+    totals.duties += r.duties; totals.hard += r.hard;
     Object.keys(r.counts).forEach((k) => { totals.counts[k] = (totals.counts[k] || 0) + r.counts[k]; });
     Object.keys(r.att).forEach((k) => { totals.att[k] = (totals.att[k] || 0) + r.att[k]; });
   });
@@ -957,11 +981,11 @@ export const surnameOf = (name) => {
 };
 
 /**
- * Sort pivot rows by "person" (surname, then given name) | "duties" | "hard" | "skill" | "role:<name>" |
+ * Sort pivot rows by "person" (surname, then given name) | "duties" | "hard" | "role:<name>" |
  * "att:<status label>"; ties fall back to surname order.
  */
 export function sortPivotRows(rows, key, dir) {
-  const val = (r) => (key === "duties" ? r.duties : key === "hard" ? r.hard : key === "skill" ? r.skill
+  const val = (r) => (key === "duties" ? r.duties : key === "hard" ? r.hard
     : key.indexOf("role:") === 0 ? (r.counts[key.slice(5)] || 0)
     : key.indexOf("att:") === 0 ? ((r.att && r.att[key.slice(4)]) || 0) : 0);
   const byName = (a, b) => surnameOf(a.person.name).localeCompare(surnameOf(b.person.name), "en-IE") || a.person.name.localeCompare(b.person.name, "en-IE");

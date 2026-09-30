@@ -1,6 +1,6 @@
 import { esc, icon } from "../util.js";
 import { S } from "../state.js";
-import { D, hasRoster, qual, activePeople, unitName } from "../model.js";
+import { D, hasRoster, unitName } from "../model.js";
 import { ph } from "../ui-kit.js";
 import { hasWorkspace, workspaceName, supportsWorkspace } from "../workspace.js";
 import { getSessionUser } from "../audit.js";
@@ -33,10 +33,6 @@ function blockCard(n, key, title, caption, screen) {
 
 export function vStart() {
   const nR = D().roles.length, nP = D().people.length;
-  const skillRoles = D().roles.filter((r) => r.skillRestricted);
-  const nQ = skillRoles.length
-    ? activePeople().filter((p) => skillRoles.some((r) => qual(p, r.id))).length
-    : 0;
   const unit = (D().meta && D().meta.unitName) || "";
   const hasUnit = !!unit.trim();
   const rosterOk = hasRoster();
@@ -74,7 +70,6 @@ export function vStart() {
     `<span class="badge badge-ghost badge-sm">${hasUnit ? "Unit set" : "No unit"}</span>`,
     `<span class="badge badge-ghost badge-sm">${nR} role${nR === 1 ? "" : "s"}</span>`,
     `<span class="badge badge-ghost badge-sm">${nP} people</span>`,
-    `<span class="badge badge-ghost badge-sm">${nQ} skilled</span>`,
     `<span class="badge badge-ghost badge-sm">${rosterOk ? "Roster ready" : "No roster"}</span>`
   ].join(" ");
 
@@ -124,7 +119,6 @@ export function vStart() {
       ${setupStep(ws || !supportsWorkspace(), "Folder", null, ws ? esc(wsLabel) : "Choose folder (top bar)")}
       ${setupStep(nR > 0, "Roles", "rol", nR ? nR + " defined" : "Add duty roles")}
       ${setupStep(nP > 0, "People", "ppl", nP ? nP + " on the team" : "Add the team")}
-      ${setupStep(nQ > 0 || !skillRoles.length, "Skills", "skl", skillRoles.length ? (nQ ? nQ + " trained" : "Tick who is trained") : "No skill roles yet")}
       ${setupStep(rosterOk, "First roster", "att", rosterOk ? "Generated" : "Generate from Attendance")}
     </div>
   </div>`;
@@ -151,16 +145,17 @@ export function vStart() {
       <summary>How generate works</summary>
       <div class="home-details-body">
         <ol class="list-decimal ml-5 space-y-2">
-          <li>Only <b>Present</b> people that day are considered.</li>
-          <li><b>Only do this role</b> people are locked in first.</li>
-          <li><b>Needs a skill</b> roles fill next (scarce pools first — drivers, MIC, jailer).</li>
-          <li>Other roles are shuffled so the sheet does not always fill top-to-bottom the same way.</li>
-          <li>Prefers people who have not had that role recently in this block; ties broken at random.</li>
-          <li>Avoids the same role two days in a row when someone else can cover.</li>
-          <li>On the second night, avoids a hard role if they already had a hard role the night before.</li>
-          <li>If a day cannot fill strictly, cells may stay <b>unfilled</b> — edit by hand.</li>
+          <li>Only people marked <b>Present</b> that day get a role.</li>
+          <li>People only get roles they are ticked for on <b>People</b>.</li>
+          <li><b>Only do this role</b> people get that role first.</li>
+          <li><b>Essential</b> roles are filled before the others. Non-essential roles are filled from whoever is left, in the order listed on Roles and groups.</li>
+          <li>Each role goes to whoever has done it <b>least often overall</b>: every roster saved to the Log, plus the earlier days of this block. Ties are picked at random.</li>
+          <li>Nobody gets a role from the same group (e.g. Car) two days running when someone else can cover.</li>
+          <li>On the second night, nobody gets a hard role if they had a hard role the night before, when someone else can cover.</li>
+          <li><b>Once per block</b> roles go to a person on one day of the block at most.</li>
+          <li>An essential role is only left empty when nobody Present can take it. You'll see a warning, and you can fill it by hand.</li>
         </ol>
-        <p class="text-xs opacity-60 mt-2 mb-0">Fairness is within the current four-day block. Log history is for reprint / CSV, not yet used to weight older blocks.</p>
+        <p class="text-xs opacity-60 mt-2 mb-0">Over time the counts on <b>Duty stats</b> even out. Leave and sickness mean they won't always match exactly. Only rosters saved to the Log are counted, so press <b>Save roster</b> every block.</p>
       </div>
     </details>
     <details class="home-details">

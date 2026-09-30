@@ -68,12 +68,13 @@ html,body{font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helve
    rest (min-w-28 / w-24 / table-fixed are not in the vendored tailwind.css, so
    those utility classes silently do nothing — plain CSS is used here instead). */
 .rostergrid{table-layout:fixed}
-/* H63: colfit.js writes a <colgroup> of percentage widths (content-sized name/number columns,
-   equal day columns); fixed layout makes the browser honour them. Long text wraps. */
+/* H63: colfit.js writes a <colgroup> (px widths for the name/number columns, day columns
+   unsized so they share the rest equally); fixed layout makes the browser honour them.
+   Names stay on one line so every row is the same height; long role text in day cells wraps. */
 .rota.colfit{table-layout:fixed;width:100%}
 .rota.colfit td,.rota.colfit th{overflow-wrap:anywhere}
 .rota.colfit .numcol-e,.rota.colfit .numcol-s{min-width:0}
-.rota.colfit td.stickycol{white-space:normal}
+.rota.colfit td.stickycol{white-space:nowrap}
 .rostergrid .personcol{width:10rem}
 .rostergrid .rolecol{width:6.5rem}
 .rostergrid .rolecol .rolename{white-space:normal;overflow-wrap:anywhere}

@@ -1,18 +1,16 @@
 /**
  * H63: roster column fit. Name / Employee no. / Shoulder no. take the width of their
- * content; the day columns share the remaining width equally. Widths are written as
- * percentages of the table so the same layout fits the screen and the printed page.
+ * content (in px, so the longest name never wraps onto two lines); the day columns share
+ * the remaining width equally on screen and on the printed page.
  */
 
 /**
- * Pure: content-sized columns keep their natural width; the day columns share what is left equally.
- * Returns percentages of `tableWidth` (px), or null when there is nothing to fit.
+ * Pure: pixel widths for the content-sized columns — natural width rounded up, plus a little slack,
+ * so the longest name keeps its one line on screen and on the printed page. Day columns get no
+ * width and share what is left equally under fixed table layout.
  */
-export function columnPercents(fixedNatural, dayCount, tableWidth) {
-  if (!(tableWidth > 0) || !(dayCount > 0)) return null;
-  const fixed = fixedNatural.map((w) => Math.min(w / tableWidth * 100, 100 / (dayCount + fixedNatural.length)));
-  const left = 100 - fixed.reduce((a, b) => a + b, 0);
-  return { fixed, days: Array(dayCount).fill(left / dayCount) };
+export function fixedColumnPx(fixedNatural) {
+  return fixedNatural.map((w) => Math.ceil(w) + 2);
 }
 
 /** DOM: measure each roster table under `root` in auto layout, then fix its column widths. */
@@ -27,11 +25,10 @@ export function fitRosterColumns(root) {
     const nat = heads.map((th) => th.getBoundingClientRect().width);
     table.style.width = "";
     const isFixed = heads.map((th) => th.classList.contains("stickycol") || th.classList.contains("numcol"));
-    const width = table.parentElement ? table.parentElement.clientWidth : 0;
-    const pct = columnPercents(nat.filter((_, i) => isFixed[i]), isFixed.filter((x) => !x).length, width);
-    if (!pct) return;
-    let f = 0, d = 0;
-    const cols = isFixed.map((fx) => `<col style="width:${(fx ? pct.fixed[f++] : pct.days[d++]).toFixed(3)}%">`).join("");
+    if (!nat.some((w) => w > 0) || isFixed.every((x) => x)) return;
+    const px = fixedColumnPx(nat.filter((_, i) => isFixed[i]));
+    let f = 0;
+    const cols = isFixed.map((fx) => (fx ? `<col style="width:${px[f++]}px">` : "<col>")).join("");
     table.insertAdjacentHTML("afterbegin", `<colgroup>${cols}</colgroup>`);
     table.classList.add("colfit");
   });

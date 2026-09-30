@@ -10,16 +10,15 @@ import { vAtt, actions as attActions, changes as attChanges } from "./screens/at
 import { vRos, actions as rosActions, changes as rosChanges } from "./screens/roster.js";
 import { actions as prtActions, changes as prtChanges } from "./screens/print.js";
 import { vPpl, actions as pplActions, changes as pplChanges } from "./screens/people.js";
-import { vSkills, actions as sklActions, changes as sklChanges } from "./screens/skills.js";
 import { vRol, actions as rolActions, changes as rolChanges } from "./screens/roles.js";
 import { vLog, actions as logActions } from "./screens/log.js";
 import { vStats, actions as statsActions, changes as statsChanges } from "./screens/stats.js";
 import { actions as appActions } from "./app-actions.js";
 import { fitRosterColumns } from "./colfit.js";
 
-const SCREENS = { start: vStart, att: vAtt, ros: vRos, prt: vRos, ppl: vPpl, skl: vSkills, rol: vRol, log: vLog, stats: vStats };
-const ACT = { ...appActions, ...startActions, ...attActions, ...rosActions, ...prtActions, ...sklActions, ...rolActions, ...logActions, ...statsActions, ...pplActions };
-const CHANGES = { ...startChanges, ...attChanges, ...pplChanges, ...sklChanges, ...rolChanges, ...prtChanges, ...rosChanges, ...statsChanges };
+const SCREENS = { start: vStart, att: vAtt, ros: vRos, prt: vRos, ppl: vPpl, rol: vRol, log: vLog, stats: vStats };
+const ACT = { ...appActions, ...startActions, ...attActions, ...rosActions, ...prtActions, ...rolActions, ...logActions, ...statsActions, ...pplActions };
+const CHANGES = { ...startChanges, ...attChanges, ...pplChanges, ...rolChanges, ...prtChanges, ...rosChanges, ...statsChanges };
 
 /* Re-rendering replaces the whole screen, which resets scroll containers to the top. Keep the
    position of the tables (and the page) when the same screen is redrawn, e.g. after clicking a cell. */
@@ -65,6 +64,7 @@ function focusSelector(el) {
 function render() {
   if (S.ui.screen === "prt" || S.ui.screen === "ros") S.ui.screen = "ros";
   if (S.ui.screen === "hist") S.ui.screen = "log"; /* Historic roster was merged into Log (H24 → deprecated) */
+  if (S.ui.screen === "skl") S.ui.screen = "ppl"; /* Skills screen retired (H23 → deprecated); ticks live on People */
   if (S.ui.screen === "help" || !SCREENS[S.ui.screen]) S.ui.screen = "start";
   const scroll = lastScreen === S.ui.screen ? captureScroll() : null;
   const active = document.activeElement;
