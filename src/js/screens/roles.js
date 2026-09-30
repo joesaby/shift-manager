@@ -4,7 +4,7 @@ import { ph } from "../ui-kit.js";
 import { touch, toast, askConfirm } from "../state.js";
 import { logAudit } from "../audit.js";
 
-const FIELD_MAP = { name: "name", group: "groupId", day: "usedAtDay", night: "usedAtNight", hard: "hard", skill: "skillRestricted", essential: "essential" };
+const FIELD_MAP = { name: "name", group: "groupId", day: "usedAtDay", night: "usedAtNight", hard: "hard", skill: "skillRestricted", essential: "essential", once: "oncePerBlock" };
 
 function rolesOrdered() {
   return D().roles.slice().sort((a, b) => {
@@ -29,12 +29,13 @@ export function vRol() {
     <td class="text-center"><input type="checkbox" class="checkbox checkbox-sm" ${r.usedAtNight ? "checked" : ""} data-ch="rf" data-r="${r.id}" data-f="night"></td>
     <td class="text-center"><input type="checkbox" class="checkbox checkbox-sm" ${r.hard ? "checked" : ""} data-ch="rf" data-r="${r.id}" data-f="hard"></td>
     <td class="text-center"><input type="checkbox" class="checkbox checkbox-sm" ${r.skillRestricted ? "checked" : ""} data-ch="rf" data-r="${r.id}" data-f="skill"></td>
+    <td class="text-center"><input type="checkbox" class="checkbox checkbox-sm" ${r.oncePerBlock ? "checked" : ""} data-ch="rf" data-r="${r.id}" data-f="once" title="Same person at most one day per block (per group)"></td>
     <td class="whitespace-nowrap"><button class="btn btn-xs" data-act="moveRole" data-r="${r.id}" data-n="-1" ${upOk ? "" : "disabled"} aria-label="Move up">Up</button> <button class="btn btn-xs" data-act="moveRole" data-r="${r.id}" data-n="1" ${downOk ? "" : "disabled"} aria-label="Move down">Down</button> <button class="btn btn-xs btn-outline btn-error" data-act="askDelRole" data-r="${r.id}">Delete</button></td></tr>`;
   }).join("");
   const grps = D().groups.map((g) => `<div class="flex items-center gap-2"><input type="color" class="w-10 h-9 rounded border" value="${g.color}" data-ch="gcolor" data-g="${g.id}"><input class="input input-bordered input-sm" value="${esc(g.name)}" data-ch="gname" data-g="${g.id}"><button class="btn btn-xs btn-outline btn-error" data-act="delGroup" data-g="${g.id}">Delete</button></div>`).join("");
   return `${ph("Roles and groups", "Essential roles must be filled. Unticked roles are for spare people (filled after essentials, in this list order).", '<input id="newRole" class="input input-bordered w-44" placeholder="Role name"><button class="btn btn-primary" data-act="addRole">Add role</button><button class="btn btn-outline" data-act="bulk" data-k="roles">Paste many</button>')}
-   <div class="card bg-base-100 shadow-sm border border-base-300 overflow-x-auto"><table class="table table-sm"><thead><tr><th>Role</th><th>Group</th><th class="text-center">Essential</th><th class="text-center">Used by day</th><th class="text-center">Used at night</th><th class="text-center">Hard role</th><th class="text-center">Needs a skill</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="8" class="opacity-70">No roles yet.</td></tr>'}</tbody></table></div>
-   <div class="text-sm text-base-content/70">Essential: must be filled (warnings if empty). Non-essential: optional work for spares — list order is fill priority (Files 1 before Files 5). Hard role: not given on back-to-back nights. Needs a skill: filled first within its pass. Untick Used by day or Used at night to make a role only available on the other shift.</div>
+   <div class="card bg-base-100 shadow-sm border border-base-300 overflow-x-auto"><table class="table table-sm"><thead><tr><th>Role</th><th>Group</th><th class="text-center">Essential</th><th class="text-center">Used by day</th><th class="text-center">Used at night</th><th class="text-center">Hard role</th><th class="text-center">Needs a skill</th><th class="text-center">Once per block</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="9" class="opacity-70">No roles yet.</td></tr>'}</tbody></table></div>
+   <div class="text-sm text-base-content/70">Essential: must be filled (warnings if empty). Non-essential: optional work for spares — list order is fill priority (Files 1 before Files 5). Hard role: not given on back-to-back nights. Needs a skill: filled first within its pass. Once per block: a person gets at most one day on roles in that group per block (e.g. Files). Any role is also never given from the same group two days running. Untick Used by day or Used at night to make a role only available on the other shift.</div>
    <div class="card bg-base-100 shadow-sm border border-base-300"><div class="card-body"><h2 class="card-title">Groups and colours</h2><div class="space-y-2">${grps}</div>
     <div class="flex gap-2 mt-2"><input id="newGroup" class="input input-bordered input-sm" placeholder="New group name"><button class="btn btn-sm btn-primary" data-act="addGroup">Add group</button></div></div></div>`;
 }
