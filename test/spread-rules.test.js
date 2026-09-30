@@ -86,3 +86,30 @@ describe("H71 no same-group role on consecutive days", () => {
     }
   });
 });
+
+describe("H11 hard roles on back-to-back nights — non-essential pass", () => {
+  it("a non-essential hard role on the second night goes to someone who did not have a hard role the night before", () => {
+    const people = ["a", "b", "c", "d"].map((id) => ({ id, name: id, active: true, fixedRoleId: null }));
+    const roles = [
+      role("e1", "Car", "g1", { sortOrder: 1, hard: true }),
+      role("n1", "Beat", "g2", { essential: false, sortOrder: 2, hard: true }),
+      role("n2", "Desk", "g3", { essential: false, sortOrder: 3 }),
+      role("n3", "Files", "g4", { essential: false, sortOrder: 4 })
+    ];
+    for (let run = 0; run < 30; run++) {
+      load(baseDoc({
+        groups: [
+          { id: "g1", name: "Car", color: "#F8BBD0", sortOrder: 1 }, { id: "g2", name: "Beat", color: "#C8E6C9", sortOrder: 2 },
+          { id: "g3", name: "Desk", color: "#FFE0B2", sortOrder: 3 }, { id: "g4", name: "Files", color: "#E1BEE7", sortOrder: 4 }
+        ],
+        roles, people,
+        personRoles: people.flatMap((p) => roles.map((r) => ({ personId: p.id, roleId: r.id })))
+      }));
+      generate();
+      const days = rosterDays(); /* Day, Day, Night, Night */
+      const holder = days[3].assign.n1;
+      const lastNight = roleOfPerson(days[2], holder);
+      assert.ok(!lastNight || !roles.find((r) => r.id === lastNight).hard, holder + " had hard " + lastNight + " then Beat");
+    }
+  });
+});

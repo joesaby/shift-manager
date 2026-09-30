@@ -35,7 +35,7 @@ export const RULES = [
   { key: "sameGroup", id: "H71", kind: "soft", essential: "soft", nonEssential: "hard",
     help: "Nobody gets a role from the same group (e.g. Car) two days running when someone else can cover.",
     breaks: (c) => !!(c.prevRole && c.prevRole.groupId === c.role.groupId) },
-  { key: "hardNights", id: "H11", kind: "soft", essential: "soft", nonEssential: "off",
+  { key: "hardNights", id: "H11", kind: "soft", essential: "soft", nonEssential: "soft",
     help: "On the second night, nobody gets a hard role if they had a hard role the night before, when someone else can cover.",
     breaks: (c) => !!(c.night && c.prevNight && c.role.hard && c.prevRole && c.prevRole.hard) },
   { key: "oncePerBlock", id: "H70", kind: "filter", essential: "hard", nonEssential: "hard",
