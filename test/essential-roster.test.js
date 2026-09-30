@@ -363,10 +363,10 @@ describe("R8 review fixes", () => {
       ]
     }));
     generate();
-    rosterDays().forEach((day) => {
-      assert.equal(day.assign.nf1, "p3", "higher-priority Files 1 is filled first");
-      assert.equal(day.assign.nf2, null);
-    });
+    /* Day 1 only: from day 2 the same-group rule (H71) stops p3 repeating Files. */
+    const day = rosterDays()[0];
+    assert.equal(day.assign.nf1, "p3", "higher-priority Files 1 is filled first");
+    assert.equal(day.assign.nf2, null);
   });
 
   it("assignTo refuses a swap that would put the displaced holder in a role they cannot do", () => {

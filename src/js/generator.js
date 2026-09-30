@@ -13,7 +13,13 @@ export function adjacentPersonId(pid, dir) {
   return null;
 }
 
-function fillPass(roleIds, free, assign, strict, last, prev, d, softConstraints) {
+/** H71: group of the role this person held the previous day, or null. */
+function prevGroup(prev, id) {
+  const r = prev[id] && roleById(prev[id]);
+  return r ? r.groupId : null;
+}
+
+function fillPass(roleIds, free, assign, strict, last, prev, d, softConstraints, used) {
   const cand = (r) => free.filter((id) => qual(personById(id), r));
   const skilled = roleIds.filter((r) => roleById(r).skillRestricted).sort((a, b) => cand(a).length - cand(b).length);
   /* Preserve caller order for non-essential priority; shuffle only in essential soft pass. */
@@ -24,8 +30,12 @@ function fillPass(roleIds, free, assign, strict, last, prev, d, softConstraints)
   const ordered = softConstraints ? skilled.concat(other) : roleIds;
   for (const r of ordered) {
     let c = cand(r);
+    const role = roleById(r);
+    /* H70: once-per-block roles — one day per block per group, always enforced. */
+    if (role.oncePerBlock) c = c.filter((id) => !used[id + "|" + role.groupId]);
+    /* H71: same-group role two days running — soft in the essential strict pass, always in the non-essential pass. */
+    if ((strict && softConstraints) || !softConstraints) c = c.filter((id) => prevGroup(prev, id) !== role.groupId);
     if (strict && softConstraints) {
-      c = c.filter((id) => prev[id] !== r);
       if (night && prevNight && roleById(r).hard) c = c.filter((id) => !(prev[id] && roleById(prev[id]) && roleById(prev[id]).hard));
     }
     if (!c.length) {
@@ -43,7 +53,7 @@ function fillPass(roleIds, free, assign, strict, last, prev, d, softConstraints)
 
 export function generate() {
   const people = activePeople();
-  const attempt = (strict, last, prev, d) => {
+  const attempt = (strict, last, prev, used, d) => {
     const dayRoles = rolesForDay(d);
     const essentialIds = dayRoles.filter((r) => r.essential !== false).map((r) => r.id);
     const nonEssentialIds = dayRoles
@@ -58,20 +68,20 @@ export function generate() {
       else if (!p.fixedRoleId) free.push(p.id);
     });
     const essRest = essentialIds.filter((r) => assign[r] === undefined);
-    if (fillPass(essRest, free, assign, strict, last, prev, d, true) == null) return null;
+    if (fillPass(essRest, free, assign, strict, last, prev, d, true, used) == null) return null;
     const nonRest = nonEssentialIds.filter((r) => assign[r] === undefined);
     /* Non-essential: never fail strict mode; skip H10/H11 soft filters so spares absorb. */
-    fillPass(nonRest, free, assign, false, last, prev, d, false);
+    fillPass(nonRest, free, assign, false, last, prev, d, false, used);
     return { assign };
   };
-  const out = []; const last = {}; let prev = {};
+  const out = []; const last = {}; const used = {}; let prev = {};
   const n = D().blocks.current.shifts.length;
   for (let d = 0; d < n; d++) {
     let res = null;
-    for (let t = 0; t < 1500 && !res; t++) res = attempt(true, last, prev, d);
-    if (!res) res = attempt(false, last, prev, d);
+    for (let t = 0; t < 1500 && !res; t++) res = attempt(true, last, prev, used, d);
+    if (!res) res = attempt(false, last, prev, used, d);
     prev = {};
-    Object.keys(res.assign).forEach((r) => { const id = res.assign[r]; if (id) { prev[id] = r; last[id + "|" + r] = d; } });
+    Object.keys(res.assign).forEach((r) => { const id = res.assign[r]; if (id) { prev[id] = r; last[id + "|" + r] = d; const ro = roleById(r); if (ro && ro.oncePerBlock) used[id + "|" + ro.groupId] = true; } });
     out.push(res);
   }
   writeRoster(out, "generated");

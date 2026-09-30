@@ -114,6 +114,30 @@ describe("H59 buildDayBrief", () => {
   });
 });
 
+describe("H61 briefing sheet away list", () => {
+  it("lists leave / sick / rest / duty away people after the assigned rows", () => {
+    load(baseDoc({
+      roles: [role("r1", "Beat 1", 1)],
+      people: [person("p1", "Ann One"), person("p2", "Al Leave"), person("p3", "Bo Sick"), person("p4", "Cy Rest"), person("p5", "Di Away")],
+      personRoles: [{ personId: "p1", roleId: "r1" }]
+    }));
+    writeRoster([{ assign: { r1: "p1" } }, { assign: {} }, { assign: {} }, { assign: {} }]);
+    setStatus("p4", 0, "Rest day");
+    setStatus("p5", 0, "Duty away");
+    setStatus("p3", 0, "Sick leave");
+    setStatus("p2", 0, "Annual leave");
+    const brief = buildDayBrief(0);
+    assert.equal(brief.rows.length, 1);
+    assert.deepEqual(brief.away.map((a) => [a.personName, a.status]), [
+      ["Al Leave", "Annual leave"], ["Bo Sick", "Sick leave"], ["Cy Rest", "Rest day"], ["Di Away", "Duty away"]
+    ]);
+    const html = dayBriefHTML(brief);
+    assert.ok(html.indexOf("Ann One") < html.indexOf("Al Leave"));
+    assert.ok(html.indexOf("Al Leave") < html.indexOf("Di Away"));
+    assert.match(html, /Sick leave/);
+  });
+});
+
 describe("H59 dayBriefHTML", () => {
   it("renders Role / Name / numbers and duty brief title", () => {
     load(baseDoc({
@@ -129,7 +153,8 @@ describe("H59 dayBriefHTML", () => {
     ]);
     const html = dayBriefHTML(buildDayBrief(0));
     assert.match(html, /id="printArea"/);
-    assert.match(html, /Duty brief:/);
+    assert.match(html, /Briefing sheet: /);
+    assert.doesNotMatch(html, /Duty brief/);
     assert.match(html, /Beat 1/);
     assert.match(html, /Ann One/);
     assert.match(html, /111/);

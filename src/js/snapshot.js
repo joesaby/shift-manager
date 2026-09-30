@@ -63,6 +63,8 @@ export function buildSnapshot() {
   };
 }
 
+const AWAY_ORDER = ["Annual leave", "Sick leave", "Rest day", "Duty away"];
+
 /**
  * H59: one-day briefing rows — Present + assigned only, sorted by role sortOrder.
  * @param {number} d day index
@@ -73,9 +75,13 @@ export function buildDayBrief(d) {
   const day = days[d];
   const ros = rosterDays();
   const rows = [];
+  const away = [];
   if (day && ros) {
     activePeople().forEach((p) => {
-      if (!isPresent(p, d)) return;
+      if (!isPresent(p, d)) {
+        away.push({ personName: p.name, status: getStatus(p.id, d), employeeNo: p.employeeNo || "", shoulderNo: p.shoulderNo || "" });
+        return;
+      }
       const rid = roleOfPerson(ros[d], p.id);
       if (!rid) return;
       const role = roleById(rid) || { name: "", groupId: "", sortOrder: 9999 };
@@ -90,11 +96,14 @@ export function buildDayBrief(d) {
       });
     });
     rows.sort((a, b) => (a.sortOrder - b.sortOrder) || a.roleName.localeCompare(b.roleName) || a.personName.localeCompare(b.personName));
+    const ord = (s) => { const i = AWAY_ORDER.indexOf(s); return i < 0 ? AWAY_ORDER.length : i; };
+    away.sort((a, b) => (ord(a.status) - ord(b.status)) || a.personName.localeCompare(b.personName));
   }
   return {
     day: day || { label: "", shift: "", iso: "" },
     unitName: unitName(),
-    rows
+    rows,
+    away
   };
 }
 
@@ -160,12 +169,14 @@ export function dayBriefHTML(brief) {
   const unitLine = unit ? `<div class="text-base font-semibold">${esc(unit)}</div>` : "";
   const day = brief.day || {};
   const title = day.iso
-    ? `Duty brief: ${fmt(day.iso)} · ${day.shift || ""}`
-    : "Duty brief";
+    ? `Briefing sheet: ${fmt(day.iso)} · ${day.shift || ""}`
+    : "Briefing sheet";
   const header = `<div class="flex items-center gap-3 mb-4"><img src="${LOGO_DATA_URI}" alt="An Garda Síochána" class="w-12 h-12 object-contain shrink-0" width="48" height="48"><div><div class="text-xs font-semibold uppercase tracking-wide opacity-70">An Garda Síochána</div>${unitLine}<h2 class="text-xl font-semibold">${esc(title)}</h2></div></div>`;
   const head = `<tr><th class="bg-neutral text-neutral-content text-left p-2">Role</th><th class="bg-neutral text-neutral-content text-left p-2">Name</th><th class="bg-neutral text-neutral-content numcol numcol-e">Employee no.</th><th class="bg-neutral text-neutral-content numcol numcol-s">Shoulder no.</th></tr>`;
   const rows = (brief.rows || []).map((r) =>
     `<tr><td class="p-2 font-semibold whitespace-nowrap" style="background:${r.color};color:#1f2937">${esc(r.roleName)}</td><td class="p-2 whitespace-nowrap">${esc(r.personName)}</td><td class="numcol numcol-e">${esc(r.employeeNo || "")}</td><td class="numcol numcol-s">${esc(r.shoulderNo || "")}</td></tr>`
+  ).join("") + (brief.away || []).map((a) =>
+    `<tr><td class="p-2 whitespace-nowrap" style="background:${SBG[a.status] || "#EEEEEE"};color:#1f2937">${esc(a.status)}</td><td class="p-2 whitespace-nowrap">${esc(a.personName)}</td><td class="numcol numcol-e">${esc(a.employeeNo || "")}</td><td class="numcol numcol-s">${esc(a.shoulderNo || "")}</td></tr>`
   ).join("");
   return `<div id="printArea" class="bg-white text-black border border-base-300 rounded-box p-6 shadow-sm day-brief">
     ${header}
