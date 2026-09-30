@@ -8,6 +8,7 @@ Offline single-file duty-rota app for An Garda Síochána shift managers. No ser
 npm install
 npm run build          # → dist/shift-manager.html + offline zips
 npm run mock-data      # optional local mock JSON for http serving
+npm run docs:rules     # regenerate the PRD “Generate rules” table from src/js/rules.js
 ```
 
 Open `dist/shift-manager.html` (or the unzipped release HTML) in Chrome/Edge.
@@ -19,7 +20,8 @@ Open `dist/shift-manager.html` (or the unzipped release HTML) in Chrome/Edge.
 | `src/js/main.js` | App shell: screens map, `data-act` / `data-ch` wiring, re-render |
 | `src/js/state.js` | In-memory `S`, localStorage backup, file open/save |
 | `src/js/model.js` | Schema v2, attendance, generate helpers, migrations |
-| `src/js/generator.js` | Roster allocation rules |
+| `src/js/rules.js` | **Generate rules registry** (H-id, kind, per-pass mode, check, help line) — drives the generator, the Home guide and the PRD §5 table (`npm run docs:rules`) |
+| `src/js/generator.js` | Roster allocation (reads checks from `rules.js`; min-cost assignment for essentials) |
 | `src/js/workspace.js` | Folder picker + autosave (File System Access API) |
 | `src/js/audit.js` | Manager name + folder audit lines |
 | `src/js/snapshot.js` | Print/log snapshots (`person-day` current; legacy layouts still render) |
@@ -65,6 +67,7 @@ UI pattern: screens return HTML strings; clicks use `data-act="…"`; inputs use
 - Block = four days (typically Day, Day, Night, Night).
 - Day fills roles with `usedAtDay`; night fills `usedAtNight`.
 - Only **Present** people allocate; Rest day / leave / duty away do not.
+- Generate rules live in `src/js/rules.js` — change a rule there, then `npm run docs:rules`; don’t hand-edit the PRD rules table or the Home “How generate works” list.
 - Print layout is **person × day** (`layout: "person-day"`); spares get editable notes before print.
 - One workspace folder per unit.
 

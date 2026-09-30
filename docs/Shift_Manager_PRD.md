@@ -67,7 +67,7 @@ Shift manager at a desk, last night of a block. Others only see the printed rota
 | H9 | *Retired 2026-09-30.* Skill-first / scarcest-first fill order → [`PRD_Deprecated.md`](PRD_Deprecated.md); replaced by H28 |
 | H10 | Prefer not repeating the previous working day’s role when alternatives exist (**essential pass**; non-essential pass may skip or apply loosely — see §11) |
 | H11 | Hard roles not on back-to-back nights when alternatives exist (essential pass; non-essential hard roles follow the same soft rule if marked hard) |
-| H28 | **Fair rotation across all blocks:** Generate gives each role to the Present, qualified person who has done that role **least often overall** — every roster saved to the Log (skipping the saved copy of the block being generated, as Duty stats does) plus the earlier days of the block being generated; ties at random. Each day's essential roles are solved together (min-cost assignment), so every essential role is filled whenever any valid arrangement exists; a role stays blank only when nobody Present can do it (warns per H13). H71 / H11 stay soft in the essential pass, H70 / H71 always enforced in the non-essential pass, which keeps list-order priority (H44). Goal: role counts on Duty stats even out over time (leave / sickness mean not always exactly). Replaces the within-block "not recently" preference, the skill-first order (H9) and the random shuffle of general roles |
+| H28 | **Fair rotation across all blocks:** Generate gives each role to the Present, qualified person who has done that role **least, as a share of their own duties** (role count ÷ their total duties) — over the **12 months before the block starts** (`LOOKBACK_MONTHS` in `rules.js`) of rosters saved to the Log, plus the earlier days of the block being generated; ties at random. Older blocks, later-dated saved blocks and the saved copy of the block being generated are not counted, and a saved duty on a day the person was **not Present** (attendance row or long-term sick) is not counted. Share rather than raw count so a new starter or someone back from long leave is not picked for the same role for months. Each day's essential roles are solved together (min-cost assignment), so every essential role is filled whenever any valid arrangement exists; a role stays blank only when nobody Present can do it (warns per H13). H71 / H11 stay soft in the essential pass, H70 / H71 always enforced in the non-essential pass, which keeps list-order priority (H44). Goal: role counts on Duty stats even out over time (leave / sickness mean not always exactly). Replaces the within-block "not recently" preference, the skill-first order (H9) and the random shuffle of general roles |
 | H12 | Manual edit on the **person × day Roster**: assign, same-day moves (see H47), unassign / leave unfilled |
 | H13 | Warn on **unfilled essential** roles (never block Generate or Print). Unfilled non-essential roles do not warn. Set `stale` after **role-catalogue or Day↔Night shift** changes — **not** after attendance-only changes. Do **not** suggest regenerate for attendance changes (see H48) |
 | H14 | Colour print from the Roster: **person × day** grid — person leftmost column, then optional Employee / Shoulder no. columns (H53), then one column per day; each day cell shows that person's duty type or status as text, coloured by role group when Present, or by the shared unavailable-status colour when not Present (see H41). Non-Present cells that still have a stored assignment show `<status> (was: <role>)`. Print only what has been **saved** (see H51–H52). On screen the print header (crest / “Duty rota …” / “Prepared by”) is hidden; it appears in print (H55). Output aims to fit **one A4 landscape page** via scale-to-fit (H39, H57). Optional extras: a **Tally** footer row of attendance counts per day (H66) and black cell borders (H65); column widths follow H63 |
@@ -192,6 +192,27 @@ Retired surfaces (**Print rota** nav, person × role Roster grid) → [`PRD_Depr
 10. **Stale flag:** Role-catalogue changes and Day↔Night (or block setup) changes that invalidate the generated shape set `stale`. Attendance-only status changes do **not** set `stale`; the Roster shows vacated essentials instead.
 11. Generate and Print are **never blocked** by unfilled essential roles — warn only.
 12. **Save vs print:** Only a saved roster is printed. Unsaved is derived from live snapshot vs last log entry for this block start. Regenerate requires explicit confirm once a roster exists.
+
+
+### Generate rules
+
+Generated from [`src/js/rules.js`](../src/js/rules.js) — the same list drives Generate and the Home guide ("How generate works"). Edit the rule there, then run `npm run docs:rules`; a test fails if this table is out of date.
+
+<!-- rules:start (generated from src/js/rules.js by npm run docs:rules — do not edit by hand) -->
+
+| # | H-id | Key | Kind | Essential pass | Non-essential pass | Rule (shown on Home) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | H6 | `present` | structural | order of work | order of work | Only people marked **Present** that day get a role. |
+| 2 | H7 | `qualified` | filter | never broken | never broken | People only get roles they are ticked for on **People**. |
+| 3 | H8 | `fixedRole` | structural | order of work | order of work | **Only do this role** people get that role first. |
+| 4 | H44 | `essentialFirst` | structural | order of work | order of work | **Essential** roles are filled before the others. Non-essential roles are filled from whoever is left, in the order listed on Roles and groups. |
+| 5 | H28 | `leastDone` | objective | score | score | Each role goes to whoever has done it **least, as a share of their own duties**, over the last 12 months of rosters saved to the Log plus the earlier days of this block. Only days they were Present count. Ties are picked at random. |
+| 6 | H71 | `sameGroup` | soft | gives way if no other way | never broken | Nobody gets a role from the same group (e.g. Car) two days running when someone else can cover. |
+| 7 | H11 | `hardNights` | soft | gives way if no other way | gives way if no other way | On the second night, nobody gets a hard role if they had a hard role the night before, when someone else can cover. |
+| 8 | H70 | `oncePerBlock` | filter | never broken | never broken | **Once per block** roles go to a person on one day of the block at most. |
+| 9 | H13 | `emptyOnlyIfImpossible` | structural | order of work | order of work | An essential role is only left empty when nobody Present can take it. You'll see a warning, and you can fill it by hand. |
+
+<!-- rules:end -->
 
 ---
 

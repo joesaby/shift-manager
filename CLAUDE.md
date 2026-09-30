@@ -35,7 +35,8 @@ Bias toward caution over speed; for trivial typos, use judgment.
 ## Quick map
 
 - Screens: `src/js/screens/` + wire-up in `src/js/main.js`
-- Rules / schema: `src/js/model.js`, `src/js/generator.js`
+- Generate rules: `src/js/rules.js` (registry → generator, Home guide, PRD table via `npm run docs:rules`)
+- Schema / allocation: `src/js/model.js`, `src/js/generator.js`
 - Print/log: `src/js/snapshot.js`
 - Build: `build.mjs` → `dist/shift-manager.html` + zips
 

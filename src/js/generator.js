@@ -1,4 +1,5 @@
 import { S, touch, toast } from "./state.js";
+import { RULES, hardRules, softRules } from "./rules.js";
 import {
   D, activePeople, rolesForDay, isPresent, qual, canDo, personById, roleById, shiftOf,
   roleOfPerson, writeRoster, rosterDays, writeDayAssign, dayLabels, historicRoleCounts
@@ -11,12 +12,6 @@ export function adjacentPersonId(pid, dir) {
   if (i < 0) return null;
   for (let j = i + dir; j >= 0 && j < people.length; j += dir) if (people[j].active !== false) return people[j].id;
   return null;
-}
-
-/** H71: group of the role this person held the previous day, or null. */
-function prevGroup(prev, id) {
-  const r = prev[id] && roleById(prev[id]);
-  return r ? r.groupId : null;
 }
 
 /** Hungarian min-cost assignment on a square matrix; returns col index per row. */
@@ -46,31 +41,40 @@ function hungarian(a) {
   return rowCol;
 }
 
-const FORBID = 1e12; /* not qualified / once-per-block already used */
+const FORBID = 1e12; /* breaks a "hard" rule for this pass (see rules.js) */
 const EMPTY = 1e8;   /* leaving an essential role unfilled */
-const SOFT = 1e4;    /* H71 same group as yesterday, H11 hard role on back-to-back nights */
+const SOFT = 1e4;    /* per "soft" rule broken (see rules.js) */
+
+/** Facts the rule checks need for one person × role on day d. */
+function ruleCtx(id, role, prev, d, used) {
+  const pr = prev[id] ? roleById(prev[id]) : null;
+  return {
+    role, prevRole: pr || null, qualified: qual(personById(id), role.id),
+    usedGroup: !!used[id + "|" + role.groupId],
+    night: shiftOf(d) === "Night", prevNight: d > 0 && shiftOf(d - 1) === "Night"
+  };
+}
+
+/** For a pass: null if a hard rule is broken, else how many soft rules are. */
+function judge(pass, ctx) {
+  if (hardRules(pass).some((r) => r.breaks(ctx))) return null;
+  return softRules(pass).filter((r) => r.breaks(ctx)).length;
+}
 
 /**
- * H28: each role goes to whoever has done it least (saved rotas + earlier days of this block);
- * ties at random. Essential roles are solved together so every one is filled whenever any valid
- * arrangement exists; soft rules (H71, H11) give way only when there is no other way.
+ * Essential pass: RULES objective (least done) with filters / soft penalties from RULES; all essential
+ * roles solved together so each is filled whenever any valid arrangement exists; ties at random.
  */
 function fillEssential(roleIds, free, assign, count, prev, d, used) {
   if (!roleIds.length) return;
-  const night = shiftOf(d) === "Night"; const prevNight = d > 0 && shiftOf(d - 1) === "Night";
   const n = roleIds.length; const m = free.length; const N = n + m;
   const cost = [];
   roleIds.forEach((r) => {
     const role = roleById(r);
-    const ok = free.map((id) => qual(personById(id), r) && !(role.oncePerBlock && used[id + "|" + role.groupId]));
-    const base = Math.min(...free.filter((_, j) => ok[j]).map((id) => count(id, r)), 0);
-    const row = free.map((id, j) => {
-      if (!ok[j]) return FORBID;
-      let c = count(id, r) - base + Math.random() * 1e-3;
-      if (prevGroup(prev, id) === role.groupId) c += SOFT;
-      if (night && prevNight && role.hard && prev[id] && roleById(prev[id]) && roleById(prev[id]).hard) c += SOFT;
-      return c;
-    });
+    const soft = free.map((id) => judge("essential", ruleCtx(id, role, prev, d, used)));
+    const base = Math.min(...free.filter((_, j) => soft[j] != null).map((id) => count(id, r)), 0);
+    const row = free.map((id, j) => (soft[j] == null ? FORBID
+      : count(id, r) - base + soft[j] * SOFT + Math.random() * 1e-7));
     for (let k = 0; k < n; k++) row.push(k === cost.length ? EMPTY : FORBID);
     cost.push(row);
   });
@@ -84,24 +88,27 @@ function fillEssential(roleIds, free, assign, count, prev, d, used) {
   taken.forEach((id) => free.splice(free.indexOf(id), 1));
 }
 
-/** H44: non-essential roles in list (priority) order; H70 / H71 always enforced; least-done person wins. */
-function fillNonEssential(roleIds, free, assign, count, prev, used) {
+/** Non-essential pass (H44): roles in list (priority) order; RULES filters, then fewest soft breaks, then least done. */
+function fillNonEssential(roleIds, free, assign, count, prev, d, used) {
   for (const r of roleIds) {
     const role = roleById(r);
-    const c = free.filter((id) => qual(personById(id), r)
-      && !(role.oncePerBlock && used[id + "|" + role.groupId])
-      && prevGroup(prev, id) !== role.groupId);
+    const c = free.map((id) => ({ id, soft: judge("nonEssential", ruleCtx(id, role, prev, d, used)) }))
+      .filter((x) => x.soft != null);
     if (!c.length) { assign[r] = null; continue; }
-    c.sort((a, b) => (count(a, r) - count(b, r)) || (Math.random() - 0.5));
-    assign[r] = c[0];
-    free.splice(free.indexOf(c[0]), 1);
+    c.sort((a, b) => (a.soft - b.soft) || (count(a.id, r) - count(b.id, r)) || (Math.random() - 0.5));
+    assign[r] = c[0].id;
+    free.splice(free.indexOf(c[0].id), 1);
   }
 }
 
 export function generate() {
   const people = activePeople();
   const counts = historicRoleCounts();
-  const count = (id, r) => counts[id + "|" + r] || 0;
+  const totals = {};
+  Object.keys(counts).forEach((k) => { const id = k.split("|")[0]; totals[id] = (totals[id] || 0) + counts[k]; });
+  /* H28 objective from RULES (share of the person's own duties); name kept short for the fill passes. */
+  const score = RULES.find((x) => x.kind === "objective").score;
+  const count = (id, r) => score({ count: counts[id + "|" + r] || 0, total: totals[id] || 0 });
   const out = []; const used = {}; let prev = {};
   const n = D().blocks.current.shifts.length;
   for (let d = 0; d < n; d++) {
@@ -118,11 +125,11 @@ export function generate() {
       else if (!p.fixedRoleId) free.push(p.id);
     });
     fillEssential(essentialIds.filter((r) => assign[r] === undefined), free, assign, count, prev, d, used);
-    fillNonEssential(nonEssentialIds.filter((r) => assign[r] === undefined), free, assign, count, prev, used);
+    fillNonEssential(nonEssentialIds.filter((r) => assign[r] === undefined), free, assign, count, prev, d, used);
     prev = {};
     Object.keys(assign).forEach((r) => {
       const id = assign[r]; if (!id) return;
-      prev[id] = r; counts[id + "|" + r] = count(id, r) + 1;
+      prev[id] = r; counts[id + "|" + r] = (counts[id + "|" + r] || 0) + 1; totals[id] = (totals[id] || 0) + 1;
       const ro = roleById(r); if (ro && ro.oncePerBlock) used[id + "|" + ro.groupId] = true;
     });
     out.push({ assign });

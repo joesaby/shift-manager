@@ -22,11 +22,14 @@ Ground designs in the product docs so work reuses what exists, stays offline, an
 | [`TERMS.md`](../../../TERMS.md) | No-warranty / org responsibility framing |
 | [`docs/THIRD_PARTY.md`](../../../docs/THIRD_PARTY.md) | Tailwind/DaisyUI/esbuild packaging |
 | [`README.md`](../../../README.md) | Operator-facing behaviour |
+| [`src/js/rules.js`](../../../src/js/rules.js) | **Generate rules registry** — every roster-generation rule (H-id, kind, per-pass mode, check, Home help line). Source for the generator, the Home guide and the PRD §5 “Generate rules” table |
 | [`daisyui` skill](../daisyui/SKILL.md) | Component class names / markup when the change touches UI HTML |
 
 Do **not** run this for typos, copy tweaks, or one-line CSS with no product surface.
 
 **UI / DaisyUI:** if Mode A designs new or changed screen markup (buttons, forms, alerts, nav, tables chrome, badges, dialogs, etc.), **Read the [`daisyui` skill](../daisyui/SKILL.md)** and the applicable component guides before choosing classes. Prefer daisyUI components that already exist in the **vendored** `src/styles/tailwind.css` subset. The official skill documents daisyUI 5; this app ships an older fixed subset — do not assume Daisy 5-only classes (`fieldset`, `status`, `filter`, `badge-soft`, …) work unless `grep` confirms them, otherwise use present Daisy classes or plain CSS in `app.css` (AGENTS hard constraint #7). Do **not** add a Daisy CDN or regenerate CSS as part of ordinary feature work.
+
+**Generate rules:** any change to how Generate allocates (add / remove / reword a rule, make a rule hard or soft, change which pass applies it) starts in `src/js/rules.js`, not inline in `generator.js`. Structural rules (order of work) are implemented in `generator.js` but still get a `RULES` entry so they are documented. After editing, run `npm run docs:rules` (rewrites the PRD table between the `rules:start` / `rules:end` markers — never edit that block by hand) and keep each rule’s H-id a live PRD row; `test/rules.test.js` fails on drift. A retired rule is removed from `RULES` **and** its H-id moved to `PRD_Deprecated.md`.
 
 **PRD deprecation rule:** any requirement (H-id or named product surface) that is deprecated, retired, or superseded **must** be moved into [`docs/PRD_Deprecated.md`](../../../docs/PRD_Deprecated.md). Leave only a one-line pointer in the live PRD (or remove the row). Never leave deprecated behaviour documented as current Must/Should/Could.
 
@@ -35,7 +38,7 @@ Do **not** run this for typos, copy tweaks, or one-line CSS with no product surf
 ## Mode A — Feature brainstorm (before code)
 
 1. **Map to PRD.** Find matching Must/Should IDs (H…). If none, treat it as a new requirement — confirm with the user and plan a PRD update before coding.
-2. **Locate code.** Using `AGENTS.md`, name the modules likely touched (`model.js`, `generator.js`, `snapshot.js`, `screens/…`, `workspace.js`, …). Prefer extending those over new frameworks.
+2. **Locate code.** Using `AGENTS.md`, name the modules likely touched (`model.js`, `rules.js`, `generator.js`, `snapshot.js`, `screens/…`, `workspace.js`, …). Prefer extending those over new frameworks. Generate behaviour → `rules.js` first (see **Generate rules** above).
 3. **Constraints check** (fail the design if violated):
    - Offline / no CDN / no new runtime network
    - Single HTML via `build.mjs`; `file://` must work
@@ -74,6 +77,7 @@ Run against the **diff**, not a re-debug of every line:
 - [ ] JSON compatibility: migration or additive fields only; legacy snaps still render if print/log touched
 - [ ] User-facing strings go through `esc()`
 - [ ] `SECURITY.md` / `THIRD_PARTY.md` / `README.md` / PRD updated when posture or operator steps change
+- [ ] Generate rule changes live in `src/js/rules.js`; `npm run docs:rules` was run (PRD table matches) and the Home guide reads from `RULES`
 - [ ] No drive-by refactors outside the request
 - [ ] Any new Tailwind utility class checked against `src/styles/tailwind.css` (vendored, fixed subset), not just assumed to work
 - [ ] If UI markup changed: daisyUI skill was consulted; component choices fit the intent; every new Daisy/Tailwind class exists in the vendored CSS (or plain CSS was added to `app.css` instead); no Daisy CDN / Daisy 5-only APIs introduced without a packaging plan

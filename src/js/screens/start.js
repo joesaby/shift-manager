@@ -4,6 +4,7 @@ import { D, hasRoster, unitName } from "../model.js";
 import { ph } from "../ui-kit.js";
 import { hasWorkspace, workspaceName, supportsWorkspace } from "../workspace.js";
 import { getSessionUser } from "../audit.js";
+import { RULES, helpHtml, LOOKBACK_MONTHS } from "../rules.js";
 
 function setupStep(done, label, screen, hint) {
   const go = screen ? `type="button" data-act="nav" data-s="${screen}"` : "";
@@ -145,17 +146,9 @@ export function vStart() {
       <summary>How generate works</summary>
       <div class="home-details-body">
         <ol class="list-decimal ml-5 space-y-2">
-          <li>Only people marked <b>Present</b> that day get a role.</li>
-          <li>People only get roles they are ticked for on <b>People</b>.</li>
-          <li><b>Only do this role</b> people get that role first.</li>
-          <li><b>Essential</b> roles are filled before the others. Non-essential roles are filled from whoever is left, in the order listed on Roles and groups.</li>
-          <li>Each role goes to whoever has done it <b>least often overall</b>: every roster saved to the Log, plus the earlier days of this block. Ties are picked at random.</li>
-          <li>Nobody gets a role from the same group (e.g. Car) two days running when someone else can cover.</li>
-          <li>On the second night, nobody gets a hard role if they had a hard role the night before, when someone else can cover.</li>
-          <li><b>Once per block</b> roles go to a person on one day of the block at most.</li>
-          <li>An essential role is only left empty when nobody Present can take it. You'll see a warning, and you can fill it by hand.</li>
+          ${RULES.map((r) => `<li>${helpHtml(r.help)}</li>`).join("\n          ")}
         </ol>
-        <p class="text-xs opacity-60 mt-2 mb-0">Over time the counts on <b>Duty stats</b> even out. Leave and sickness mean they won't always match exactly. Only rosters saved to the Log are counted, so press <b>Save roster</b> every block.</p>
+        <p class="text-xs opacity-60 mt-2 mb-0">Over time the counts on <b>Duty stats</b> even out. Leave and sickness mean they won't always match exactly. Only rosters saved to the Log in the last ${LOOKBACK_MONTHS} months are counted, so press <b>Save roster</b> every block.</p>
       </div>
     </details>
     <details class="home-details">
