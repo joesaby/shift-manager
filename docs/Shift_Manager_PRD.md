@@ -193,6 +193,27 @@ Retired surfaces (**Print rota** nav, person × role Roster grid) → [`PRD_Depr
 11. Generate and Print are **never blocked** by unfilled essential roles — warn only.
 12. **Save vs print:** Only a saved roster is printed. Unsaved is derived from live snapshot vs last log entry for this block start. Regenerate requires explicit confirm once a roster exists.
 
+
+### Generate rules
+
+Generated from [`src/js/rules.js`](../src/js/rules.js) — the same list drives Generate and the Home guide ("How generate works"). Edit the rule there, then run `npm run docs:rules`; a test fails if this table is out of date.
+
+<!-- rules:start (generated from src/js/rules.js by npm run docs:rules — do not edit by hand) -->
+
+| # | H-id | Key | Kind | Essential pass | Non-essential pass | Rule (shown on Home) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | H6 | `present` | structural | order of work | order of work | Only people marked **Present** that day get a role. |
+| 2 | H7 | `qualified` | filter | never broken | never broken | People only get roles they are ticked for on **People**. |
+| 3 | H8 | `fixedRole` | structural | order of work | order of work | **Only do this role** people get that role first. |
+| 4 | H44 | `essentialFirst` | structural | order of work | order of work | **Essential** roles are filled before the others. Non-essential roles are filled from whoever is left, in the order listed on Roles and groups. |
+| 5 | H28 | `leastDone` | objective | score | score | Each role goes to whoever has done it **least often overall**: every roster saved to the Log, plus the earlier days of this block. Ties are picked at random. |
+| 6 | H71 | `sameGroup` | soft | gives way if no other way | never broken | Nobody gets a role from the same group (e.g. Car) two days running when someone else can cover. |
+| 7 | H11 | `hardNights` | soft | gives way if no other way | not applied | On the second night, nobody gets a hard role if they had a hard role the night before, when someone else can cover. |
+| 8 | H70 | `oncePerBlock` | filter | never broken | never broken | **Once per block** roles go to a person on one day of the block at most. |
+| 9 | H13 | `emptyOnlyIfImpossible` | structural | order of work | order of work | An essential role is only left empty when nobody Present can take it. You'll see a warning, and you can fill it by hand. |
+
+<!-- rules:end -->
+
 ---
 
 ## 6. Persistence
