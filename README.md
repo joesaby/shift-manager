@@ -17,15 +17,14 @@ Data stays in that folder (`shift-manager-data.json`, `backups/`, `logs/`). You 
 | Step | Where |
 | --- | --- |
 | Unit + manager names, workspace folder | Home |
-| Duty roles, print colours, day/night flags, hard / skill roles | Roles and groups |
-| People, qualifications, optional fixed role | People |
-| Skill matrix (roles marked Needs a skill) | Skills |
+| Duty roles, print colours, day/night flags, hard roles | Roles and groups |
+| People, qualifications (tick every role each person can do), optional fixed role | People |
 
 Untick **Active** on People when someone leaves. For a long sickness, tick **Long-term sick** on that person (with a From date and an optional To date): every Attendance day in that period is Sick leave automatically, in every block. Change a single day on Attendance to override it.
 
 ## Each block
 
-1. **Attendance** — block start date, Day/Night per day, status per person (Present = green; Annual leave / Sick leave / Duty away / Rest day = blue / unavailable), then **Generate roster** once.
+1. **Attendance** — block start date, Day/Night per day, status per person (Present = green; Annual leave / Sick leave / Duty away / Rest day = blue / unavailable), then **Generate roster** once. Generate gives each role to whoever has done it least across every roster saved to the Log, so **Save roster** every block to keep Duty stats even.
 2. **Roster** — person × day layout. Drag a **parking-lot** chip onto a person to fill a vacated essential role; drag people to swap. Non-essential roles vacated by sick silently drop for that day. **Save roster**, then **Print** (or **Save & print** if unsaved). Above the grid, **Briefing sheet** has **Print Thu** / **Print Fri** / … — a one-page briefing sheet for that day only, sorted by role (name + employee / shoulder numbers), for parade use, headed **Briefing sheet** with the date, with anyone on annual leave, sick, rest day or duty away listed at the bottom; it does not change the saved roster order. In the toolbar, **Tally ▾** adds an attendance-count row under each day (Present, leave, sick, …) that prints with the roster, and **Black borders** prints black cell lines instead of light grey (both are remembered in this browser). Click a name to highlight a row and use ↑ / ↓ to move the highlight. On **Attendance**, each day's header shows who is away by type.
 
 Free-text spare notes are gone: anyone with no role shows **Unassigned**. Notes typed in an older version are cleared from the current block when the file is opened; rotas already saved to the Log keep theirs.
@@ -41,7 +40,7 @@ On **Roles and groups**, tick **Essential** for duties that must be filled; leav
 | Home | Unit, manager, folder, this-block path |
 | 1. Attendance | Dates, shifts, who is working |
 | 2. Roster | Generate once, edit, Save roster, print; Print day per column |
-| People / Skills / Roles and groups | Team setup (Essential flag on roles) |
+| People / Roles and groups | Team setup (Essential flag on roles) |
 | Log | Saved rotas, View / Edit, CSV |
 | Duty stats | Person × role counts over any period (default: everything up to today) — ▲ ▼ on a column sorts it (e.g. ▼ on a role, to see who did it most); tallies at the end. Click a name for a printable report on just that person, with role counts and attendance (sick, annual leave, …) |
 

@@ -753,6 +753,31 @@ export function personLoadByMonth(personId, opts) {
   });
 }
 
+/**
+ * H28: how many times each person has done each role across every saved rota, keyed "personId|roleId".
+ * Counts what Duty stats counts (assignments, else Present records by name) and skips the
+ * saved copy of the block being generated so a regenerate does not count its own old roster.
+ */
+export function historicRoleCounts() {
+  const counts = {};
+  const bump = (pid, rid) => { const k = pid + "|" + rid; counts[k] = (counts[k] || 0) + 1; };
+  const currentStart = block().startDate;
+  history().forEach((h) => {
+    if (historyStart(h) === currentStart) return;
+    if (h.assignments && h.assignments.length) {
+      h.assignments.forEach((a) => { if (a.personId && a.roleId) bump(a.personId, a.roleId); });
+      return;
+    }
+    (h.records || []).forEach((r) => {
+      if (!r.role || r.role === "Spare" || r.status !== "Present") return;
+      const role = D().roles.find((x) => x.name === r.role);
+      const p = D().people.find((x) => x.name === r.person);
+      if (role && p) bump(p.id, role.id);
+    });
+  });
+  return counts;
+}
+
 function shiftMapForEntry(h) {
   const map = {};
   const start = h.startDate || h.start;

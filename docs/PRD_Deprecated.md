@@ -17,6 +17,8 @@ Active requirements live in [`Shift_Manager_PRD.md`](Shift_Manager_PRD.md).
 
 | ID / surface | Deprecated | Superseded by | Former requirement | Notes |
 | --- | --- | --- | --- | --- |
+| **H9** | 2026-09-30 | **H28** (fair rotation across all blocks) | Skill-restricted roles filled before general roles; scarcest first (within the essential pass; then again within the non-essential pass). Home listed it with "Other roles are shuffled", "Prefers people who have not had that role recently in this block" and "If a day cannot fill strictly, cells may stay unfilled"; fairness was within the current four-day block only | Generate now solves each day's essential roles together by least-done count across saved rotas; no ordering by skill flag |
+| **H23 / Skills screen + Needs a skill column** | 2026-09-30 | **H2** (People qualification ticks) | Skills nav screen (matrix of roles marked Needs a skill) and the **Needs a skill** checkbox on Roles and groups | `skillRestricted` stays in JSON (no migration) and no longer affects Generate; a stored `ui.screen` of `skl` opens People. Duty stats Skill tally still reads the stored flag |
 | **H30** | 2026-09-27 | One workspace folder per unit (`AGENTS.md` / PRD §1 Workspace model) | Multiple units inside one JSON (`unitId` on entities) | Do not implement multi-unit JSON; keep one folder per unit |
 | **Spare notes (free-text)** | 2026-09-22 | **H37** (Unassigned empty cell) | Free-text spare notes on Present people with no role; `blocks.current.spareNotes[]` on the working block and in snapshots (sometimes called “HVB” in older notes) | Migrate-on-open clears `spareNotes` to `[]`; new snapshots omit the field |
 | **Print rota nav** | 2026-09-25 | **H14**, **H36**, **H46** (Print action on Roster) | Separate top-level **Print rota** nav screen | Persisted UI id `prt` still opens Roster for old deep-links |
@@ -35,6 +37,7 @@ Active requirements live in [`Shift_Manager_PRD.md`](Shift_Manager_PRD.md).
 | --- | --- | --- |
 | Save to log duplicates | H15 / H49 | Save roster upserts by block start; no new duplicates. Pre-existing duplicate history rows left alone |
 | Generate while `stale` | H13 / H48 | Attendance no longer sets `stale`; catalogue/shift `stale` stays warn-only; regenerate is confirmed Start over |
+| Weight Generate from Log history (H28) | 2026-09-30 | H28 promoted to Must: least-done count across every saved rota |
 | Bulk entry for employee/shoulder numbers | H53 | Out of scope — edit on People detail; search by number |
 
 ---
