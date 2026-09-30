@@ -141,7 +141,7 @@ describe("attendanceForRange", () => {
 });
 
 describe("personReport", () => {
-  it("lists every role with the person's count, plus hard / skill totals and attendance", () => {
+  it("lists every role with the person's count, plus hard total and attendance", () => {
     load({ history: [augBlock], attendance: [{ date: "2026-09-22", personId: "p1", statusId: "sick_leave" }] });
     const rep = personReport("p1", { from: "2026-08-01", to: "2026-09-30" });
     assert.equal(rep.person.name, "Ann One");
@@ -177,6 +177,13 @@ describe("Duty stats screen", () => {
     assert.ok(html.includes("Sick leave") && html.includes("Annual leave"));
     assert.ok(!html.includes("Bob Two"), "no other person");
     assert.ok(html.includes('data-act="statsBack"') && html.includes('data-act="print"'));
+  });
+
+  it("H62 the person report has no skill-roles tally (skill flag retired with H23)", () => {
+    load({ history: [augBlock] });
+    S.ui.statsPerson = "p1";
+    assert.ok(!/skill roles/i.test(vStats()));
+    assert.equal(personReport("p1", { from: "2026-08-01", to: "2026-09-30" }).skill, undefined);
   });
 
   it("presets and date edits change the range; a preset clears custom dates", () => {

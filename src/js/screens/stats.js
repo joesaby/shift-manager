@@ -72,8 +72,7 @@ function vPersonReport(pid, range) {
         <table class="rota"><thead><tr><th class="bg-neutral text-neutral-content text-left p-2">Duty</th><th class="bg-neutral text-neutral-content pivot-n p-2">Times</th></tr></thead>
           <tbody>${dutyRows}
             <tr class="pivot-total-row"><td class="font-bold">Total duties</td><td class="pivot-n font-bold">${rep.duties}</td></tr>
-            <tr><td>of which hard roles</td><td class="pivot-n">${rep.hard}</td></tr>
-            <tr><td>of which skill roles</td><td class="pivot-n">${rep.skill}</td></tr></tbody></table>
+            <tr><td>of which hard roles</td><td class="pivot-n">${rep.hard}</td></tr></tbody></table>
         <table class="rota"><thead><tr><th class="bg-neutral text-neutral-content text-left p-2">Attendance</th><th class="bg-neutral text-neutral-content pivot-n p-2">Days</th></tr></thead>
           <tbody>${attRows}
             <tr class="pivot-total-row"><td class="font-bold">Total days</td><td class="pivot-n font-bold">${rep.attendanceDays}</td></tr></tbody></table>

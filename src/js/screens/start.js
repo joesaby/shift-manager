@@ -145,13 +145,17 @@ export function vStart() {
       <summary>How generate works</summary>
       <div class="home-details-body">
         <ol class="list-decimal ml-5 space-y-2">
-          <li>Only <b>Present</b> people that day are considered.</li>
-          <li><b>Only do this role</b> people are locked in first.</li>
-          <li>Each role goes to whoever has done it <b>least often overall</b> — every roster saved to the Log plus the earlier days of this block; ties broken at random. Over time Duty stats evens out (leave and sickness mean it will not always be exact).</li>
-          <li>Avoids the same role two days in a row when someone else can cover.</li>
-          <li>On the second night, avoids a hard role if they already had a hard role the night before.</li>
+          <li>Only people marked <b>Present</b> that day get a role.</li>
+          <li>People only get roles they are ticked for on <b>People</b>.</li>
+          <li><b>Only do this role</b> people get that role first.</li>
+          <li><b>Essential</b> roles are filled before the others. Non-essential roles are filled from whoever is left, in the order listed on Roles and groups.</li>
+          <li>Each role goes to whoever has done it <b>least often overall</b>: every roster saved to the Log, plus the earlier days of this block. Ties are picked at random.</li>
+          <li>Nobody gets a role from the same group (e.g. Car) two days running when someone else can cover.</li>
+          <li>On the second night, nobody gets a hard role if they had a hard role the night before, when someone else can cover.</li>
+          <li><b>Once per block</b> roles go to a person on one day of the block at most.</li>
+          <li>An essential role is only left empty when nobody Present can take it. You'll see a warning, and you can fill it by hand.</li>
         </ol>
-        <p class="text-xs opacity-60 mt-2 mb-0">Fairness counts every block saved to the Log, so remember to <b>Save roster</b> each block.</p>
+        <p class="text-xs opacity-60 mt-2 mb-0">Over time the counts on <b>Duty stats</b> even out. Leave and sickness mean they won't always match exactly. Only rosters saved to the Log are counted, so press <b>Save roster</b> every block.</p>
       </div>
     </details>
     <details class="home-details">

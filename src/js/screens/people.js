@@ -2,7 +2,7 @@ import { esc, uid } from "../util.js";
 import { S, toast } from "../state.js";
 import {
   D, block, personById, setLongTermSick, clearLongTermSick, roleById, groupById, qual, qualCount, setQual,
-  removePersonEverywhere, markStale, personLoadByMonth, currentMonthKey, monthLabel, personRoleIds
+  removePersonEverywhere, markStale, personLoadByMonth, currentMonthKey, monthLabel
 } from "../model.js";
 import { ph } from "../ui-kit.js";
 import { touch, askConfirm } from "../state.js";
@@ -18,13 +18,6 @@ function initials(name) {
 function surname(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
   return parts.length ? parts[parts.length - 1] : "";
-}
-
-function skillCount(p) {
-  return personRoleIds(p.id).filter((rid) => {
-    const r = roleById(rid);
-    return r && r.skillRestricted;
-  }).length;
 }
 
 function filteredPeople() {
@@ -45,7 +38,6 @@ function filteredPeople() {
       if (f === "active") return p.active !== false;
       if (f === "inactive") return p.active === false;
       if (f === "fixed") return !!p.fixedRoleId;
-      if (f === "skills") return skillCount(p) > 0;
       return true;
     });
 }
@@ -58,9 +50,7 @@ function personMeta(p) {
     const r = roleById(p.fixedRoleId);
     bits.push("Only " + ((r && r.name) || "?"));
   }
-  const skills = skillCount(p);
-  if (skills) bits.push(skills + " skill" + (skills === 1 ? "" : "s"));
-  else bits.push(qualCount(p) + " role" + (qualCount(p) === 1 ? "" : "s"));
+  bits.push(qualCount(p) + " role" + (qualCount(p) === 1 ? "" : "s"));
   return bits.join(" · ");
 }
 
@@ -69,7 +59,6 @@ export function vPpl() {
   const nActive = all.filter((p) => p.active !== false).length;
   const nInactive = all.length - nActive;
   const nFixed = all.filter((p) => p.fixedRoleId).length;
-  const nSkills = all.filter((p) => skillCount(p) > 0).length;
   const list = filteredPeople();
   let sel = personById(S.ui.selPerson);
   if (!sel) sel = all[0] || null;
@@ -120,7 +109,6 @@ export function vPpl() {
         ${chip("active", "Active", nActive)}
         ${chip("inactive", "Inactive", nInactive)}
         ${chip("fixed", "Fixed", nFixed)}
-        ${chip("skills", "Skills", nSkills)}
       </div>
     </div>
   </div>`;
@@ -129,7 +117,7 @@ export function vPpl() {
   if (sel) {
     const tog = D().roles.map((r) => {
       const on = qual(sel, r.id);
-      return `<label class="flex items-center gap-2 border rounded-lg px-3 py-2 cursor-pointer" style="background:${on ? groupById(r.groupId).color : "#fff"}"><input type="checkbox" class="checkbox checkbox-sm" ${on ? "checked" : ""} data-ch="qual" data-p="${sel.id}" data-r="${r.id}"><span class="flex-1 text-sm">${esc(r.name)}</span>${r.skillRestricted ? '<span class="badge badge-sm badge-warning">Skill</span>' : ""}</label>`;
+      return `<label class="flex items-center gap-2 border rounded-lg px-3 py-2 cursor-pointer" style="background:${on ? groupById(r.groupId).color : "#fff"}"><input type="checkbox" class="checkbox checkbox-sm" ${on ? "checked" : ""} data-ch="qual" data-p="${sel.id}" data-r="${r.id}"><span class="flex-1 text-sm">${esc(r.name)}</span></label>`;
     }).join("");
     const onlyOpts = `<option value="">None (any role they are ticked for)</option>` + D().roles.filter((r) => qual(sel, r.id)).map((r) => `<option value="${r.id}"${sel.fixedRoleId === r.id ? " selected" : ""}>${esc(r.name)}</option>`).join("");
     const curKey = currentMonthKey();
@@ -139,13 +127,12 @@ export function vPpl() {
       <div class="font-semibold">This month’s load</div>
       <div class="text-sm opacity-70 mb-2">${esc(monthLabel(curKey))} — duties from the current roster and log. Full team history is on <a class="link link-primary" data-act="nav" data-s="stats">Duty stats</a>.</div>
       ${load && load.duties
-        ? `<div class="overflow-x-auto"><table class="table table-sm"><thead><tr><th>Duties</th><th class="text-center">Day</th><th class="text-center">Night</th><th class="text-center">Hard</th><th class="text-center">Skill</th><th>Duty type</th><th>Top roles</th></tr></thead>
+        ? `<div class="overflow-x-auto"><table class="table table-sm"><thead><tr><th>Duties</th><th class="text-center">Day</th><th class="text-center">Night</th><th class="text-center">Hard</th><th>Duty type</th><th>Top roles</th></tr></thead>
             <tbody><tr>
               <td class="font-medium">${load.duties}</td>
               <td class="text-center">${load.day || 0}</td>
               <td class="text-center">${load.night || 0}</td>
               <td class="text-center">${load.hard}</td>
-              <td class="text-center">${load.skill}</td>
               <td class="text-sm">${(load.groups || []).map((g) => esc(g.name) + " ×" + g.n).join(", ") || "—"}</td>
               <td class="text-sm opacity-80">${load.roles.slice(0, 5).map((r) => esc(r.name) + " ×" + r.n).join(", ") || "—"}</td>
             </tr></tbody></table></div>`
@@ -156,7 +143,7 @@ export function vPpl() {
         <span class="avatar placeholder"><span class="bg-neutral text-neutral-content rounded-full w-12 text-sm font-semibold">${esc(initials(sel.name))}</span></span>
         <div>
           <div class="font-semibold text-lg leading-tight">${esc(sel.name)}</div>
-          <div class="text-xs opacity-60">${sel.active !== false ? "Active" : "Inactive"} · ${qualCount(sel)} roles · ${skillCount(sel)} skills</div>
+          <div class="text-xs opacity-60">${sel.active !== false ? "Active" : "Inactive"} · ${qualCount(sel)} roles</div>
         </div>
       </div>
       <div class="flex flex-wrap gap-3 items-end">
