@@ -17,15 +17,15 @@ Data stays in that folder (`shift-manager-data.json`, `backups/`, `logs/`). You 
 | Step | Where |
 | --- | --- |
 | Unit + manager names, workspace folder | Home |
-| Duty roles, print colours, day/night flags, hard roles | Roles and groups |
-| People, qualifications (tick every role each person can do), optional fixed role | People |
+| Duty roles, print colours, day/night flags, hard roles, the **Files role** (Up / Down set the order) | Roles and groups |
+| People, qualifications (tick every role each person can do — **Select all**, then untick the one or two they can't), optional fixed role | People |
 
 Untick **Active** on People when someone leaves. For a long sickness, tick **Long-term sick** on that person (with a From date and an optional To date): every Attendance day in that period is Sick leave automatically, in every block. Change a single day on Attendance to override it.
 
 ## Each block
 
-1. **Attendance** — block start date, Day/Night per day, status per person (Present = green; Annual leave / Sick leave / Duty away / Rest day = blue / unavailable), then **Generate roster** once. Generate gives each role to whoever has done it least, as a share of their own duties, over the last 12 months of rosters saved to the Log (only days they were Present count), so **Save roster** every block to keep Duty stats even.
-2. **Roster** — person × day layout. Drag a **parking-lot** chip onto a person to fill a vacated essential role; drag people to swap. Non-essential roles vacated by sick silently drop for that day. **Save roster**, then **Print** (or **Save & print** if unsaved). Above the grid, **Briefing sheet** has **Print Thu** / **Print Fri** / … — a one-page briefing sheet for that day only, sorted by role (name + employee / shoulder numbers), for parade use, headed **Briefing sheet** with the date, with anyone on annual leave, sick, rest day or duty away listed at the bottom; it does not change the saved roster order. In the toolbar, **Tally ▾** adds an attendance-count row under each day (Present, leave, sick, …) that prints with the roster, and **Black borders** prints black cell lines instead of light grey (both are remembered in this browser). Click a name to highlight a row and use ↑ / ↓ to move the highlight. On **Attendance**, each day's header shows who is away by type.
+1. **Attendance** — block start date, Day/Night per day, status per person (Present = green; Annual leave / Sick leave / Duty away / Rest day = blue / unavailable; tick **AL** beside a name for annual leave on all days), then **Generate roster** once. Generate gives each role to whoever has done it least, as a share of their own duties, over the last 12 months of rosters saved to the Log (only days they were Present count), so **Save roster** every block to keep Duty stats even. If one role is ticked **Files role**, everyone still free after the other roles gets Files (any number a day), and who ends up spare is rotated by how often each person has had Files.
+2. **Roster** — person × day layout. Drag a **parking-lot** chip onto a person to fill a vacated essential role; drag people to swap. Non-essential roles vacated by sick silently drop for that day. **Save roster**, then **Print** (or **Save & print** if unsaved). Above the grid, **Briefing sheet** has **Print Thu** / **Print Fri** / … — a one-page briefing sheet for that day only, grouped by role group (name + employee / shoulder numbers), for parade use, headed **Briefing sheet** with the date, with anyone on annual leave, sick, rest day or duty away listed at the bottom; it does not change the saved roster order. In the toolbar, **Tally ▾** adds an attendance-count row under each day (Present, leave, sick, …) that prints with the roster, and **Black borders** prints black cell lines instead of light grey (both are remembered in this browser). Click a name to highlight a row and use ↑ / ↓ to move the highlight. Each Files cell shows when that person last had Files (screen only, not printed), to help pick who to move into an essential role at short notice. On **Attendance**, each day's header shows who is away by type.
 
 Free-text spare notes are gone: anyone with no role shows **Unassigned**. Notes typed in an older version are cleared from the current block when the file is opened; rotas already saved to the Log keep theirs.
 
@@ -68,6 +68,7 @@ Every push to `main` publishes a patch release and keeps only the **latest 3** G
 | [`SECURITY.md`](SECURITY.md) | Offline posture, data stores, deployment |
 | [`TERMS.md`](TERMS.md) | Plain-language use terms; MIT / no warranty |
 | [`docs/THIRD_PARTY.md`](docs/THIRD_PARTY.md) | Tailwind, DaisyUI, esbuild |
-| [`docs/Shift_Manager_PRD.md`](docs/Shift_Manager_PRD.md) | Product requirements |
+| [`docs/Shift_Manager_PRD.md`](docs/Shift_Manager_PRD.md) | Product requirements (shift-manager stories) |
+| [`docs/Shift_Manager_Spec.md`](docs/Shift_Manager_Spec.md) | Technical / design spec the PRD points to |
 | [`docs/PRD_Deprecated.md`](docs/PRD_Deprecated.md) | Retired / superseded requirements |
 | [`LICENSE`](LICENSE) | MIT |

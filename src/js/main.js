@@ -23,7 +23,7 @@ const CHANGES = { ...startChanges, ...attChanges, ...pplChanges, ...rolChanges, 
 /* Re-rendering replaces the whole screen, which resets scroll containers to the top. Keep the
    position of the tables (and the page) when the same screen is redrawn, e.g. after clicking a cell. */
 let lastScreen = null;
-const SCROLLERS = ".printScroll, .attScroll";
+const SCROLLERS = ".printScroll, .attScroll, .pivot-scroll";
 
 function captureScroll() {
   const page = document.scrollingElement;

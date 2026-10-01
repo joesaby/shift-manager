@@ -1,6 +1,6 @@
 import { esc, icon } from "../util.js";
 import { S } from "../state.js";
-import { D, hasRoster, unitName } from "../model.js";
+import { D, hasRoster, unitName, filesRole, qual } from "../model.js";
 import { ph } from "../ui-kit.js";
 import { hasWorkspace, workspaceName, supportsWorkspace } from "../workspace.js";
 import { getSessionUser } from "../audit.js";
@@ -16,6 +16,15 @@ function setupStep(done, label, screen, hint) {
       <span class="block text-xs opacity-60 mt-0.5">${hint}</span>
     </span>
   </${tag}>`;
+}
+
+/* H73: optional step — Files only works once a role is ticked Files role and people are ticked for it. */
+export function filesStep() {
+  const fr = filesRole();
+  if (!fr) return setupStep(false, "Files role", "rol", "Optional — tick Files role on Roles");
+  const n = D().people.filter((p) => p.active !== false && qual(p, fr.id)).length;
+  return n ? setupStep(true, "Files role", "rol", n + (n === 1 ? " person can" : " people can") + " do Files")
+    : setupStep(false, "Files role", "ppl", "Tick Files for people on People (Select all)");
 }
 
 function blockCard(n, key, title, caption, screen) {
@@ -120,6 +129,7 @@ export function vStart() {
       ${setupStep(ws || !supportsWorkspace(), "Folder", null, ws ? esc(wsLabel) : "Choose folder (top bar)")}
       ${setupStep(nR > 0, "Roles", "rol", nR ? nR + " defined" : "Add duty roles")}
       ${setupStep(nP > 0, "People", "ppl", nP ? nP + " on the team" : "Add the team")}
+      ${filesStep()}
       ${setupStep(rosterOk, "First roster", "att", rosterOk ? "Generated" : "Generate from Attendance")}
     </div>
   </div>`;

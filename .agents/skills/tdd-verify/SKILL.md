@@ -24,6 +24,7 @@ Skip only when the user marks the change `trivial: true` / docs-only with no beh
 | Doc / skill | Validate |
 | --- | --- |
 | [`docs/Shift_Manager_PRD.md`](../../../docs/Shift_Manager_PRD.md) | **Live (new/current) PRD** — every touched H-id still Must/Should as intended |
+| [`docs/Shift_Manager_Spec.md`](../../../docs/Shift_Manager_Spec.md) | **Spec** — the touched H-id’s `S<n>` entry matches the implementation; a layout/CSS tweak edits the Spec, not a new H-id |
 | [`docs/PRD_Deprecated.md`](../../../docs/PRD_Deprecated.md) | **Old/retired PRD** — change must not re-implement deprecated behaviour as current; retired H-ids live here, not in the live PRD |
 | [`daisyui` skill](../daisyui/SKILL.md) | Component choice for any UI markup in the diff |
 | [`src/styles/tailwind.css`](../../../src/styles/tailwind.css) | Every new Daisy/Tailwind class actually exists (fixed vendored subset) |

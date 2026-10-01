@@ -1,7 +1,7 @@
 import { esc, fmtLong } from "../util.js";
 import { S } from "../state.js";
 import {
-  currentMonthKey, monthLabel, loadMonths, teamLoadForMonth, dutyPivot, sortPivotRows, nextPivotSort,
+  currentMonthKey, dutyPivot, sortPivotRows, nextPivotSort,
   statsRange, personReport, personById, unitName
 } from "../model.js";
 import { ph } from "../ui-kit.js";
@@ -92,8 +92,6 @@ export function vStats() {
     if (html) return html;
     S.ui.statsPerson = null; /* person no longer exists */
   }
-  const months = loadMonths();
-  const cur = currentMonthKey();
   const sort = S.ui.statsSort;
   const pivot = dutyPivot(range);
   const rows = sortPivotRows(pivot.rows, sort.key, sort.dir);
@@ -133,28 +131,9 @@ export function vStats() {
       <td class="pivot-n pivot-total">${totals.duties}</td>
     </tr>`;
 
-  const historicMonths = months.filter((m) => m !== cur);
-  const histCards = historicMonths.length
-    ? historicMonths.map((m) => {
-      const t = teamLoadForMonth(m).reduce((a, r) => a + r.duties, 0);
-      const mb = monthBounds(m);
-      const active = S.ui.statsFrom === mb.from && S.ui.statsTo === mb.to;
-      return `<button class="btn btn-sm justify-between ${active ? "btn-primary" : "btn-outline"}" data-act="statsMonth" data-m="${m}">
-        <span>${esc(monthLabel(m))}</span>
-        <span class="opacity-80 font-normal">${t} duties</span>
-      </button>`;
-    }).join("")
-    : `<div class="text-sm opacity-70">No older months yet. After you Save roster across months, they appear here.</div>`;
-
-  const preset = activePreset();
-  const periodNote = preset === "all" ? "All time, up to today" : preset === "month" ? "This month" : preset === "year" ? "This year" : "Custom dates";
-
   return `${ph("Duty stats", "How many times each person did each role over the period you choose (default: everything up to today). Use the ▲ ▼ at the top of any column to sort it — for example a role, to see who did it most. Click a name for a printable report on just that person.")}
     ${rangeBar(range)}
-    <div class="stats stats-vertical lg:stats-horizontal shadow-sm border border-base-300 bg-base-100 w-full">
-      <div class="stat"><div class="stat-title">Period</div><div class="stat-value text-lg">${esc(fmtLong(range.from))} – ${esc(fmtLong(range.to))}</div><div class="stat-desc">${periodNote} · current roster + saved log</div></div>
-      <div class="stat"><div class="stat-title">Duties</div><div class="stat-value text-3xl">${totals.duties}</div></div>
-    </div>
+    <div class="text-sm opacity-80">${esc(fmtLong(range.from))} – ${esc(fmtLong(range.to))} · <b>${totals.duties}</b> duties · current roster + saved log</div>
     <div class="card bg-base-100 shadow-sm border border-base-300">
       <div class="pivot-scroll">
         <table class="table table-sm stats-pivot">
@@ -167,18 +146,10 @@ export function vStats() {
           <tbody>${body ? body + totalRow : '<tr><td colspan="' + (pivot.roles.length + 4) + '" class="opacity-70 p-4">No duties in this period.</td></tr>'}</tbody>
         </table>
       </div>
-    </div>
-    <div class="card bg-base-100 shadow-sm border border-base-300">
-      <div class="card-body">
-        <h2 class="card-title text-lg">Historic</h2>
-        <p class="text-sm opacity-70 -mt-2">Past months with recorded duties. Click one to show just that month above.</p>
-        <div class="flex flex-col gap-2 max-w-lg">${histCards}</div>
-      </div>
     </div>`;
 }
 
 export const actions = {
-  statsMonth: (a) => { const b = monthBounds(a.m); S.ui.statsFrom = b.from; S.ui.statsTo = b.to; S.ui.statsPerson = null; },
   statsPreset: (a) => {
     const cur = currentMonthKey();
     const b = a.p === "month" ? monthBounds(cur) : a.p === "year" ? yearBounds(cur.slice(0, 4)) : { from: null, to: null };
