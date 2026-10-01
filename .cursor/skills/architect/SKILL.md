@@ -15,7 +15,8 @@ Ground designs in the product docs so work reuses what exists, stays offline, an
 
 | Doc | Use for |
 | --- | --- |
-| [`docs/Shift_Manager_PRD.md`](../../../docs/Shift_Manager_PRD.md) | Active requirements (H1…), business rules, schema |
+| [`docs/Shift_Manager_PRD.md`](../../../docs/Shift_Manager_PRD.md) | **What** — active requirements as “As a shift manager, I …” stories grouped by feature (H-ids, priority, `Spec: S<n>`), business rules, schema |
+| [`docs/Shift_Manager_Spec.md`](../../../docs/Shift_Manager_Spec.md) | **How** — technical / design detail per `S<n>` entry (layout, CSS, stored fields, code paths); find an H-id with `grep '\*\*H47\*\*'` |
 | [`docs/PRD_Deprecated.md`](../../../docs/PRD_Deprecated.md) | Retired / superseded requirements (do not implement as current) |
 | [`AGENTS.md`](../../../AGENTS.md) | Module map, hard constraints, release |
 | [`SECURITY.md`](../../../SECURITY.md) | Offline posture, data stores, deployment trust |
@@ -31,13 +32,15 @@ Do **not** run this for typos, copy tweaks, or one-line CSS with no product surf
 
 **Generate rules:** any change to how Generate allocates (add / remove / reword a rule, make a rule hard or soft, change which pass applies it) starts in `src/js/rules.js`, not inline in `generator.js`. Structural rules (order of work) are implemented in `generator.js` but still get a `RULES` entry so they are documented. After editing, run `npm run docs:rules` (rewrites the PRD table between the `rules:start` / `rules:end` markers — never edit that block by hand) and keep each rule’s H-id a live PRD row; `test/rules.test.js` fails on drift. A retired rule is removed from `RULES` **and** its H-id moved to `PRD_Deprecated.md`.
 
+**PRD / Spec split:** the PRD is written in the shift manager’s words and stays stable; the Spec holds the how. A change to what the manager can do → new or edited story row (new H-id only for a genuinely new capability) **and** its Spec entry. A tweak to how an existing thing looks or behaves (layout, CSS, column widths, storage detail) → edit the Spec entry only, no new H-id. Every live PRD row needs a priority, an “As a shift manager…” story and a `Spec: S<n>` that resolves (`test/prd-spec.test.js`).
+
 **PRD deprecation rule:** any requirement (H-id or named product surface) that is deprecated, retired, or superseded **must** be moved into [`docs/PRD_Deprecated.md`](../../../docs/PRD_Deprecated.md). Leave only a one-line pointer in the live PRD (or remove the row). Never leave deprecated behaviour documented as current Must/Should/Could.
 
 ---
 
 ## Mode A — Feature brainstorm (before code)
 
-1. **Map to PRD.** Find matching Must/Should IDs (H…). If none, treat it as a new requirement — confirm with the user and plan a PRD update before coding.
+1. **Map to PRD.** Find the matching story (H…) in the feature group, then run `npm run docs:trace H…` — it prints the story, Spec entry, neighbouring H-ids (mentions / mentioned by), the `src/` and `test/` files that cite it, and any Deprecated history, so the blast radius is known before design. Trace each id the change might touch. If none, treat it as a new requirement — confirm with the user and plan a PRD story + Spec entry before coding. If it only changes how an existing story is built or looks, it is a Spec edit (see **PRD / Spec split**).
 2. **Locate code.** Using `AGENTS.md`, name the modules likely touched (`model.js`, `rules.js`, `generator.js`, `snapshot.js`, `screens/…`, `workspace.js`, …). Prefer extending those over new frameworks. Generate behaviour → `rules.js` first (see **Generate rules** above).
 3. **Constraints check** (fail the design if violated):
    - Offline / no CDN / no new runtime network
@@ -54,13 +57,13 @@ Do **not** run this for typos, copy tweaks, or one-line CSS with no product surf
 
 ```markdown
 ## Design brief
-- PRD: H… (quote requirement in one line)
+- PRD: H… (quote the story in one line) · Spec: S…
 - Modules: …
 - Approach: …
 - DaisyUI / UI: n/a | skill read + components … (classes confirmed in vendored CSS | app.css fallback)
 - Alternatives considered: …
 - Schema / migration: none | …
-- Docs to update: … (incl. PRD_Deprecated.md if retiring an H-id)
+- Docs to update: … (PRD story and/or Spec entry; PRD_Deprecated.md if retiring an H-id)
 - Open questions: …
 ```
 
@@ -68,7 +71,7 @@ Do **not** run this for typos, copy tweaks, or one-line CSS with no product surf
 
 ## Mode B — Architecture-fit review (before commit)
 
-Run against the **diff**, not a re-debug of every line:
+Run against the **diff**, not a re-debug of every line. Run `npm run docs:trace` on each H-id the diff touches: neighbours listed there that the diff ignores are the likely misses.
 
 - [ ] Every behaviour change maps to a PRD H-id or an agreed doc update
 - [ ] Deprecated / superseded requirements were moved to `docs/PRD_Deprecated.md` (not left as current Must/Should/Could)

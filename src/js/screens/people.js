@@ -161,7 +161,7 @@ export function vPpl() {
           <span class="text-xs opacity-60 pb-2">Leave “To” empty until they return.</span>
         </div>` : ""}
       </div>
-      <div><div class="font-semibold">Roles this person is qualified for</div><div class="text-sm opacity-70 mb-2">Only ticked roles are ever offered to them.</div>
+      <div><div class="flex items-center justify-between gap-3 mb-2"><div class="font-semibold">Roles this person is qualified for</div><div class="flex gap-1">${D().roles.length ? `<button class="btn btn-xs" data-act="qualAll" data-p="${sel.id}">Select all</button><button class="btn btn-xs" data-act="qualNone" data-p="${sel.id}">Clear all</button>` : ""}</div></div><div class="text-sm opacity-70 mb-2">Only ticked roles are ever offered to them.</div>
         ${D().roles.length ? `<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">${tog}</div>` : `<div class="alert">Add roles first on the Roles and groups screen.</div>`}</div>
       <label class="form-control max-w-sm"><span class="label-text font-semibold">Only do this role</span><span class="label-text-alt opacity-70 mb-1">If set, they always get this role when present.</span><select class="select select-bordered" data-ch="ponly" data-p="${sel.id}">${onlyOpts}</select></label>
       ${loadBlock}
@@ -180,6 +180,14 @@ export const actions = {
     S.ui.selPerson = a.p;
     S.ui.peopleQ = "";
     S.ui.peoplePickerOpen = false;
+  },
+  qualAll: (a) => {
+    D().roles.forEach((r) => setQual(a.p, r.id, true));
+    markStale(); touch();
+  },
+  qualNone: (a) => {
+    D().roles.forEach((r) => setQual(a.p, r.id, false));
+    markStale(); touch();
   },
   addPerson: () => {
     const el = document.getElementById("newPerson"); const n = el && el.value.trim(); if (!n) return;

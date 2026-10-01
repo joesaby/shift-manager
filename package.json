@@ -8,6 +8,7 @@
     "build": "node build.mjs",
     "mock-data": "node scripts/write-mock-data.mjs",
     "docs:rules": "node scripts/rules-docs.mjs",
+    "docs:trace": "node scripts/trace.mjs",
     "test": "node --test test/**/*.test.js"
   },
   "devDependencies": {

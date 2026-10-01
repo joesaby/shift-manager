@@ -28,6 +28,10 @@ export const RULES = [
     help: "**Only do this role** people get that role first." },
   { key: "essentialFirst", id: "H44", kind: "structural",
     help: "**Essential** roles are filled before the others. Non-essential roles are filled from whoever is left, in the order listed on Roles and groups." },
+  { key: "filesTakesSpares", id: "H73", kind: "structural",
+    help: "The **Files** role (ticked on Roles and groups) goes to everyone still free once the other roles are filled — any number of people a day. With **Once per block** ticked, someone who already had Files this block is left Unassigned." },
+  { key: "filesFairSpares", id: "H73", kind: "structural",
+    help: "Who is left free for Files rotates: people who have had Files **least, as a share of their duties**, are kept back from the other roles first. Fair spread of the other roles still comes first." },
   { key: "leastDone", id: "H28", kind: "objective",
     help: "Each role goes to whoever has done it **least, as a share of their own duties**, over the last " + LOOKBACK_MONTHS + " months of rosters saved to the Log plus the earlier days of this block. Only days they were Present count. Ties are picked at random.",
     /* Share, not raw count, so a new starter or someone back from long leave is not picked for the same role for months. */

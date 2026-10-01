@@ -2,7 +2,8 @@ import { S, touch, toast } from "./state.js";
 import { RULES, hardRules, softRules } from "./rules.js";
 import {
   D, activePeople, rolesForDay, isPresent, qual, canDo, personById, roleById, shiftOf,
-  roleOfPerson, writeRoster, rosterDays, writeDayAssign, dayLabels, historicRoleCounts
+  roleOfPerson, writeRoster, rosterDays, writeDayAssign, dayLabels, historicRoleCounts,
+  filesRole, isFilesRole, setFiles
 } from "./model.js";
 
 /** H64: id of the visible row above (-1) / below (+1) this person, or null. Selection only — never reorders. */
@@ -64,8 +65,9 @@ function judge(pass, ctx) {
 /**
  * Essential pass: RULES objective (least done) with filters / soft penalties from RULES; all essential
  * roles solved together so each is filled whenever any valid arrangement exists; ties at random.
+ * H73: bias function adds secondary cost for Files fair spares.
  */
-function fillEssential(roleIds, free, assign, count, prev, d, used) {
+function fillEssentialWithBias(roleIds, free, assign, count, bias, prev, d, used) {
   if (!roleIds.length) return;
   const n = roleIds.length; const m = free.length; const N = n + m;
   const cost = [];
@@ -74,7 +76,7 @@ function fillEssential(roleIds, free, assign, count, prev, d, used) {
     const soft = free.map((id) => judge("essential", ruleCtx(id, role, prev, d, used)));
     const base = Math.min(...free.filter((_, j) => soft[j] != null).map((id) => count(id, r)), 0);
     const row = free.map((id, j) => (soft[j] == null ? FORBID
-      : count(id, r) - base + soft[j] * SOFT + Math.random() * 1e-7));
+      : count(id, r) - base + soft[j] * SOFT + bias(id) + Math.random() * 1e-7));
     for (let k = 0; k < n; k++) row.push(k === cost.length ? EMPTY : FORBID);
     cost.push(row);
   });
@@ -88,14 +90,15 @@ function fillEssential(roleIds, free, assign, count, prev, d, used) {
   taken.forEach((id) => free.splice(free.indexOf(id), 1));
 }
 
-/** Non-essential pass (H44): roles in list (priority) order; RULES filters, then fewest soft breaks, then least done. */
-function fillNonEssential(roleIds, free, assign, count, prev, d, used) {
+/** Non-essential pass (H44): roles in list (priority) order; RULES filters, then fewest soft breaks, then least done.
+ * H73: bias function adds secondary cost for Files fair spares. */
+function fillNonEssentialWithBias(roleIds, free, assign, count, bias, prev, d, used) {
   for (const r of roleIds) {
     const role = roleById(r);
-    const c = free.map((id) => ({ id, soft: judge("nonEssential", ruleCtx(id, role, prev, d, used)) }))
+    const c = free.map((id) => ({ id, soft: judge("nonEssential", ruleCtx(id, role, prev, d, used)), b: bias(id) }))
       .filter((x) => x.soft != null);
     if (!c.length) { assign[r] = null; continue; }
-    c.sort((a, b) => (a.soft - b.soft) || (count(a.id, r) - count(b.id, r)) || (Math.random() - 0.5));
+    c.sort((a, b) => (a.soft - b.soft) || (count(a.id, r) + a.b - count(b.id, r) - b.b) || (Math.random() - 0.5));
     assign[r] = c[0].id;
     free.splice(free.indexOf(c[0].id), 1);
   }
@@ -109,30 +112,60 @@ export function generate() {
   /* H28 objective from RULES (share of the person's own duties); name kept short for the fill passes. */
   const score = RULES.find((x) => x.kind === "objective").score;
   const count = (id, r) => score({ count: counts[id + "|" + r] || 0, total: totals[id] || 0 });
+  const fr = filesRole();
+  /* H73 fair spares: secondary cost (H28 share stays the main score) on giving a real role to someone due
+     Files; nobody is held back for Files they cannot have today (not in today's roles / once per block used). */
+  const FILES_W = 0.25;
+  const filesShare = (id) => (totals[id] ? (counts[id + "|" + fr.id] || 0) / totals[id] : 0);
   const out = []; const used = {}; let prev = {};
   const n = D().blocks.current.shifts.length;
   for (let d = 0; d < n; d++) {
     const dayRoles = rolesForDay(d);
-    const essentialIds = dayRoles.filter((r) => r.essential !== false).map((r) => r.id);
+    const essentialIds = dayRoles.filter((r) => r.essential !== false && !isFilesRole(r.id)).map((r) => r.id);
     const nonEssentialIds = dayRoles
-      .filter((r) => r.essential === false)
+      .filter((r) => r.essential === false && !isFilesRole(r.id))
       .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
       .map((r) => r.id);
     const assign = {}; const free = [];
     const rl = essentialIds.concat(nonEssentialIds);
+    const files = [];
+    const filesToday = !!fr && dayRoles.some((r) => r.id === fr.id);
+    const bias = (id) => (filesToday && canDo(personById(id), fr.id) && !(fr.oncePerBlock && used[id + "|" + fr.groupId]) ? FILES_W * (1 - filesShare(id)) : 0);
     people.filter((p) => isPresent(p, d)).forEach((p) => {
-      if (p.fixedRoleId && rl.indexOf(p.fixedRoleId) >= 0 && assign[p.fixedRoleId] === undefined) assign[p.fixedRoleId] = p.id;
-      else if (!p.fixedRoleId) free.push(p.id);
+      if (p.fixedRoleId && isFilesRole(p.fixedRoleId)) {
+        // H73: fixed Files person goes into files list
+        if (canDo(p, p.fixedRoleId)) files.push(p.id);
+      } else if (p.fixedRoleId && rl.indexOf(p.fixedRoleId) >= 0 && assign[p.fixedRoleId] === undefined) {
+        assign[p.fixedRoleId] = p.id;
+      } else if (!p.fixedRoleId) {
+        free.push(p.id);
+      }
     });
-    fillEssential(essentialIds.filter((r) => assign[r] === undefined), free, assign, count, prev, d, used);
-    fillNonEssential(nonEssentialIds.filter((r) => assign[r] === undefined), free, assign, count, prev, d, used);
+    // H28+H73: fillEssential with bias for Files fair spares
+    fillEssentialWithBias(essentialIds.filter((r) => assign[r] === undefined), free, assign, count, bias, prev, d, used);
+    fillNonEssentialWithBias(nonEssentialIds.filter((r) => assign[r] === undefined), free, assign, count, bias, prev, d, used);
+
+    // H73: Files role — everyone still free who is qualified and (oncePerBlock rule allows)
+    if (filesToday) {
+      free.filter((id) => {
+        return canDo(personById(id), fr.id) && (!fr.oncePerBlock || !used[id + "|" + fr.groupId]);
+      }).forEach((id) => files.push(id));
+    }
+
     prev = {};
     Object.keys(assign).forEach((r) => {
       const id = assign[r]; if (!id) return;
       prev[id] = r; counts[id + "|" + r] = (counts[id + "|" + r] || 0) + 1; totals[id] = (totals[id] || 0) + 1;
       const ro = roleById(r); if (ro && ro.oncePerBlock) used[id + "|" + ro.groupId] = true;
     });
-    out.push({ assign });
+    // H73: bump counts/totals for Files people
+    files.forEach((id) => {
+      prev[id] = fr.id;
+      counts[id + "|" + fr.id] = (counts[id + "|" + fr.id] || 0) + 1;
+      totals[id] = (totals[id] || 0) + 1;
+      if (fr.oncePerBlock) used[id + "|" + fr.groupId] = true;
+    });
+    out.push({ assign, files });
   }
   writeRoster(out, "generated");
   touch();
@@ -157,12 +190,18 @@ function isEssentialId(rid) {
   return !r || r.essential !== false;
 }
 
+/** H73: get the real role for a person, treating Files as no role (null). */
+function realRole(day, pid) {
+  const role = roleOfPerson(day, pid);
+  return isFilesRole(role) ? null : role;
+}
+
 export function assignTo(d, rid, pid) {
   const days = rosterDays();
   if (!days) return false;
   const day = days[d];
   const holder = liveHolder(day, rid);
-  const old = pid ? roleOfPerson(day, pid) : null;
+  const old = pid ? realRole(day, pid) : null;  // H73: Files is treated as no role
   if (pid && old && holder && !canDo(personById(holder), old)) {
     toast("Cannot swap — " + ((personById(holder) || {}).name || "that person") + " is not qualified for " + roleName(old) + ".");
     return false;
@@ -179,9 +218,7 @@ export function assignTo(d, rid, pid) {
 
 /**
  * Assign a parking-lot (vacated essential) role to a Present person.
- * chip→spare: take it.
- * chip→non-essential holder: take essential; drop non-essential for the day.
- * chip→essential holder: take parked; old essential becomes vacant (parking lot).
+ * H73: Files holder treated as spare — they take the role, Files dropped.
  */
 export function assignParkedRole(d, rid, pid) {
   if (!pid) return false;
@@ -193,7 +230,7 @@ export function assignParkedRole(d, rid, pid) {
   if (!canDo(p, rid)) { toast("Cannot assign — not qualified for that role."); return false; }
   if (liveHolder(day, rid)) { toast("That role is already filled."); return false; }
 
-  const old = roleOfPerson(day, pid);
+  const old = realRole(day, pid);  // H73: Files is treated as no role
   const next = { ...day.assign };
   const cleared = new Set([rid]);
   next[rid] = pid;
@@ -217,7 +254,8 @@ export function assignParkedRole(d, rid, pid) {
 
 /**
  * Same-day person swap. Essential↔non-essential is also a swap (not replace).
- * holder↔holder swaps roles; holder→spare hands over.
+ * H73: Files holder treated as spare — real-role holder ↔ Files holder: Files person takes role,
+ * former holder gets setFiles if canDo.
  */
 export function swapPeople(d, aPid, bPid) {
   if (!aPid || !bPid || aPid === bPid) return false;
@@ -230,8 +268,8 @@ export function swapPeople(d, aPid, bPid) {
     toast("Only Present people can swap.");
     return false;
   }
-  const aRole = roleOfPerson(day, aPid);
-  const bRole = roleOfPerson(day, bPid);
+  const aRole = realRole(day, aPid);  // H73: Files is treated as no role
+  const bRole = realRole(day, bPid);  // H73: Files is treated as no role
   if (!aRole && !bRole) return false;
 
   if (aRole && bRole) {
@@ -248,26 +286,48 @@ export function swapPeople(d, aPid, bPid) {
     return true;
   }
 
-  const sparePid = aRole ? bPid : aPid;
+  // H73: one has a real role; the other is spare or on Files (Files holder counts as spare)
+  const hasRole = aRole ? aPid : bPid;
+  const hasFiles = aRole ? bPid : aPid;
+  const wasFiles = isFilesRole(roleOfPerson(day, hasFiles));
   const rid = aRole || bRole;
-  const spare = personById(sparePid);
-  if (!canDo(spare, rid)) {
+  if (!canDo(personById(hasFiles), rid)) {
     toast("Cannot assign — not qualified for that role.");
     return false;
   }
   const next = { ...day.assign };
-  next[rid] = sparePid;
+  next[rid] = hasFiles;
   writeDayAssign(d, next, []);
+  // H73: give Files to the person who had the role, if they can do Files
+  const fr = filesRole();
+  if (wasFiles && canDo(personById(hasRole), fr.id)) {
+    setFiles(d, hasRole, true);
+  }
   S.ui.sel = null; touch();
-  toast(roleName(rid) + " → " + (spare.name || sparePid));
+  toast(wasFiles ? "Swapped " + roleName(rid) + " ↔ Files" : roleName(rid) + " → " + (personById(hasFiles).name || hasFiles));
   return true;
 }
 
-/** Assign a (possibly vacated) role to a Present person; unassign with pid null. */
+/** Assign a (possibly vacated) role to a Present person; unassign with pid null.
+ * H73: for Files role, use setFiles instead. */
 export function assignRoleToPerson(d, rid, pid) {
   if (!pid) {
+    if (isFilesRole(rid)) {
+      toast("Files unassigned");
+      return true;  // No-op: people can't be unassigned by this path for Files
+    }
     assignTo(d, rid, null);
     toast(roleName(rid) + " left unfilled");
+    return true;
+  }
+  // H73: Files role assignment
+  if (isFilesRole(rid)) {
+    const p = personById(pid);
+    if (!p || !isPresent(p, d)) { toast("Only Present people can take a role."); return false; }
+    if (!canDo(p, rid)) { toast("Cannot assign — not qualified for that role."); return false; }
+    setFiles(d, pid, true);
+    S.ui.sel = null; touch();
+    toast("Files → " + (p.name || pid));
     return true;
   }
   const days = rosterDays();
@@ -288,6 +348,13 @@ export function unassignPerson(d, pid) {
   if (!days) return false;
   const rid = roleOfPerson(days[d], pid);
   if (!rid) return false;
+  // H73: Files unassignment
+  if (isFilesRole(rid)) {
+    setFiles(d, pid, false);
+    S.ui.sel = null; touch();
+    toast("Files unassigned");
+    return true;
+  }
   assignTo(d, rid, null);
   toast(roleName(rid) + " unassigned");
   return true;
@@ -306,8 +373,8 @@ export function canDropPersonOnPerson(d, fromPid, toPid) {
   const day = days[d];
   const a = personById(fromPid); const b = personById(toPid);
   if (!a || !b || !isPresent(a, d) || !isPresent(b, d)) return false;
-  const aRole = roleOfPerson(day, fromPid);
-  const bRole = roleOfPerson(day, toPid);
+  const aRole = realRole(day, fromPid);  // H73: Files is treated as no role
+  const bRole = realRole(day, toPid);    // H73: Files is treated as no role
   if (!aRole && !bRole) return false;
   if (aRole && bRole) return canDo(a, bRole) && canDo(b, aRole);
   return canDo(aRole ? b : a, aRole || bRole);

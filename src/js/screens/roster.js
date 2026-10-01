@@ -3,7 +3,7 @@ import { S, toast, askConfirm, render } from "../state.js";
 import {
   D, block, hasRoster, isStale, groupById,
   personById, isPresent, qual, roleOfPerson, rosterDays, vacatedEssential, openRolesForDay, unassignedReason,
-  unitName, activePeople, statusCountsForDay, canRegenerate
+  unitName, activePeople, statusCountsForDay, canRegenerate, isFilesRole, lastFilesDate
 } from "../model.js";
 import { buildSnapshot, saveRoster as persistRoster, isRosterUnsaved, printFitStyle, buildDayBrief, dayBriefHTML } from "../snapshot.js";
 import { generate as generateRoster, swapPeople, assignRoleToPerson, assignParkedRole, unassignPerson, canTakeParkedRole, canDropPersonOnPerson } from "../generator.js";
@@ -146,12 +146,15 @@ export function vRos() {
       }
 
       const w = myRole ? rosterWarn(d, myRole, p.id) : "";
+      /* H74: when this person last had Files — screen only, never printed or saved. */
+      const lastF = isFilesRole(c.roleId) ? lastFilesDate(p.id, d) : undefined;
+      const filesLast = lastF === undefined ? "" : `<div class="files-last no-print">${lastF ? "last: " + esc(fmt(lastF)) : "first time"}</div>`;
       return `<td class="p-1 text-center rostercell ${selected ? "cell-sel" : ""} ${hot ? "drop-hot" : ""} ${dimChip || dimPerson ? "drop-dim" : ""}" data-drop-person="${p.id}" data-drop-day="${d}" style="background:${c.color};color:#1f2937">
         <div class="roster-cell-inner">
           <button type="button" class="drag-handle role-drag no-print" draggable="true" data-drag-person="${p.id}" data-drag-day="${d}" data-act="pickPerson" data-d="${d}" data-p="${p.id}" title="Drag or click to swap" aria-label="Select ${esc(p.name)}">${esc(c.text)}${w ? " !" : ""}</button>
           <span class="role-print-only">${esc(c.text)}</span>
           <button type="button" class="unassign-btn no-print" data-act="unassign" data-d="${d}" data-p="${p.id}" title="Unassign" aria-label="Unassign ${esc(p.name)}">×</button>
-        </div>
+        </div>${filesLast}
       </td>`;
     }).join("");
     return `<tr class="${p.id === rowSel ? "row-sel" : ""}">

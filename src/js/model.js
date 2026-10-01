@@ -251,6 +251,11 @@ export const personById = (id) => D().people.find((p) => p.id === id);
 export const groupById = (id) => D().groups.find((g) => g.id === id) || { name: "", color: "#E5E7EB" };
 export const activePeople = () => D().people.filter((p) => p.active !== false);
 
+/** H73: the Files role, or null if not configured. */
+export const filesRole = () => D().roles.find((r) => r.files) || null;
+/** H73: check if a roleId is the Files role. */
+export const isFilesRole = (rid) => { const r = roleById(rid); return !!(r && r.files); };
+
 export const blockLen = () => (D().settings && D().settings.blockLengthDays) || block().shifts.length || 4;
 export const dateOf = (d) => addDays(block().startDate, d);
 export const shiftOf = (d) => block().shifts[d];
@@ -354,35 +359,49 @@ export function markStale() {
 
 /** Day-indexed assign map used by generator and roster UI.
  * Live holders only: a stored assignment whose person is not Present is vacated
- * (`assign[roleId] = null`, `former[roleId] = personId`). Returning to Present restores. */
+ * (`assign[roleId] = null`, `former[roleId] = personId`). Returning to Present restores.
+ * H73: Files role rows are stored separately in `files` (Present holders) and `formerFiles` (vacated). */
 export function rosterDays() {
   if (!hasRoster()) return null;
   const n = blockLen();
   const out = [];
+  const fr = filesRole();
   for (let d = 0; d < n; d++) {
     const date = dateOf(d);
     const assign = {};
     const former = {};
-    rolesForDay(d).forEach((r) => { assign[r.id] = null; });
+    const files = [];
+    const formerFiles = [];
+    rolesForDay(d).forEach((r) => { if (!isFilesRole(r.id)) assign[r.id] = null; });
     block().assignments.filter((a) => a.date === date).forEach((a) => {
       const p = personById(a.personId);
-      if (p && isPresent(p, d)) assign[a.roleId] = a.personId;
-      else {
-        assign[a.roleId] = null;
-        former[a.roleId] = a.personId;
+      const isFiles = isFilesRole(a.roleId);
+      if (isFiles) {
+        if (p && isPresent(p, d)) files.push(a.personId);
+        else formerFiles.push(a.personId);
+      } else {
+        if (p && isPresent(p, d)) assign[a.roleId] = a.personId;
+        else {
+          assign[a.roleId] = null;
+          former[a.roleId] = a.personId;
+        }
       }
     });
-    out.push({ assign, former });
+    out.push({ assign, former, files, formerFiles });
   }
   return out;
 }
 
-/** All unfilled roles for a day, essential and non-essential (H37 extension — Roster "Add role" selector). */
+/** All unfilled roles for a day, essential and non-essential (H37 extension — Roster "Add role" selector).
+ * H73: Files role is always "open" (unlimited holders). */
 export function openRolesForDay(d) {
   const days = rosterDays();
   if (!days) return [];
   const assign = days[d].assign;
-  return rolesForDay(d).filter((r) => !assign[r.id]);
+  const roles = rolesForDay(d).filter((r) => !assign[r.id]);
+  const fr = filesRole();
+  if (fr && rolesForDay(d).some((r) => r.id === fr.id) && !roles.includes(fr)) roles.push(fr);
+  return roles;
 }
 
 /**
@@ -416,28 +435,49 @@ export function vacatedEssential(d) {
 /**
  * Rewrite one day's assignment rows from a live assign map, preserving vacated
  * (non-Present) rows for roles that remain null and were not cleared.
+ * H73: Files rows are kept unless their person now holds a role in assign or was cleared.
  * @param {number} d day index
- * @param {Record<string, string|null>} assign live map
+ * @param {Record<string, string|null>} assign live map (never contains Files role)
  * @param {Set<string>|string[]} [clearedRoleIds] roles explicitly unassigned (drop vacated row)
  */
 export function writeDayAssign(d, assign, clearedRoleIds) {
   const date = dateOf(d);
   const cleared = clearedRoleIds instanceof Set ? clearedRoleIds : new Set(clearedRoleIds || []);
+  const fr = filesRole();
   const keptVacated = block().assignments.filter((a) => {
     if (a.date !== date) return false;
+    if (isFilesRole(a.roleId)) return false; // H73: Files rows handled separately
     if (assign[a.roleId]) return false;
     if (cleared.has(a.roleId)) return false;
     const p = personById(a.personId);
     return !(p && isPresent(p, d));
   });
+
+  // H73: keep Files rows unless person now holds a role in assign or was explicitly cleared
+  const keptFiles = [];
+  if (fr) {
+    block().assignments.filter((a) => a.date === date && isFilesRole(a.roleId)).forEach((a) => {
+      if (!Object.values(assign).includes(a.personId)) keptFiles.push(a);
+    });
+  }
+
   block().assignments = block().assignments.filter((a) => a.date !== date);
+
   Object.keys(assign).forEach((roleId) => {
     if (assign[roleId]) {
       block().assignments.push({ date, roleId, personId: assign[roleId], source: "manual" });
     }
   });
+
   keptVacated.forEach((a) => {
     if (!block().assignments.some((x) => x.date === date && x.roleId === a.roleId)) {
+      block().assignments.push(a);
+    }
+  });
+
+  // H73: restore Files rows for people not now holding a role
+  keptFiles.forEach((a) => {
+    if (!block().assignments.some((x) => x.date === date && x.personId === a.personId && isFilesRole(x.roleId))) {
       block().assignments.push(a);
     }
   });
@@ -445,7 +485,11 @@ export function writeDayAssign(d, assign, clearedRoleIds) {
 
 export function roleOfPerson(dayAssign, pid) {
   const k = Object.keys(dayAssign.assign).filter((r) => dayAssign.assign[r] === pid);
-  return k.length ? k[0] : null;
+  if (k.length) return k[0];
+  // H73: check if person is in Files
+  const fr = filesRole();
+  if (fr && (dayAssign.files || []).includes(pid)) return fr.id;
+  return null;
 }
 
 export function roleOfPersonOnDay(d, pid) {
@@ -454,15 +498,41 @@ export function roleOfPersonOnDay(d, pid) {
   return a ? a.roleId : null;
 }
 
+/** H73: add or remove Files for a person on a given day.
+ * @param {number} d day index
+ * @param {string} pid person id
+ * @param {boolean} on true = add Files, false = remove Files
+ */
+export function setFiles(d, pid, on) {
+  const fr = filesRole();
+  if (!fr) return;
+  const date = dateOf(d);
+  const existing = block().assignments.find((a) => a.date === date && a.personId === pid && a.roleId === fr.id);
+  if (on && !existing) {
+    // Remove any other role for this person on this day
+    block().assignments = block().assignments.filter((a) => !(a.date === date && a.personId === pid));
+    block().assignments.push({ date, roleId: fr.id, personId: pid, source: "manual" });
+  } else if (!on && existing) {
+    block().assignments = block().assignments.filter((a) => !(a.date === date && a.personId === pid && a.roleId === fr.id));
+  }
+}
+
 export function writeRoster(days, source) {
   const src = source || "generated";
   const assignments = [];
+  const fr = filesRole();
   days.forEach((day, d) => {
     const date = dateOf(d);
     Object.keys(day.assign || {}).forEach((roleId) => {
       const personId = day.assign[roleId];
       if (personId) assignments.push({ date, roleId, personId, source: src });
     });
+    // H73: add Files role rows
+    if (fr && day.files) {
+      day.files.forEach((personId) => {
+        assignments.push({ date, roleId: fr.id, personId, source: src });
+      });
+    }
   });
   const b = block();
   b.assignments = assignments;
@@ -490,7 +560,9 @@ export function swapOrAssign(d, rid, pid) {
   if (!days) return;
   const day = days[d];
   const holder = day.assign[rid] || null;
-  const old = pid ? roleOfPerson(day, pid) : null;
+  let old = pid ? roleOfPerson(day, pid) : null;
+  // H73: Files holder is treated as having no role
+  if (old && isFilesRole(old)) old = null;
   const next = { ...day.assign };
   next[rid] = pid || null;
   if (pid && old) next[old] = holder || null;
@@ -662,9 +734,9 @@ export function historicRosterModel(entry) {
   };
 
   const roster = days.map((day) => {
-    const assign = {};
+    const assign = {}; const files = [];
     (entry.assignments || []).filter((a) => a.date === day.iso).forEach((a) => {
-      assign[a.roleId] = a.personId;
+      if (isFilesRole(a.roleId)) files.push(a.personId); else assign[a.roleId] = a.personId;
     });
     /* Fallback from records when no structured assignments. */
     if (!Object.keys(assign).length && entry.records) {
@@ -674,7 +746,7 @@ export function historicRosterModel(entry) {
         if (role && person) assign[role.id] = person.id;
       });
     }
-    return { assign };
+    return { assign, files };
   });
 
   const rolesFor = (d) => D().roles.filter((r) => (days[d].shift === "Day" ? r.usedAtDay !== false : r.usedAtNight));
@@ -753,6 +825,13 @@ export function personLoadByMonth(personId, opts) {
   });
 }
 
+/** Helper for historicRoleCounts and lastFilesDate: check if person was Present on date in a history entry. */
+function presentOnInHistory(h, pid, date) {
+  const row = (h.attendance || []).find((a) => a.personId === pid && a.date === date);
+  if (row) return row.statusId === "present";
+  return !longTermSickOn(personById(pid), date);
+}
+
 /**
  * H28: how many times each person did each role in saved rotas, keyed "personId|roleId".
  * Window: the LOOKBACK_MONTHS before the block being generated starts (older and later-dated
@@ -766,16 +845,11 @@ export function historicRoleCounts() {
   const from = new Date(currentStart + "T12:00:00");
   from.setMonth(from.getMonth() - LOOKBACK_MONTHS);
   const inWindow = (date) => !!date && date >= iso(from) && date < currentStart;
-  const presentOn = (h, pid, date) => {
-    const row = (h.attendance || []).find((a) => a.personId === pid && a.date === date);
-    if (row) return row.statusId === "present";
-    return !longTermSickOn(personById(pid), date);
-  };
   history().forEach((h) => {
     if (historyStart(h) === currentStart) return;
     if (h.assignments && h.assignments.length) {
       h.assignments.forEach((a) => {
-        if (a.personId && a.roleId && inWindow(a.date) && presentOn(h, a.personId, a.date)) bump(a.personId, a.roleId);
+        if (a.personId && a.roleId && inWindow(a.date) && presentOnInHistory(h, a.personId, a.date)) bump(a.personId, a.roleId);
       });
       return;
     }
@@ -787,6 +861,37 @@ export function historicRoleCounts() {
     });
   });
   return counts;
+}
+
+/** H74: latest date strictly before dateOf(d) on which pid had the Files role and was Present.
+ * Checks history entries + current block earlier days. Returns ISO date string or null. */
+export function lastFilesDate(pid, d) {
+  const fr = filesRole();
+  if (!fr) return null;
+  const beforeDate = dateOf(d);
+  const currentStart = block().startDate;
+  let lastDate = null;
+
+  // Check earlier days of current block
+  for (let i = 0; i < d; i++) {
+    const date = dateOf(i);
+    if (isPresent(personById(pid), i)) {
+      const hasFiles = block().assignments.some((a) => a.date === date && a.personId === pid && a.roleId === fr.id);
+      if (hasFiles && (!lastDate || date > lastDate)) lastDate = date;
+    }
+  }
+
+  // Check history entries (skip saved copy of current block)
+  history().forEach((h) => {
+    if (historyStart(h) === currentStart) return;
+    (h.assignments || []).forEach((a) => {
+      if (a.personId === pid && a.roleId === fr.id && a.date < beforeDate && presentOnInHistory(h, pid, a.date)) {
+        if (!lastDate || a.date > lastDate) lastDate = a.date;
+      }
+    });
+  });
+
+  return lastDate;
 }
 
 function shiftMapForEntry(h) {

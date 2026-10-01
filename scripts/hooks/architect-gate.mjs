@@ -62,7 +62,7 @@ export const PR_INTENT_RE =
   /\b(pull request|create\s+(a\s+)?pr\b|open\s+(a\s+)?pr\b|gh\s+pr\s+create|make\s+(a\s+)?pr\b)\b/i;
 
 const BEHAVIOUR_PATH_RE =
-  /^(src\/js\/|src\/styles\/app\.css|docs\/Shift_Manager_PRD\.md|docs\/PRD_Deprecated\.md|SECURITY\.md|docs\/THIRD_PARTY\.md|README\.md|AGENTS\.md|CLAUDE\.md|build\.mjs)/;
+  /^(src\/js\/|src\/styles\/app\.css|docs\/Shift_Manager_PRD\.md|docs\/Shift_Manager_Spec\.md|docs\/PRD_Deprecated\.md|SECURITY\.md|docs\/THIRD_PARTY\.md|README\.md|AGENTS\.md|CLAUDE\.md|build\.mjs)/;
 
 const STATE_DIR = join(tmpdir(), 'shift-manager-architect');
 

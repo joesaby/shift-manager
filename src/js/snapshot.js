@@ -3,7 +3,8 @@ import {
   block, dayLabels, activePeople, roleById, groupById, getStatus, isPresent, roleOfPerson,
   roleOfPersonOnDay, rosterDays, rolesForDay, unitName, vacatedEssential,
   findHistoryIndexForStart, history, upsertHistoryEntry, snapshotBlockForHistory,
-  historicRosterModel, personById, canEditHistory, historyStart, loadHistoryForEdit
+  historicRosterModel, personById, canEditHistory, historyStart, loadHistoryForEdit,
+  isFilesRole
 } from "./model.js";
 import { LOGO_DATA_URI } from "../assets/logo.js";
 import { getSessionUser, logAudit } from "./audit.js";
@@ -33,6 +34,7 @@ export function buildSnapshot() {
 
   const unfilled = days.map((day, d) => rolesForDay(d)
     .filter((r) => r.essential !== false)
+    .filter((r) => !isFilesRole(r.id))  // H73: Files role is never unfilled
     .filter((r) => !(ros && ros[d].assign[r.id]))
     .map((r) => r.name));
 
@@ -66,9 +68,9 @@ export function buildSnapshot() {
 const AWAY_ORDER = ["Annual leave", "Sick leave", "Rest day", "Duty away"];
 
 /**
- * H59: one-day briefing rows — Present + assigned only, sorted by role sortOrder.
+ * H72: one-day briefing rows — Present + assigned only, sorted by role group sortOrder, then role sortOrder, then role name, then person name.
  * @param {number} d day index
- * @returns {{ day: {label:string,shift:string,iso:string}, unitName: string, rows: Array<{roleId:string,roleName:string,sortOrder:number,personName:string,employeeNo:string,shoulderNo:string,color:string}> }}
+ * @returns {{ day: {label:string,shift:string,iso:string}, unitName: string, rows: Array<{roleId:string,roleName:string,groupSort:number,sortOrder:number,personName:string,employeeNo:string,shoulderNo:string,color:string}> }}
  */
 export function buildDayBrief(d) {
   const days = dayLabels();
@@ -85,17 +87,19 @@ export function buildDayBrief(d) {
       const rid = roleOfPerson(ros[d], p.id);
       if (!rid) return;
       const role = roleById(rid) || { name: "", groupId: "", sortOrder: 9999 };
+      const group = groupById(role.groupId);
       rows.push({
         roleId: rid,
         roleName: role.name || "",
+        groupSort: group ? (group.sortOrder == null ? 9999 : group.sortOrder) : 9999,
         sortOrder: role.sortOrder == null ? 9999 : role.sortOrder,
         personName: p.name,
         employeeNo: p.employeeNo || "",
         shoulderNo: p.shoulderNo || "",
-        color: groupById(role.groupId).color
+        color: group.color
       });
     });
-    rows.sort((a, b) => (a.sortOrder - b.sortOrder) || a.roleName.localeCompare(b.roleName) || a.personName.localeCompare(b.personName));
+    rows.sort((a, b) => (a.groupSort - b.groupSort) || (a.sortOrder - b.sortOrder) || a.roleName.localeCompare(b.roleName) || a.personName.localeCompare(b.personName));
     const ord = (s) => { const i = AWAY_ORDER.indexOf(s); return i < 0 ? AWAY_ORDER.length : i; };
     away.sort((a, b) => (ord(a.status) - ord(b.status)) || a.personName.localeCompare(b.personName));
   }

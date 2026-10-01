@@ -52,91 +52,127 @@ Shift manager at a desk, last night of a block. Others only see the printed rota
 
 ## 3. Functional requirements
 
-### Must
+Written from the shift manager's side: **As a shift manager, I …**. Grouped by what I do, not by screen. Each row keeps its stable **H-id** (used in code, tests and the Generate rules table below) and a priority. **Spec** points to [`Shift_Manager_Spec.md`](Shift_Manager_Spec.md) for the technical and design detail (layout, CSS, stored fields, code paths). Retired rows → [`PRD_Deprecated.md`](PRD_Deprecated.md).
 
-| ID | Requirement |
-| --- | --- |
-| H1 | Add, rename, deactivate and delete people |
-| H2 | Per person: qualification ticks for every role (People screen — the only place "who can do what" is set) |
-| H3 | Per person: optional fixed role (“only do this”), limited to qualified roles |
-| H4 | Set block start date and Day/Night for each of four days |
-| H5 | Set status per person per day: Present, Annual leave, Sick leave, Duty away, Rest day |
-| H6 | Generate fills roles for Present people for the block: **essential roles first**, then non-essential from remaining Present people (see H44) |
-| H7 | Generate and manual edit only offer qualified people (hard block) |
-| H8 | Fixed-role people get that role when Present (including when the fixed role is non-essential — fixed wins even if essential roles are short) |
-| H9 | *Retired 2026-09-30.* Skill-first / scarcest-first fill order → [`PRD_Deprecated.md`](PRD_Deprecated.md); replaced by H28 |
-| H10 | Prefer not repeating the previous working day’s role when alternatives exist (**essential pass**; non-essential pass may skip or apply loosely — see §11) |
-| H11 | Hard roles not on back-to-back nights when alternatives exist (essential pass; non-essential hard roles follow the same soft rule if marked hard) |
-| H28 | **Fair rotation across all blocks:** Generate gives each role to the Present, qualified person who has done that role **least, as a share of their own duties** (role count ÷ their total duties) — over the **12 months before the block starts** (`LOOKBACK_MONTHS` in `rules.js`) of rosters saved to the Log, plus the earlier days of the block being generated; ties at random. Older blocks, later-dated saved blocks and the saved copy of the block being generated are not counted, and a saved duty on a day the person was **not Present** (attendance row or long-term sick) is not counted. Share rather than raw count so a new starter or someone back from long leave is not picked for the same role for months. Each day's essential roles are solved together (min-cost assignment), so every essential role is filled whenever any valid arrangement exists; a role stays blank only when nobody Present can do it (warns per H13). H71 / H11 stay soft in the essential pass, H70 / H71 always enforced in the non-essential pass, which keeps list-order priority (H44). Goal: role counts on Duty stats even out over time (leave / sickness mean not always exactly). Replaces the within-block "not recently" preference, the skill-first order (H9) and the random shuffle of general roles |
-| H12 | Manual edit on the **person × day Roster**: assign, same-day moves (see H47), unassign / leave unfilled |
-| H13 | Warn on **unfilled essential** roles (never block Generate or Print). Unfilled non-essential roles do not warn. Set `stale` after **role-catalogue or Day↔Night shift** changes — **not** after attendance-only changes. Do **not** suggest regenerate for attendance changes (see H48) |
-| H14 | Colour print from the Roster: **person × day** grid — person leftmost column, then optional Employee / Shoulder no. columns (H53), then one column per day; each day cell shows that person's duty type or status as text, coloured by role group when Present, or by the shared unavailable-status colour when not Present (see H41). Non-Present cells that still have a stored assignment show `<status> (was: <role>)`. Print only what has been **saved** (see H51–H52). On screen the print header (crest / “Duty rota …” / “Prepared by”) is hidden; it appears in print (H55). Output aims to fit **one A4 landscape page** via scale-to-fit (H39, H57). Optional extras: a **Tally** footer row of attendance counts per day (H66) and black cell borders (H65); column widths follow H63 |
-| H15 | **Save roster** upserts the log entry for the current block start date (match `start` or `startDate` on history rows); replace that entry with the latest snapshot rather than pushing a duplicate. Browse, re-print, **Edit** (H68), CSV export on Log (no delete — see [`PRD_Deprecated.md`](PRD_Deprecated.md)); show manager who saved when known. Changing block start after a save creates a **new** history entry. Pre-existing duplicate rows from older push behaviour are left alone (no cleanup) |
-| H16 | Open / save JSON; `localStorage` backup; **Choose folder** workspace with autosave |
-| H17 | Set **unit name** (`meta.unitName`); show on Home, Attendance, Roster, sidebar |
-| H18 | Set **manager name** (browser-local); stamp on new Save roster / print snapshots; do not rewrite older entries |
-| H33 | **Rest day** is an attendance status choice (does not allocate; shown as status text on Roster/print) |
-| H34 | People screen list is sorted by **surname** (last word of the person's name), not first name |
-| H35 | Roles have both **Used by day** and **Used at night** flags; a role can be restricted to only one shift type (day fills roles marked used-by-day, night fills roles marked used-at-night) |
-| H36 | **Roster** (interactive, post-generate) renders **person × day**: person name leftmost, each day a column, duty-type/status text coloured per role group / status. Print is an action on this screen, not a separate nav screen. Persisted UI screen ids `prt` and `ros` both open Roster. Layout: full-width main (H54), compact toolbar (H55), viewport-sized scroll body (H56) |
-| H37 | On Roster (and print), a Present person with no role shows a blank white day cell with italic light-grey **Unassigned** — primed for parking-chip drop or person swap (skill / Present / fixed-role rules still apply). Typical causes: × unassign or role moved to parking lot. **Assumption:** managers keep **more roles than Present** for each day/shift so Generate does not leave surplus people empty. Former free-text spare notes → [`PRD_Deprecated.md`](PRD_Deprecated.md); `blocks.current.spareNotes` cleared on migrate-on-open; new snapshots omit the field. **Add role selector (screen-only):** when at least one role for that day (essential or non-essential) is unfilled and this person is Present and qualified for it, the Unassigned cell shows an inline `<select>` listing those roles (essential first, non-essential marked "(optional)") instead of the plain label, so a last-minute non-essential fill does not require the parking lot. Choosing one calls the same `assignRoleToPerson` path as other assign gestures. When no such role exists, the plain "Unassigned" label keeps a tooltip explaining why: nothing unfilled for anyone that day, this person isn't Present, or they aren't qualified for what's left. Not printed |
-| H38 | On Roster, while scrolling the person list: the **day header row**, the **parking-lot row**, and the **Person (name) column** stay frozen/visible. Employee / Shoulder number columns scroll with the body (not sticky). Do not break this when sizing the scroll region to the viewport (H56). **Scroll is kept on redraw:** clicking or dragging a cell redraws the screen without resetting the table's (or page's) scroll position, so a long roster stays where the manager was working, and a dropdown or input you just changed keeps keyboard focus (without scrolling), so Tab carries on from where you were instead of restarting at the top of the page. **Auto-scroll while dragging:** dragging a person or parking-lot chip near the top or bottom of the table (including over the frozen header or pinned Tally row) scrolls the table in that direction, faster nearer the edge, so a long roster can be reached without dropping first |
-| H39 | Print output uses **A4 landscape** with ~10mm margins. Prefer **one page**: scale font/padding so Name + number columns + four day columns fit; readable floor ≈ 8–9px. Beyond what scale can keep readable, a second page is allowed. Safety: `tr { break-inside: avoid }`; `thead` repeats on a second page. Parking lot, drag handles, × unassign and the row highlight (H64) are not printed; the optional Tally row (H66) is printed and counts toward the one-page fit |
-| H40 | Attendance screen's per-day card shows the date prominently (large) and the present / roles headcount smaller; the roles count (`y` in “x present, y roles”) counts **essential** roles only for that shift |
-| H41 | Attendance and Roster use the same status colours: **Present** is green; **Annual leave**, **Sick leave**, **Duty away**, and **Rest day** share one blue (unavailable). Role-group colours on Roster/print stay as configured under Roles and groups |
-| H42 | Attendance screen's day / shift header row stays frozen (visible) while scrolling the person list |
-| H43 | Roles have an **Essential** flag (`essential: boolean`). Roles screen: Essential checkbox column; list groups essential roles first, then non-essential. Default `true` on migrate when the field is missing |
-| H44 | Generate **two-pass**: (1) essential roles with current allocation logic; (2) non-essential roles in `sortOrder` from remaining free Present people. Roles that cannot be filled stay **blank** (same as after ×): never fail strict mode for non-essential shortage; unfilled essentials warn (H13) but do not block. List order among non-essential = fill/drop priority. **No** auto-promotion of a non-essential holder into a vacated essential role. Catalogue is expected to have enough roles that every Present person can be assigned |
-| H45 | Vacated roles are **derived**, not stored. **Parking lot:** pinned row under the frozen day header listing vacated **essential** roles only (chips: `<role> — was: <person>` when known; slim “all essential roles covered” when empty so layout does not jump; not printed). Vacated **non-essential** roles create **no** chip and **no** warning — silently empty for that day; the sick person's cell shows the status with a small **screen-only** second line `was: <role>` (never printed and not stored in the saved snapshot text). Returning to Present restores the assignment. Snapshot `unfilled` counts vacated essentials only |
-| H46 | Single post-generate working screen: person × day **Roster** (**Save roster** + Print actions). Former person × role grid / Print rota nav → [`PRD_Deprecated.md`](PRD_Deprecated.md). Keep roster warnings and swap behaviour on the new screen. Historic/log snaps with older layouts still render |
-| H47 | Same-day moves on Roster. **Primary:** drag parking-lot chip onto a person (click chip → click person fallback). **Person drag** via cell handle. Matrix: chip→unassigned takes role; chip→non-essential holder → they take essential, non-essential **dropped for that day** (no parking, toast); chip→essential holder → they take parked role, old essential enters parking lot; essential↔essential and non-essential↔non-essential **swap**; person→unassigned hands over; **essential holder → non-essential holder = swap** (not replace). Reject/dim non-Present, skill-unqualified, fixed-role-invalid; cross-day rejected. Toast after every move. Unassign available (role to parking lot; person cell becomes Unassigned) |
-| H48 | **Generate once per block:** before a roster exists, Generate is the primary action. After a roster exists, it is a secondary **Start over / Regenerate** with confirmation (“reshuffles everyone and discards manual edits”). No banner suggests regenerate for attendance changes |
-| H49 | **Save roster** upserts by block start (`start` / `startDate`); Log and Duty stats must not double-count the same block after repeated saves |
-| H50 | Every Save roster writes a folder **audit** line via `logAudit` (text files under `logs/`, not JSON). Earlier log versions for that start are not kept — only the audit trail records that a save happened |
-| H51 | **Unsaved** is derived (not stored): compare live `buildSnapshot()` to the last saved history entry for this block start, ignoring stamp fields (`savedBy`, `savedAt`, and equivalents). Include attendance status and employee/shoulder numbers so a post-save sick mark or number edit makes the roster unsaved. Show an “Unsaved changes” badge when unsaved |
-| H52 | When unsaved, Print becomes **Save & print** (save first, then print). When saved, Print uses the existing `#printArea` (no separate render path) |
-| H53 | Per person: optional **Employee number** and **Shoulder number** (`employeeNo`, `shoulderNo` — strings, default `""`). People detail: two inputs beside Name. Search matches numbers as well as names. Roster/print (`rotaHTMLPersonDay` and the interactive Roster table): a single header row with two narrow non-sticky columns “Employee no.” and “Shoulder no.” after the sticky Name column (min-widths sized for an 8-digit number); blank when unset; number cells are not drag targets. `buildSnapshot()` stores both per person; render number columns only when the snap carries them (legacy snaps unchanged). Unsaved comparison (H51) includes them. CSV export unchanged. Number columns are included in print scale-to-fit (H57) |
-| H54 | **Full-width Roster (and Attendance when trivial):** on these screens the main content is not capped at `max-w-7xl`; horizontal padding is reduced so Name + Emp + Shldr + four day columns fit without horizontal scrolling on typical laptop widths (incl. ~1366×768 with sidebar collapsed) |
-| H55 | **Compact Roster chrome (screen):** one toolbar row — “Roster · unit · block dates · Unsaved badge · Save · Print / Save & print · Start over”. No page subtitle. Vacated-role and unfilled alerts stay but are compact/inline. The crest / “Duty rota …” / “Prepared by” block is **print-only** (`no-print` inverse / screen-hidden). Screen card padding is tight |
-| H56 | **Viewport-sized Roster table (screen):** the scroll region uses remaining viewport height (not a fixed `70vh`). Only the table **body** scrolls; day header + parking lot stay in the frozen thead (H38). Compact row padding (~`py-1`) so ~30 people fit a 1080p screen without vertical scrolling when chrome is collapsed/minimal. Parking-lot row height is capped (wrap ≤2 lines, then scroll inside the parking cells) so many chips do not push the grid down |
-| H57 | **Print scale-to-fit:** at render (or via a CSS variable / `zoom` on `#printArea`) shrink font size and row padding so the saved roster fits one A4 landscape page down to a readable minimum (~8–9px). Includes H53 number columns. Parking / drag / unassign chrome remain non-printed. Verify with sample data at 20, 28, 35, and 45 people |
-| H58 | **Collapsible sidebar:** drop permanent `lg:drawer-open` when the user collapses; show the hamburger at every width. Default: collapsed on Attendance, Roster and Duty stats (wide tables), pinned open elsewhere; an explicit Hide / Pin choice overrides the default on every screen. Remember the choice per viewer in `localStorage` (try/catch; render correctly if storage is unavailable). Keep mobile overlay drawer behaviour. Do **not** move nav into the top bar (possible later — see §11) |
-| H59 | **Duty stats pivot:** for the selected period (H61), one row per person and one column per role, each cell the number of times that person did that role (blank-dot when none). Columns follow the Roles screen (essential first, then list order); a duty that appears in the log but is no longer in the role list keeps a column at the end. Day / Night columns and tiles, the duty-type (group) column and the Top roles column are removed. The Historic list stays as “jump to a month”; its cards show duties only |
-| H60 | **Sortable and tallied:** every heading (Person, each role, Hard, Total) has its own **▲ (low to high / A–Z) and ▼ (high to low / Z–A)** buttons at the top of the column, so a direction can be chosen directly (▼ on a role = who did it most); clicking the heading name toggles (first click high-to-low, Person A–Z). Ties fall back to name. The active direction is highlighted; other headings show both arrows faintly. **Tallies at the end:** Hard, Skill and Total columns after the roles (Total pinned at the right), and a Total row at the bottom (pinned) with each role's tally and the grand total. Hard roles are tagged “H” on their heading. Sort state is per session (not saved). No highlighting or ranking logic — the table is read as-is |
-| H61 | **Period selector:** Duty stats covers a date range, not a single month. **Default: everything from the earliest recorded date (current planned block + saved log) up to today.** Presets **All time** (default), **This year**, **This month**, plus a **From / To** date selector (either box may be cleared to return to its default; dates entered the wrong way round are swapped). The Historic month list sets the range to that month. Duties and attendance are counted by date, the saved copy of the live block is not counted twice (H49). The period is screen state only (not saved to the data file) |
-| H62 | **Person report:** clicking a name on Duty stats opens a report for just that person over the same period: every role down the page with how many times they did it (zeros shown; hard roles tagged; total and hard totals), and **attendance** — days Present, Annual leave, Sick leave, Duty away, Rest day (and total). Attendance comes from the current planned block and rotas saved to the Log (a block that was never saved is not counted; saved rotas use their per-day records). **← All people** returns to the pivot; **Open in People** goes to that person's People page; **Print this report** prints only this report (`#printArea`: crest, unit, name, employee / shoulder numbers when set, period, prepared by) on one A4 landscape page |
-| H61 | **Day briefing print:** on Roster, a **Briefing sheet** bar above the grid has one **Print day-label** button per day (e.g. Print Thu). Prints a disposable one-page A4 **portrait** sheet for that day only: rows are Present people with an assigned role, sorted by role catalogue `sortOrder` (then role name); columns Role · Name · Employee no. · Shoulder no.; Role cell uses the role-group colour. Heading reads **Briefing sheet: <date> · <Day/Night>**. Present people with a role come first; **Annual leave, Sick leave, Rest day and Duty away** people are listed at the bottom (status in the Role column, in that order, then by name). Unassigned Present are still omitted. Uses the **live** roster (no Save required; does not change person row order on the interactive grid or write to Log). Full-block **Print / Save & print** (H14, H52) stays unchanged (landscape person × day of the saved roster). Empty day (nobody Present+assigned) toasts and does not open the print dialog |
-| H63 | **Roster column fit:** on Roster and print, the Name, Employee no. and Shoulder no. columns are sized to their longest content in **pixels** (never stretched; a name never wraps, so every row is one line — even on the narrower printed page), and the day columns share the remaining width equally. Widths are derived at render (`src/js/colfit.js` measures the table, then writes a `<colgroup>` with px widths for those columns and unsized day columns, with fixed table layout), never stored, so there is no schema change and old snapshots get the same treatment. Long role text in a day cell may still wrap on a narrow window. Complements H39 / H57 (one-page print). Drag-to-resize is not part of this requirement |
-| H64 | **Highlight a Roster row:** on Roster, clicking a person's name highlights that row (outlined, name cell tinted); click the name again or press Esc to clear. With a row highlighted, **↑ / ↓** move the highlight to the row above / below (inactive people are skipped; stops at the first / last row; the row is scrolled into view; ignored while typing in an input or select). Selection only: rows are **never reordered**, nothing is saved or changed in the data, and the highlight is not printed. Independent of the swap selection (H36 drag / click cells) |
-| H65 | **Black print borders (optional):** Roster toolbar has a **Black borders** checkbox. Off (default): printed grid keeps the light-grey lines. On: every cell of the printed roster (Roster and Log prints) has a 1px black border. Screen appearance is unchanged. The choice is remembered per viewer in `localStorage` (try/catch; works without storage) and is not saved in the data file or snapshots, so there is no schema change |
-| H66 | **Attendance tally:** (a) **Attendance** day summary sits **inside each day's column header** (above the status dropdowns, so it lines up with its column; the separate stats strip is removed) and keeps “N present, M roles to fill” (green / red as before) and adds a second line with one chip per non-Present status that has people that day (e.g. Annual leave 2 · Sick leave 1), in the Attendance status colours (H41); “Everyone present” when none. (b) **Roster** toolbar has a **Tally ▾** menu of checkboxes, one per attendance status (none ticked by default). Ticked statuses appear as a **Tally** footer row under each day column (label + count, zero shown), pinned to the bottom of the scroll area on screen and **printed** with the roster (one extra row in the one-page fit, H39 / H57). No ticks = no row. The ticked set is remembered per viewer in `localStorage` (try/catch), never saved to the data file or snapshots; counts come from the live attendance of active people (`statusCountsForDay`, `model.js`). Log prints are unchanged |
-| H67 | **Long-term sick:** People detail has a **Long-term sick** toggle with **From** and optional **To** dates (inclusive; no To = until ended). Ticking it starts the period on the current block's start date. Stored as `people[].longTermSick: { from: "YYYY-MM-DD", to: "YYYY-MM-DD" | "" }` (absent = none; additive, old files open unchanged — no migration needed). `getStatus` (`model.js`) returns **Sick leave** for a covered day that has no attendance entry, so every new block, Attendance, the summary and tally (H66), Roster, Generate, saved snapshots and Duty stats use it with no per-day clicking. An attendance day set by hand wins for that day only (Present on a covered day is stored explicitly). Changing the period does not mark the roster stale (like any attendance change, H13). To before From is rejected with a toast. Sick leave only; **Active** (H-none) is unchanged and is for people who have left |
-| H68 | **Edit a saved roster:** each Log entry (list and viewer) has an **Edit** button that copies the saved block (dates, Day/Night shifts, attendance, assignments) into the working block and opens Roster, with all the usual tools (swap, parking lot, tally, print). Save roster then replaces that block's log entry (H15 upsert), so past rosters can be corrected and planned ones changed. The log entry itself is never modified until you save. If the working roster has **unsaved changes**, a prompt offers **Save & open** (saves it first) or Cancel; if it is only attendance with no roster yet, a warning offers **Open anyway** or Cancel. Older-format entries without dates / shifts / attendance / assignments are view-only (Edit disabled). Opening writes a `ROSTER_EDIT_OPENED` audit line. Old JSON needs no migration
-| H69 | **No regenerating a passed roster:** a block is *past* once its last day is before today. A past block that already has a roster cannot be regenerated: Roster shows a **Past roster · corrections only** badge instead of Start over / Regenerate, the Attendance **Generate roster** button is disabled, and the action itself refuses with a message. Cells can still be edited and saved (H68). Current (in-progress) and future blocks can be regenerated as before (H13, H48); the first Generate for a block with no roster is always allowed. Guard is a convenience against accidents, not tamper-proofing — anyone can edit the JSON
-| H70 | **Once per block:** roles have an optional **Once per block** flag (`oncePerBlock: boolean`, absent = false; additive, no migration). Generate never gives a person more than one day in a block on flagged roles of the same group (e.g. Files 1–5 in a Files group). Always enforced; the role stays blank rather than repeat a person (non-essential) |
-| H71 | **No same-group role two days running:** Generate does not give a person a role from the same **group** they held the previous day (supersedes the role-only rule in H10). Essential pass: soft, as H10 (falls back if unavoidable); non-essential pass: always enforced (role left blank rather than repeat). Fixed-role people are unaffected. Manual edits are not restricted |
+*Evolving this table:* a new H-id is for a new thing the manager can do. A tweak to how an existing thing looks or behaves is edited in its Spec entry, not given a new id.
 
-### Should
+### 3.1 My team (People)
 
-| ID | Requirement |
-| --- | --- |
-| H19 | Manage role list: name, group, day/night use, hard, **essential**, once per block, display order. Roles screen groups **essential roles first**, then non-essential; `sortOrder` among non-essential is fill/drop priority |
-| H20 | Manage role groups and print colours |
-| H21 | Paste-many for people and roles |
-| H22 | Sample dataset for training |
-| H23 | *Retired 2026-09-30.* Skills screen and the **Needs a skill** role flag column → [`PRD_Deprecated.md`](PRD_Deprecated.md); qualifications are ticked on People (H2) |
-| H24 | *Retired 2026-09-29.* Historic roster screen merged into the Log → [`PRD_Deprecated.md`](PRD_Deprecated.md); reopen a saved roster with H68 |
-| H25 | Duty stats: team load over a chosen period (H61) as a person × role pivot (H59) with hard / total tallies, and a per-person report (H62); no Day / Night or duty-type (group) columns |
-| H26 | Workspace `backups/` (prev + dated snapshots) when folder connected |
-| H27 | Folder audit lines under `logs/YYYY/MM/DD/audit_log.txt` for milestones |
+| ID | Priority | Requirement | Spec |
+| --- | --- | --- | --- |
+| H1 | Must | As a shift manager, I can add, rename, deactivate and delete people, so the list matches my team. | S1 |
+| H34 | Must | As a shift manager, I see people sorted by surname, so I find someone the way I think of them. | S1 |
+| H2 | Must | As a shift manager, I tick every role each person is qualified for, in one place (People), with Select all / Clear all to save clicks, so Generate and manual edits only ever offer people who can do the job. | S2 |
+| H3 | Must | As a shift manager, I can give someone a fixed role ("only do this"), chosen from roles they are qualified for. | S2 |
+| H53 | Must | As a shift manager, I can record each person's employee number and shoulder number, search by them, and see them on the Roster and print. | S1 |
+| H67 | Must | As a shift manager, I can mark someone long-term sick with a From date and an optional To date, so every block counts them as Sick leave without me clicking each day, and I can still override a single day by hand. | S3 |
+| H21 | Should | As a shift manager, I can paste many people (or roles) at once instead of typing them one by one. | S1 |
+| H22 | Should | As a shift manager, I can load a sample dataset, so I can train new managers without real data. | S1 |
 
-### Could (not required yet)
+### 3.2 My duties (Roles and groups)
 
-| ID | Requirement |
-| --- | --- |
-| H29 | In-app screen to read folder audit text files |
-| H31 | Qualification expiry / notes on person–role links |
-| H32 | Cell-level audit of every manual swap (who/when/old/new) in JSON |
+| ID | Priority | Requirement | Spec |
+| --- | --- | --- | --- |
+| H19 | Should | As a shift manager, I manage the role list — name, group, day/night use, hard, essential, once per block, Files role — and put roles in order with Up / Down. | S4 |
+| H20 | Should | As a shift manager, I manage role groups and their print colours, so related roles (e.g. car crews) share a colour. | S4 |
+| H35 | Must | As a shift manager, I say whether a role is used by day, at night or both, so each shift only gets the roles it needs. | S4 |
+| H43 | Must | As a shift manager, I mark roles as essential, and essential roles are listed first, so the ones that must be covered are clear. | S4 |
+| H70 | Must | As a shift manager, I can mark roles "once per block", so nobody gets that kind of duty (e.g. Files 1–5) twice in a block. | S5 |
+| H73 | Must | As a shift manager, I can mark one role as the Files role, so everyone still free after the real roles are filled (and ticked for Files) lands on Files instead of being left with nothing. | S5 |
+
+### 3.3 Planning the block and attendance
+
+| ID | Priority | Requirement | Spec |
+| --- | --- | --- | --- |
+| H4 | Must | As a shift manager, I set the block start date and Day or Night for each of the four days. | S6 |
+| H5 | Must | As a shift manager, I set each person's status for each day — Present, Annual leave, Sick leave, Duty away, Rest day — and tick AL beside a name to put them on Annual leave for the whole block. | S6 |
+| H33 | Must | As a shift manager, I can mark a Rest day, which isn't allocated and shows as a status on the Roster and print. | S6 |
+| H41 | Must | As a shift manager, I see the same status colours on Attendance and Roster (Present green; all the unavailable statuses one shared blue). | S6 |
+| H40 | Must | As a shift manager, I see each day's date prominently with how many are present and how many essential roles there are to fill. | S6 |
+| H42 | Must | As a shift manager, I keep the day / shift header in view while scrolling a long list of people. | S6 |
+| H66 | Must | As a shift manager, I see at a glance who is away each day (a count per status in each day's header on Attendance), and can tick a Tally on the Roster that prints a count row under each day. | S6 |
+
+### 3.4 Generating the roster
+
+| ID | Priority | Requirement | Spec |
+| --- | --- | --- | --- |
+| H6 | Must | As a shift manager, I press Generate and it fills roles for the people who are Present, essential roles first, then the rest from whoever remains. | S7 |
+| H44 | Must | As a shift manager, I get essential roles covered first, then non-essential roles in my list order, then Files taking everyone left; a role nobody can fill stays blank rather than failing. | S7 |
+| H7 | Must | As a shift manager, I am only ever offered qualified people, by Generate and by manual edit alike. | S7 |
+| H8 | Must | As a shift manager, I get fixed-role people in their fixed role whenever they are Present. | S7 |
+| H28 | Must | As a shift manager, I get duties shared fairly: each role goes to the qualified, Present person who has done it least as a share of their own duties over the last 12 months, so counts even out over time and a new starter isn't stuck with the same role. | S7 |
+| H10 | Must | As a shift manager, I prefer people not to repeat the previous day's role when someone else can cover. | S7 |
+| H71 | Must | As a shift manager, I avoid giving anyone a role from the same group (e.g. Car) two days running when someone else can cover. | S7 |
+| H11 | Must | As a shift manager, I avoid hard roles on back-to-back nights when someone else can cover. | S7 |
+| H13 | Must | As a shift manager, I am warned about unfilled essential roles — never blocked from Generate or Print — and not nagged about non-essential ones or about attendance-only changes. | S7 |
+| H48 | Must | As a shift manager, I generate once per block; after that it is a deliberate "Start over / Regenerate" with a warning that it discards my manual edits. | S7 |
+| H69 | Must | As a shift manager, I can't accidentally regenerate a roster for a block that has already passed; I can still correct and save it. | S7 |
+| H9 | — | *Retired 2026-09-30.* Skill-first / scarcest-first fill order → [`PRD_Deprecated.md`](PRD_Deprecated.md); replaced by H28 | — |
+
+### 3.5 Adjusting the roster
+
+| ID | Priority | Requirement | Spec |
+| --- | --- | --- | --- |
+| H46 | Must | As a shift manager, I do all post-generate work on one screen — the person × day Roster — with Save roster and Print there. | S8 |
+| H36 | Must | As a shift manager, I see each person down the side and each day across, with the duty or status coloured by role group. | S8 |
+| H12 | Must | As a shift manager, I can assign, move and unassign people by hand on the Roster. | S9 |
+| H37 | Must | As a shift manager, I see a Present person with no role as "Unassigned" and can give them a role straight from a dropdown of what's still unfilled, without going via the parking lot. | S9 |
+| H45 | Must | As a shift manager, when someone goes sick the roles they vacate appear in a parking lot (essential roles only), and return to them if they come back. | S9 |
+| H47 | Must | As a shift manager, I can drag a parked role onto a person, or drag people between cells, to make same-day swaps — impossible moves are refused and every move is confirmed. | S9 |
+| H74 | Must | As a shift manager, I see on each Files cell when that person last did Files (or "first time"), to help me choose who to pull into an essential role at short notice; it is not printed. | S9 |
+| H54 | Must | As a shift manager, I see the whole roster at once on a laptop, without sideways scrolling. | S8 |
+| H55 | Must | As a shift manager, I get a compact one-row toolbar on the Roster, so the table gets the room. | S8 |
+| H56 | Must | As a shift manager, I see the table fill the screen height, so about 30 people fit with only the rows scrolling. | S8 |
+| H38 | Must | As a shift manager, I keep the day headers, the parking lot and the names in view when scrolling, and my place isn't lost when I change a cell or drag near the edge. | S8 |
+| H63 | Must | As a shift manager, I see name and number columns sized to their content, so every person fits on one line. | S8 |
+| H64 | Must | As a shift manager, I can click a name to highlight that person's row and step through with ↑ / ↓, without changing or saving anything. | S8 |
+
+### 3.6 Printing
+
+| ID | Priority | Requirement | Spec |
+| --- | --- | --- | --- |
+| H14 | Must | As a shift manager, I can print the saved roster in colour as a person × day grid that fits one A4 landscape page, showing status text where someone isn't Present. | S10 |
+| H39 | Must | As a shift manager, I get a clean one-page A4 landscape print, without the parking lot, drag handles or highlights. | S10 |
+| H57 | Must | As a shift manager, I get the print scaled to fit one page for typical team sizes (20–45 people) while staying readable. | S10 |
+| H52 | Must | As a shift manager, I print only what's saved: if there are unsaved changes the button says "Save & print" and saves first. | S10 |
+| H65 | Must | As a shift manager, I can switch on black borders for the printed grid when I want it crisper. | S10 |
+| H72 | Must | As a shift manager, I can print a one-page briefing sheet for a single day, grouped by role group, with those away listed at the bottom — without having to save first. | S11 |
+
+### 3.7 Saving, reopening and the Log
+
+| ID | Priority | Requirement | Spec |
+| --- | --- | --- | --- |
+| H15 | Must | As a shift manager, I save the roster to the Log, one entry per block, replacing the earlier save rather than duplicating it; I can browse, reprint and export the Log. | S12 |
+| H49 | Must | As a shift manager, I am never double-counted in the Log or Duty stats because I saved the same block twice. | S12 |
+| H51 | Must | As a shift manager, I see an "Unsaved changes" badge whenever the roster differs from what I last saved (including attendance and number edits). | S12 |
+| H50 | Must | As a shift manager, I have a trail of every save, kept as text in the folder, even though earlier versions aren't kept. | S12 |
+| H18 | Must | As a shift manager, I set my name once and it is stamped on new saves and prints, without rewriting older ones. | S12 |
+| H68 | Must | As a shift manager, I can open any saved roster with Edit to correct a past one or change a planned one, and nothing is changed until I save. | S13 |
+| H24 | — | *Retired 2026-09-29.* Historic roster screen merged into the Log → [`PRD_Deprecated.md`](PRD_Deprecated.md); reopen a saved roster with H68 | — |
+
+### 3.8 Duty stats
+
+| ID | Priority | Requirement | Spec |
+| --- | --- | --- | --- |
+| H25 | Should | As a shift manager, I see team load over a period I choose, to check duties are shared fairly. | S14 |
+| H59 | Must | As a shift manager, I see a person × role table of how many times each person did each role. | S14 |
+| H60 | Must | As a shift manager, I can sort by any column in either direction and see totals at the end. | S14 |
+| H61 | Must | As a shift manager, I choose the period — All time (default), This year, This month or my own From / To dates. | S14 |
+| H62 | Must | As a shift manager, I can click a person for their own report (every role, plus days Present, on leave, sick, away or resting), and print it. | S14 |
+| H23 | — | *Retired 2026-09-30.* Skills screen and the **Needs a skill** role flag column → [`PRD_Deprecated.md`](PRD_Deprecated.md); qualifications are ticked on People (H2) | — |
+
+### 3.9 My data, my unit and getting around
+
+| ID | Priority | Requirement | Spec |
+| --- | --- | --- | --- |
+| H16 | Must | As a shift manager, I can open and save my data as a file, keep a browser backup, or choose a folder that saves automatically. | S15 |
+| H17 | Must | As a shift manager, I set my unit's name and see it on Home, Attendance, Roster and the sidebar. | S15 |
+| H26 | Should | As a shift manager, I get automatic backups in my folder, so a bad edit isn't the end of the data. | S15 |
+| H27 | Should | As a shift manager, I get milestone entries recorded in the folder's audit files. | S15 |
+| H58 | Must | As a shift manager, I can collapse the sidebar to give wide tables room, and it remembers my choice. | S16 |
+| H29 | Could | As a shift manager, I could read the folder audit files inside the app. | S17 |
+| H31 | Could | As a shift manager, I could record qualification expiry or notes against a person's roles. | S17 |
+| H32 | Could | As a shift manager, I could see a cell-level record of every manual swap (who, when, old, new). | S17 |
 
 ~~H30~~ (multi-unit JSON) → [`PRD_Deprecated.md`](PRD_Deprecated.md).
 
@@ -206,11 +242,13 @@ Generated from [`src/js/rules.js`](../src/js/rules.js) — the same list drives 
 | 2 | H7 | `qualified` | filter | never broken | never broken | People only get roles they are ticked for on **People**. |
 | 3 | H8 | `fixedRole` | structural | order of work | order of work | **Only do this role** people get that role first. |
 | 4 | H44 | `essentialFirst` | structural | order of work | order of work | **Essential** roles are filled before the others. Non-essential roles are filled from whoever is left, in the order listed on Roles and groups. |
-| 5 | H28 | `leastDone` | objective | score | score | Each role goes to whoever has done it **least, as a share of their own duties**, over the last 12 months of rosters saved to the Log plus the earlier days of this block. Only days they were Present count. Ties are picked at random. |
-| 6 | H71 | `sameGroup` | soft | gives way if no other way | never broken | Nobody gets a role from the same group (e.g. Car) two days running when someone else can cover. |
-| 7 | H11 | `hardNights` | soft | gives way if no other way | gives way if no other way | On the second night, nobody gets a hard role if they had a hard role the night before, when someone else can cover. |
-| 8 | H70 | `oncePerBlock` | filter | never broken | never broken | **Once per block** roles go to a person on one day of the block at most. |
-| 9 | H13 | `emptyOnlyIfImpossible` | structural | order of work | order of work | An essential role is only left empty when nobody Present can take it. You'll see a warning, and you can fill it by hand. |
+| 5 | H73 | `filesTakesSpares` | structural | order of work | order of work | The **Files** role (ticked on Roles and groups) goes to everyone still free once the other roles are filled — any number of people a day. With **Once per block** ticked, someone who already had Files this block is left Unassigned. |
+| 6 | H73 | `filesFairSpares` | structural | order of work | order of work | Who is left free for Files rotates: people who have had Files **least, as a share of their duties**, are kept back from the other roles first. Fair spread of the other roles still comes first. |
+| 7 | H28 | `leastDone` | objective | score | score | Each role goes to whoever has done it **least, as a share of their own duties**, over the last 12 months of rosters saved to the Log plus the earlier days of this block. Only days they were Present count. Ties are picked at random. |
+| 8 | H71 | `sameGroup` | soft | gives way if no other way | never broken | Nobody gets a role from the same group (e.g. Car) two days running when someone else can cover. |
+| 9 | H11 | `hardNights` | soft | gives way if no other way | gives way if no other way | On the second night, nobody gets a hard role if they had a hard role the night before, when someone else can cover. |
+| 10 | H70 | `oncePerBlock` | filter | never broken | never broken | **Once per block** roles go to a person on one day of the block at most. |
+| 11 | H13 | `emptyOnlyIfImpossible` | structural | order of work | order of work | An essential role is only left empty when nobody Present can take it. You'll see a warning, and you can fill it by hand. |
 
 <!-- rules:end -->
 
@@ -372,7 +410,7 @@ Notes:
 1. `fixedRoleId`, if set, must be a role the person is qualified for.
 2. Live allocations only for Present people; non-Present holders are treated as vacated for fill/warn/UI (assignment row may remain until overwritten).
 3. Assignment person must be qualified for that role (generate and manual / swap).
-4. At most one person per `(date, roleId)`; at most one role per `(date, personId)` among Present holders.
+4. At most one person per `(date, roleId)` — except the Files role (H73), which may have many; at most one role per `(date, personId)` among Present holders.
 5. Role `sortOrder` defines display/generate order; among non-essential roles it is also drop/fill priority.
 6. `schemaVersion` known or migrated; missing `essential` defaults to `true` on open; missing `employeeNo` / `shoulderNo` default to `""` on open.
 
@@ -404,7 +442,7 @@ Source is modular under `src/js/` and bundled to one HTML via `npm run build`:
 | Network | None required at runtime |
 | Delivery | Single offline HTML (~350 KB) or zip of that file |
 | Performance | Generate four days for ~25 people / 16 roles in well under 2s |
-| Print | Colour; A4 landscape ~10mm margins; crest + unit + optional “Prepared by” (print-only on Roster screen); scale-to-fit one page when possible (H57); day header + parking lot frozen on screen (H38); collapsible sidebar (H58); per-day briefing print A4 portrait sorted by role (H61) |
+| Print | Colour; A4 landscape ~10mm margins; crest + unit + optional “Prepared by” (print-only on Roster screen); scale-to-fit one page when possible (H57); day header + parking lot frozen on screen (H38); collapsible sidebar (H58); per-day briefing print A4 portrait grouped by role group (H72) |
 | Resilience | Folder backups; `localStorage`; dirty badge; confirm before destructive clear |
 | Security | Local only; no telemetry |
 
@@ -434,7 +472,7 @@ Source is modular under `src/js/` and bundled to one HTML via `npm run build`:
 20. Roster is full-width with a single compact toolbar; on-screen print header is hidden; table body scrolls within the remaining viewport; ~30 compact rows fit 1080p without scrolling when chrome is minimal; parking-lot chips wrap/scroll inside a height cap.
 21. Print preview at 20 / 28 / 35 / 45 people: one page down to the readable minimum scale; second page only beyond that; `thead` repeats; rows do not split mid-row.
 22. Sidebar collapses/expands via hamburger at all widths; choice persists per viewer in `localStorage` when available; default collapsed on narrow, expanded on wide.
-23. Roster **Briefing sheet** bar offers one Print button per day (e.g. Print Thu): portrait sheet lists that day’s Present+assigned people sorted by role `sortOrder`, with Role / Name / Employee / Shoulder and group colours; leave / sick / rest / duty away listed at the bottom, Unassigned omitted; live roster (no Save); full-block Print unchanged. (H61)
+23. Roster **Briefing sheet** bar offers one Print button per day (e.g. Print Thu): portrait sheet lists that day’s Present+assigned people sorted by role `sortOrder`, with Role / Name / Employee / Shoulder and group colours; leave / sick / rest / duty away listed at the bottom, Unassigned omitted; live roster (no Save); full-block Print unchanged. (H72)
 24. Duty stats shows a person × role table with counts; the ▲ / ▼ at the top of a role column sorts by that role (▼ = most first), clicking the heading name toggles; Person sorts A–Z / Z–A; Hard / Total columns and a Total row tally at the end; there are no Day / Night columns.
 25. Duty stats opens on **All time** (earliest data to today); choosing This year / This month or entering From / To dates changes the table and tiles; clicking a name opens a report with every role's count and the person's attendance counts (Present / Annual leave / Sick leave / Duty away / Rest day) for the same period, and Print this report prints only that person.
 26. *(Retired 2026-09-29 with the Historic roster screen — see [`PRD_Deprecated.md`](PRD_Deprecated.md).)*

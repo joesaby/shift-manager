@@ -8,6 +8,7 @@ Offline single-file duty-rota app for An Garda Síochána shift managers. No ser
 npm install
 npm run build          # → dist/shift-manager.html + offline zips
 npm run mock-data      # optional local mock JSON for http serving
+npm run docs:trace H47   # requirement graph for an H-id: story, Spec, neighbours, code, tests
 npm run docs:rules     # regenerate the PRD “Generate rules” table from src/js/rules.js
 ```
 
@@ -50,7 +51,8 @@ UI pattern: screens return HTML strings; clicks use `data-act="…"`; inputs use
 ## Product source of truth
 
 - Operator docs: `README.md`
-- Requirements: `docs/Shift_Manager_PRD.md`
+- Requirements (what, as shift-manager stories): `docs/Shift_Manager_PRD.md`
+- Technical / design spec (how; PRD rows point here via `Spec: S<n>`): `docs/Shift_Manager_Spec.md` — layout/CSS/storage tweaks go here, not in new H-ids
 - Deprecated requirements: `docs/PRD_Deprecated.md` (move retired H-ids / surfaces here; do not leave them as current in the live PRD)
 - Licence / terms: `LICENSE`, `TERMS.md`
 - Security / third-party: `SECURITY.md`, `docs/THIRD_PARTY.md`
