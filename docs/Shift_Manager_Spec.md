@@ -43,7 +43,7 @@ How the requirements in [`Shift_Manager_PRD.md`](Shift_Manager_PRD.md) are built
 
 ### S4 · Role catalogue and groups
 
-**H19** — Manage role list: name, group, day/night use, hard, **essential**, once per block, **Files role** (H73), display order (**Up / Down** move a role within its essential / non-essential band; a new role goes to the end; deleting a role keeps the others in order). Roles screen groups **essential roles first**, then non-essential; `sortOrder` among non-essential is fill/drop priority
+**H19** — Manage role list: name, group, day/night use, hard, **essential**, once per block, **Files role** (H73), display order (**Up / Down** move a role within its essential / non-essential band; a new role goes to the end; deleting a role keeps the others in order). Roles screen groups **essential roles first**, then non-essential; `sortOrder` among non-essential is fill/drop priority When a redraw changes a role's place (Up / Down, ticking Essential or Files role), rows slide from their old position (`animateRows` in `main.js`, Web Animations, ~350ms) and the role acted on is briefly highlighted (`tr.row-moved`) and scrolled into view if off screen; skipped under `prefers-reduced-motion`. Screen only, nothing stored.
 
 **H20** — Manage role groups and print colours
 

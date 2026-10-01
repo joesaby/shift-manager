@@ -33,6 +33,32 @@ function captureScroll() {
   };
 }
 
+/* Roles rows that change place on redraw (Up / Down, Essential / Files role ticks) slide from where they
+   were; the role just acted on (else the one that moved furthest) is briefly highlighted and brought into view. */
+const MOVERS = "[data-role-row]";
+function captureRows() {
+  const m = {};
+  document.querySelectorAll(MOVERS).forEach((el) => { m[el.dataset.roleRow] = el.getBoundingClientRect().top; });
+  return m;
+}
+function animateRows(before) {
+  const acted = S.ui.movedRole; S.ui.movedRole = null;
+  if (!before || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+  let far = null; let farDy = 0; const moved = {};
+  document.querySelectorAll(MOVERS).forEach((el) => {
+    const was = before[el.dataset.roleRow]; if (was == null) return;
+    const dy = was - el.getBoundingClientRect().top; if (Math.abs(dy) < 1) return;
+    moved[el.dataset.roleRow] = el;
+    if (el.animate) el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], { duration: 350, easing: "ease-out" });
+    if (Math.abs(dy) > Math.abs(farDy)) { far = el; farDy = dy; }
+  });
+  if (acted && moved[acted]) far = moved[acted];
+  if (!far) return;
+  far.classList.add("row-moved");
+  const r = far.getBoundingClientRect();
+  if (r.top < 0 || r.bottom > window.innerHeight) far.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
 function restoreScroll(pos) {
   document.querySelectorAll(SCROLLERS).forEach((el, i) => {
     if (pos.els[i]) { el.scrollTop = pos.els[i][0]; el.scrollLeft = pos.els[i][1]; }
@@ -67,6 +93,7 @@ function render() {
   if (S.ui.screen === "skl") S.ui.screen = "ppl"; /* Skills screen retired (H23 → deprecated); ticks live on People */
   if (S.ui.screen === "help" || !SCREENS[S.ui.screen]) S.ui.screen = "start";
   const scroll = lastScreen === S.ui.screen ? captureScroll() : null;
+  const rows = lastScreen === S.ui.screen ? captureRows() : null;
   const active = document.activeElement;
   const keep = active && active.id;
   const keepSel = keep ? null : focusSelector(active);
@@ -76,6 +103,7 @@ function render() {
     (S.ui.toast ? `<div class="toast toast-end print:hidden"><div class="alert alert-success"><span>${esc(S.ui.toast)}</span></div></div>` : "");
   fitRosterColumns(document.getElementById("app"));
   if (scroll) restoreScroll(scroll);
+  animateRows(rows);
   if (keepSel) { const twin = document.querySelector(keepSel); if (twin) twin.focus({ preventScroll: true }); }
   lastScreen = S.ui.screen;
   document.body.classList.toggle("print-black-borders", printBorders());
