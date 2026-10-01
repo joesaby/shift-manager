@@ -1,7 +1,7 @@
 import { esc, uid } from "../util.js";
 import { D, roleById, removeRoleEverywhere, markStale } from "../model.js";
 import { ph } from "../ui-kit.js";
-import { touch, toast, askConfirm } from "../state.js";
+import { S, touch, toast, askConfirm } from "../state.js";
 import { logAudit } from "../audit.js";
 
 const FIELD_MAP = { name: "name", group: "groupId", day: "usedAtDay", night: "usedAtNight", hard: "hard", essential: "essential", once: "oncePerBlock", files: "files" };
@@ -22,7 +22,7 @@ export function vRol() {
     const sameBand = (j) => ordered[j] && ((ordered[j].essential !== false) === (r.essential !== false));
     const upOk = i > 0 && sameBand(i - 1);
     const downOk = i < ordered.length - 1 && sameBand(i + 1);
-    return `<tr><td><input class="input input-bordered input-sm w-48" value="${esc(r.name)}" data-ch="rf" data-r="${r.id}" data-f="name"></td>
+    return `<tr data-role-row="${r.id}"><td><input class="input input-bordered input-sm w-48" value="${esc(r.name)}" data-ch="rf" data-r="${r.id}" data-f="name"></td>
     <td><select class="select select-bordered select-sm" data-ch="rf" data-r="${r.id}" data-f="group">${gopts(r.groupId)}</select></td>
     <td class="text-center"><input type="checkbox" class="checkbox checkbox-sm" ${r.essential !== false ? "checked" : ""}${r.files ? " disabled" : ""} data-ch="rf" data-r="${r.id}" data-f="essential" title="${r.files ? "The Files role is never essential" : "Must be filled"}"></td>
     <td class="text-center"><input type="checkbox" class="checkbox checkbox-sm" ${r.usedAtDay !== false ? "checked" : ""} data-ch="rf" data-r="${r.id}" data-f="day"></td>
@@ -64,6 +64,7 @@ export const actions = {
     const t = ordered[i].sortOrder;
     ordered[i].sortOrder = ordered[j].sortOrder;
     ordered[j].sortOrder = t;
+    S.ui.movedRole = a.r;
     touch();
   },
   askDelRole: (a) => {
@@ -97,6 +98,7 @@ export const changes = {
     else r[key] = v;
     /* H73: one Files role, always non-essential. */
     if (key === "files" && v) { D().roles.forEach((x) => { if (x !== r) x.files = false; }); r.essential = false; }
+    if (key === "essential" || key === "files") S.ui.movedRole = r.id;
     markStale();
   },
   gname: (v, ds) => { const g = D().groups.find((x) => x.id === ds.g); if (v.trim()) g.name = v.trim(); },
