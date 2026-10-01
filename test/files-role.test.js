@@ -626,3 +626,26 @@ describe("H73/H74 roster mutations and screen integration", () => {
     assert.equal(roleById("r2").essential, false);
   });
 });
+
+describe("H73 Home setup step for the Files role", () => {
+  const doc = (filesOn, ticked) => baseDoc({
+    roles: [{ id: "f", name: "Files", groupId: "g1", usedAtDay: true, usedAtNight: true, essential: false, files: filesOn, sortOrder: 1 }],
+    people: [{ id: "a", name: "Ann", active: true }],
+    personRoles: ticked ? [{ personId: "a", roleId: "f" }] : []
+  });
+  it("says optional when no role is ticked Files role", async () => {
+    const { filesStep } = await import("../src/js/screens/start.js");
+    load(doc(false, false));
+    assert.match(filesStep(), /Files role[\s\S]*Optional — tick Files role on Roles/);
+  });
+  it("asks for people to be ticked for Files when nobody can do it", async () => {
+    const { filesStep } = await import("../src/js/screens/start.js");
+    load(doc(true, false));
+    assert.match(filesStep(), /Tick Files for people on People \(Select all\)/);
+  });
+  it("shows how many people can do Files once set up", async () => {
+    const { filesStep } = await import("../src/js/screens/start.js");
+    load(doc(true, true));
+    assert.match(filesStep(), /1 person can do Files/);
+  });
+});
