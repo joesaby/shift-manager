@@ -324,6 +324,13 @@ export function personRoleIds(pid) {
 
 export const qual = (p, rid) => D().personRoles.some((pr) => pr.personId === p.id && pr.roleId === rid);
 export const canDo = (p, rid) => qual(p, rid) && (!p.fixedRoleId || p.fixedRoleId === rid);
+/** Manual edits on day d: a fixed-role person who is no longer on their fixed role that day is free to take any role they are ticked for. */
+export const canDoOn = (p, rid, d) => {
+  if (canDo(p, rid)) return true;
+  if (!qual(p, rid)) return false;
+  const days = rosterDays();
+  return !!days && !!days[d] && roleOfPerson(days[d], p.id) !== p.fixedRoleId;
+};
 export const qualCount = (p) => personRoleIds(p.id).length;
 
 export function setQual(pid, rid, on) {
@@ -414,7 +421,7 @@ export function unassignedReason(d, pid) {
   if (!open.length) return "none-open";
   const p = personById(pid);
   if (!p || !isPresent(p, d)) return "not-eligible";
-  return open.some((r) => canDo(p, r.id)) ? null : "not-qualified";
+  return open.some((r) => canDoOn(p, r.id, d)) ? null : "not-qualified";
 }
 
 /** Vacated essential roles for a day (for Unallocated strip / warnings). */

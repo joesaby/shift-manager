@@ -3,7 +3,7 @@ import { RULES, hardRules, softRules } from "./rules.js";
 import {
   D, activePeople, rolesForDay, isPresent, qual, canDo, personById, roleById, shiftOf,
   roleOfPerson, writeRoster, rosterDays, writeDayAssign, dayLabels, historicRoleCounts,
-  filesRole, isFilesRole, setFiles
+  filesRole, isFilesRole, setFiles, canDoOn
 } from "./model.js";
 
 /** H64: id of the visible row above (-1) / below (+1) this person, or null. Selection only — never reorders. */
