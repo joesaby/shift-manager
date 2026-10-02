@@ -159,6 +159,8 @@ html,body{font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helve
 .home-details-body{font-size:.875rem;opacity:.9;padding-bottom:.75rem}
 
 
+/* Unsaved indicators: bright red, bold (badge-error is not in the vendored subset). */
+.badge-unsaved{background:#dc2626;border-color:#dc2626;color:#fff;font-weight:700}
 /* Roster drag / parking lot (H47) — plain CSS; vendored Daisy/Tailwind has no drag-chip or drop-dim utilities.
    Theme colours use Daisy tokens (--p/--su/--er/--b2/--bc). badge-error is not in the vendored subset. */
 .roster-cell-inner{display:flex;align-items:center;justify-content:center;gap:.25rem;min-height:1.75rem}

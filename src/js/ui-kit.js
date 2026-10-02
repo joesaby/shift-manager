@@ -91,7 +91,7 @@ export function shell(inner) {
    <div class="drawer-content flex flex-col min-w-0">
     <div class="navbar bg-base-100 border-b border-base-300 px-4 sticky top-0 z-30 print:hidden">
      <div class="flex-none${collapsed ? "" : " lg:hidden"}"><label for="navToggle" class="btn btn-square btn-ghost" aria-label="Open menu"><svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></label></div>
-     <div class="flex-1 gap-2">${S.dirty ? '<span id="saveStatus" class="badge badge-warning gap-1">Unsaved changes</span>' : '<span id="saveStatus" class="badge badge-ghost">All changes saved</span>'}${unit ? `<span id="navUnitBadge" class="badge badge-ghost hidden sm:inline-flex">${esc(unit)}</span>` : '<span id="navUnitBadge" class="badge badge-ghost hidden sm:inline-flex" style="display:none"></span>'}</div>
+     <div class="flex-1 gap-2">${S.dirty ? '<span id="saveStatus" class="badge badge-unsaved gap-1" title="Data file not saved yet (the roster Log has its own Saved badge on Roster)">Data file not saved</span>' : '<span id="saveStatus" class="badge badge-ghost">Data file saved</span>'}${unit ? `<span id="navUnitBadge" class="badge badge-ghost hidden sm:inline-flex">${esc(unit)}</span>` : '<span id="navUnitBadge" class="badge badge-ghost hidden sm:inline-flex" style="display:none"></span>'}</div>
      <div class="flex-none flex gap-2">${fileControls()}</div>
     </div>
     <main class="p-4 md:p-8 space-y-6 max-w-7xl w-full mx-auto${wide ? " main-wide" : ""}">${inner}</main>
