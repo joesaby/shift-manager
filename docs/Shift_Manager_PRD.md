@@ -103,6 +103,7 @@ Written from the shift manager's side: **As a shift manager, I …**. Grouped by
 | H28 | Must | As a shift manager, I get duties shared fairly: each role goes to the qualified, Present person who has done it least as a share of their own duties over the last 12 months, so counts even out over time and a new starter isn't stuck with the same role. | S7 |
 | H10 | Must | As a shift manager, I prefer people not to repeat the previous day's role when someone else can cover. | S7 |
 | H71 | Must | As a shift manager, I avoid giving anyone a role from the same group (e.g. Car) two days running when someone else can cover. | S7 |
+| H75 | Must | As a shift manager, I can tick **Probationer** on a person, so two Probationers are not put in the same role group on the same day when anyone else can be swapped in. | S7 |
 | H11 | Must | As a shift manager, I avoid hard roles on back-to-back nights when someone else can cover. | S7 |
 | H13 | Must | As a shift manager, I am warned about unfilled essential roles — never blocked from Generate or Print — and not nagged about non-essential ones or about attendance-only changes. | S7 |
 | H48 | Must | As a shift manager, I generate once per block; after that it is a deliberate "Start over / Regenerate" with a warning that it discards my manual edits. | S7 |
@@ -246,9 +247,10 @@ Generated from [`src/js/rules.js`](../src/js/rules.js) — the same list drives 
 | 6 | H28 | `leastDone` | objective | score | score | Each role goes to whoever has done it **least, as a share of their own duties**, over the last 12 months of rosters saved to the Log plus the earlier days of this block. Only days they were Present count. Ties are picked at random. |
 | 7 | H73 | `filesFairSpares` | structural | order of work | order of work | Who is left free for Files rotates: people who have had Files **least, as a share of their duties**, are kept back from the other roles first. Fair spread of the other roles still comes first. |
 | 8 | H71 | `sameGroup` | soft | gives way if no other way | never broken | Nobody gets a role from the same group (e.g. Car) two days running when someone else can cover. |
-| 9 | H11 | `hardNights` | soft | gives way if no other way | gives way if no other way | On the second night, nobody gets a hard role if they had a hard role the night before, when someone else can cover. |
-| 10 | H70 | `oncePerBlock` | filter | never broken | never broken | **Once per block** roles go to a person on one day of the block at most. |
-| 11 | H13 | `emptyOnlyIfImpossible` | structural | order of work | order of work | An essential role is only left empty when nobody Present can take it. You'll see a warning, and you can fill it by hand. |
+| 9 | H75 | `probationers` | structural | order of work | order of work | Two people ticked **Probationer** are not put in the same group on the same day when anyone else can be swapped in. Files is not counted. |
+| 10 | H11 | `hardNights` | soft | gives way if no other way | gives way if no other way | On the second night, nobody gets a hard role if they had a hard role the night before, when someone else can cover. |
+| 11 | H70 | `oncePerBlock` | filter | never broken | never broken | **Once per block** roles go to a person on one day of the block at most. |
+| 12 | H13 | `emptyOnlyIfImpossible` | structural | order of work | order of work | An essential role is only left empty when nobody Present can take it. You'll see a warning, and you can fill it by hand. |
 
 <!-- rules:end -->
 

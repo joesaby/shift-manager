@@ -104,6 +104,42 @@ function fillNonEssentialWithBias(roleIds, free, assign, count, bias, prev, d, u
   }
 }
 
+/**
+ * H75: no two Probationers in the same role group on a day, when another arrangement exists. Runs after the
+ * fill passes: a Probationer in a clashing group swaps with a non-Probationer in another group (neither
+ * breaking a hard rule), else hands the role to a free non-Probationer and drops to the spares.
+ * Fixed-role people and the Files role are left alone. If nothing works the clash stays (roles stay filled).
+ */
+function separateProbationers(assign, free, prev, d, used) {
+  const prob = (id) => !!(personById(id) || {}).probationer;
+  const grp = (r) => roleById(r).groupId;
+  const pass = (r) => (roleById(r).essential !== false ? "essential" : "nonEssential");
+  const ok = (id, r) => judge(pass(r), ruleCtx(id, roleById(r), prev, d, used)) != null;
+  const probIn = (g) => Object.keys(assign).filter((r) => assign[r] && prob(assign[r]) && grp(r) === g);
+  for (let guard = 0; guard < 50; guard++) {
+    const groups = [...new Set(Object.keys(assign).filter((r) => assign[r] && prob(assign[r])).map(grp))];
+    let moved = false;
+    for (const g of groups) {
+      const rs = probIn(g);
+      if (rs.length < 2) continue;
+      for (const r of rs) {
+        const P = assign[r];
+        if (personById(P).fixedRoleId) continue;
+        const swap = Object.keys(assign).find((r2) => {
+          const Q = assign[r2];
+          return Q && grp(r2) !== g && !prob(Q) && !personById(Q).fixedRoleId && probIn(grp(r2)).length === 0
+            && canDo(personById(Q), r) && canDo(personById(P), r2) && ok(Q, r) && ok(P, r2);
+        });
+        if (swap) { const Q = assign[swap]; assign[swap] = P; assign[r] = Q; moved = true; break; }
+        const F = free.find((id) => !prob(id) && canDo(personById(id), r) && ok(id, r));
+        if (F) { assign[r] = F; free.splice(free.indexOf(F), 1, P); moved = true; break; }
+      }
+      if (moved) break;
+    }
+    if (!moved) return;
+  }
+}
+
 export function generate() {
   const people = activePeople();
   const counts = historicRoleCounts();
@@ -144,6 +180,8 @@ export function generate() {
     // H28+H73: fillEssential with bias for Files fair spares
     fillEssentialWithBias(essentialIds.filter((r) => assign[r] === undefined), free, assign, count, bias, prev, d, used);
     fillNonEssentialWithBias(nonEssentialIds.filter((r) => assign[r] === undefined), free, assign, count, bias, prev, d, used);
+
+    separateProbationers(assign, free, prev, d, used);
 
     // H73: Files role — everyone still free who is qualified and (oncePerBlock rule allows)
     if (filesToday) {

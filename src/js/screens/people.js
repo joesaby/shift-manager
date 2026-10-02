@@ -46,6 +46,7 @@ function personMeta(p) {
   const bits = [];
   if (p.active === false) bits.push("Inactive");
   if (p.longTermSick) bits.push("Long-term sick");
+  if (p.probationer) bits.push("Probationer");
   if (p.fixedRoleId) {
     const r = roleById(p.fixedRoleId);
     bits.push("Only " + ((r && r.name) || "?"));
@@ -152,6 +153,7 @@ export function vPpl() {
         <label class="form-control ppl-shldr"><span class="label-text font-semibold">Shoulder no.</span><input class="input input-bordered" value="${esc(sel.shoulderNo || "")}" data-ch="pshldr" data-p="${sel.id}" inputmode="numeric" autocomplete="off"></label>
       </div>
       <label class="flex items-center gap-3"><input type="checkbox" class="toggle toggle-primary" ${sel.active !== false ? "checked" : ""} data-ch="pactive" data-p="${sel.id}"><span>Active (untick when someone leaves; use Long-term sick below for a long absence)</span></label>
+      <label class="flex items-center gap-3"><input type="checkbox" class="toggle toggle-primary" ${sel.probationer ? "checked" : ""} data-ch="pprob" data-p="${sel.id}"><span><b>Probationer</b> (never put in the same group on the same day as another Probationer, where it can be avoided)</span></label>
       <div class="lts-box">
         <label class="flex items-center gap-3"><input type="checkbox" class="toggle toggle-primary" ${sel.longTermSick ? "checked" : ""} data-ch="plts" data-p="${sel.id}"><span>Long-term sick</span></label>
         <div class="text-sm opacity-70 mt-1">Every day in this period is Sick leave on Attendance, in every block, so you don't have to set it daily. Change a single day on Attendance to override it.</div>
@@ -215,5 +217,6 @@ export const changes = {
   plts: (v, ds) => { if (v) setLongTermSick(ds.p, block().startDate, ""); else clearLongTermSick(ds.p); },
   pltsFrom: (v, ds) => { const l = personById(ds.p).longTermSick; if (l && !setLongTermSick(ds.p, v, l.to)) toast("Start date is missing or after the end date."); },
   pltsTo: (v, ds) => { const l = personById(ds.p).longTermSick; if (l && !setLongTermSick(ds.p, l.from, v)) toast("End date can't be before the start date."); },
+  pprob: (v, ds) => { personById(ds.p).probationer = !!v; markStale(); },
   pactive: (v, ds) => { personById(ds.p).active = v; markStale(); }
 };

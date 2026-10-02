@@ -104,6 +104,8 @@ How the requirements in [`Shift_Manager_PRD.md`](Shift_Manager_PRD.md) are built
 
 **H69** — **No regenerating a passed roster:** a block is *past* once its last day is before today. A past block that already has a roster cannot be regenerated: Roster shows a **Past roster · corrections only** badge instead of Start over / Regenerate, the Attendance **Generate roster** button is disabled, and the action itself refuses with a message. Cells can still be edited and saved (H68). Current (in-progress) and future blocks can be regenerated as before (H13, H48); the first Generate for a block with no roster is always allowed. Guard is a convenience against accidents, not tamper-proofing — anyone can edit the JSON
 
+**H75** — **Probationer:** optional per-person tick on People (`people[].probationer: boolean`, absent = false; additive, no migration; shown as “Probationer” in the person's summary line). After the essential and non-essential fills and before Files, Generate checks each role group: if two or more Probationers hold roles in it, one swaps with a non-Probationer in another group (both must be qualified, neither a fixed-role person, no hard rule broken, the other group free of Probationers), else hands the role to a free non-Probationer and drops to the spares. A soft rule: if no arrangement exists the clash stays and every role is still filled. The Files role is exempt (many people share it). Manual edits are not restricted
+
 **H71** — **No same-group role two days running:** Generate does not give a person a role from the same **group** they held the previous day (supersedes the role-only rule in H10). Essential pass: soft, as H10 (falls back if unavoidable); non-essential pass: always enforced (role left blank rather than repeat). Fixed-role people are unaffected. Manual edits are not restricted
 
 
@@ -175,7 +177,7 @@ How the requirements in [`Shift_Manager_PRD.md`](Shift_Manager_PRD.md) are built
 
 **H50** — Every Save roster writes a folder **audit** line via `logAudit` (text files under `logs/`, not JSON). Earlier log versions for that start are not kept — only the audit trail records that a save happened
 
-**H51** — **Unsaved** is derived (not stored): compare live `buildSnapshot()` to the last saved history entry for this block start, ignoring stamp fields (`savedBy`, `savedAt`, and equivalents). Include attendance status and employee/shoulder numbers so a post-save sick mark or number edit makes the roster unsaved. Show an “Unsaved changes” badge when unsaved
+**H51** — **Unsaved** is derived (not stored): compare live `buildSnapshot()` to the last saved history entry for this block start, ignoring stamp fields (`savedBy`, `savedAt`, and equivalents). Include attendance status and employee/shoulder numbers so a post-save sick mark or number edit makes the roster unsaved. Show an “Unsaved changes” badge when unsaved — bright red (`.badge-unsaved` in `app.css`), with a grey “Saved” badge otherwise. The sidebar/top-left badge is separate: it tracks the **data file** (“Data file not saved” in red / “Data file saved”), not the roster Log. Closing or reloading the tab triggers the browser’s leave-page warning when either the data file or the roster is unsaved (browsers do not allow a custom Save button there)
 
 **H18** — Set **manager name** (browser-local); stamp on new Save roster / print snapshots; do not rewrite older entries
 
