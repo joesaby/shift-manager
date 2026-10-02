@@ -88,7 +88,7 @@ How the requirements in [`Shift_Manager_PRD.md`](Shift_Manager_PRD.md) are built
 
 **H7** — Generate and manual edit only offer qualified people (hard block)
 
-**H8** — Fixed-role people get that role when Present (including when the fixed role is non-essential — fixed wins even if essential roles are short)
+**H8** — Fixed-role people get that role when Present (including when the fixed role is non-essential — fixed wins even if essential roles are short). **Manual edits (Roster):** once a fixed-role person is no longer on their fixed role that day (e.g. someone else was given it), they may take Files or any other role they are ticked for that day (`canDoOn` in `model.js`); while they hold the fixed role the usual fixed-role rule still applies
 
 **H10** — Prefer not repeating the previous working day’s role when alternatives exist (**essential pass**; non-essential pass may skip or apply loosely — see §11)
 

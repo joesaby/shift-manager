@@ -202,7 +202,7 @@ export function assignTo(d, rid, pid) {
   const day = days[d];
   const holder = liveHolder(day, rid);
   const old = pid ? realRole(day, pid) : null;  // H73: Files is treated as no role
-  if (pid && old && holder && !canDo(personById(holder), old)) {
+  if (pid && old && holder && !canDoOn(personById(holder), old, d)) {
     toast("Cannot swap — " + ((personById(holder) || {}).name || "that person") + " is not qualified for " + roleName(old) + ".");
     return false;
   }
@@ -227,7 +227,7 @@ export function assignParkedRole(d, rid, pid) {
   const day = days[d];
   const p = personById(pid);
   if (!p || !isPresent(p, d)) { toast("Only Present people can take a role."); return false; }
-  if (!canDo(p, rid)) { toast("Cannot assign — not qualified for that role."); return false; }
+  if (!canDoOn(p, rid, d)) { toast("Cannot assign — not qualified for that role."); return false; }
   if (liveHolder(day, rid)) { toast("That role is already filled."); return false; }
 
   const old = realRole(day, pid);  // H73: Files is treated as no role
@@ -273,7 +273,7 @@ export function swapPeople(d, aPid, bPid) {
   if (!aRole && !bRole) return false;
 
   if (aRole && bRole) {
-    if (!canDo(a, bRole) || !canDo(b, aRole)) {
+    if (!canDoOn(a, bRole, d) || !canDoOn(b, aRole, d)) {
       toast("Cannot swap — not qualified for that role.");
       return false;
     }
@@ -291,7 +291,7 @@ export function swapPeople(d, aPid, bPid) {
   const hasFiles = aRole ? bPid : aPid;
   const wasFiles = isFilesRole(roleOfPerson(day, hasFiles));
   const rid = aRole || bRole;
-  if (!canDo(personById(hasFiles), rid)) {
+  if (!canDoOn(personById(hasFiles), rid, d)) {
     toast("Cannot assign — not qualified for that role.");
     return false;
   }
@@ -324,7 +324,7 @@ export function assignRoleToPerson(d, rid, pid) {
   if (isFilesRole(rid)) {
     const p = personById(pid);
     if (!p || !isPresent(p, d)) { toast("Only Present people can take a role."); return false; }
-    if (!canDo(p, rid)) { toast("Cannot assign — not qualified for that role."); return false; }
+    if (!canDoOn(p, rid, d)) { toast("Cannot assign — not qualified for that role."); return false; }
     setFiles(d, pid, true);
     S.ui.sel = null; touch();
     toast("Files → " + (p.name || pid));
@@ -337,7 +337,7 @@ export function assignRoleToPerson(d, rid, pid) {
   }
   const p = personById(pid);
   if (!p || !isPresent(p, d)) { toast("Only Present people can take a role."); return false; }
-  if (!canDo(p, rid)) { toast("Cannot assign — not qualified for that role."); return false; }
+  if (!canDoOn(p, rid, d)) { toast("Cannot assign — not qualified for that role."); return false; }
   if (!assignTo(d, rid, pid)) return false;
   toast(roleName(rid) + " → " + (p.name || pid));
   return true;
@@ -363,7 +363,7 @@ export function unassignPerson(d, pid) {
 export function canTakeParkedRole(d, rid, pid) {
   const p = personById(pid);
   if (!p || !isPresent(p, d)) return false;
-  return canDo(p, rid);
+  return canDoOn(p, rid, d);
 }
 
 export function canDropPersonOnPerson(d, fromPid, toPid) {
@@ -376,6 +376,6 @@ export function canDropPersonOnPerson(d, fromPid, toPid) {
   const aRole = realRole(day, fromPid);  // H73: Files is treated as no role
   const bRole = realRole(day, toPid);    // H73: Files is treated as no role
   if (!aRole && !bRole) return false;
-  if (aRole && bRole) return canDo(a, bRole) && canDo(b, aRole);
-  return canDo(aRole ? b : a, aRole || bRole);
+  if (aRole && bRole) return canDoOn(a, bRole, d) && canDoOn(b, aRole, d);
+  return canDoOn(aRole ? b : a, aRole || bRole, d);
 }

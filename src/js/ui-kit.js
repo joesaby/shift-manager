@@ -1,6 +1,6 @@
 import { esc, NAV, icon, STAT } from "./util.js";
 import { S } from "./state.js";
-import { activePeople, canDo, isPresent, roleOfPerson, roleById, personById, dayLabels, hasRoster, rosterDays, unitName } from "./model.js";
+import { activePeople, canDoOn, isPresent, roleOfPerson, roleById, personById, dayLabels, hasRoster, rosterDays, unitName } from "./model.js";
 import { supportsWorkspace, hasWorkspace, workspaceName } from "./workspace.js";
 import { LOGO_DATA_URI } from "../assets/logo.js";
 import { getSessionUser } from "./audit.js";
@@ -109,12 +109,12 @@ export function vSelModal() {
   const day = ros[sel.d]; const role = roleById(sel.r); if (!role) return "";
   const holderId = day.assign[sel.r]; const holder = holderId ? personById(holderId) : null;
   const present = activePeople().filter((p) => isPresent(p, sel.d));
-  const elig = present.filter((p) => canDo(p, sel.r) && p.id !== holderId);
+  const elig = present.filter((p) => canDoOn(p, sel.r, sel.d) && p.id !== holderId);
   const items = elig.map((p) => {
     const r2 = roleOfPerson(day, p.id); const r2n = r2 ? (roleById(r2) || { name: "" }).name : "";
     let blocked = false, sub = r2 ? "Currently " + r2n : "Currently unassigned";
     if (r2 && holder) {
-      if (!canDo(holder, r2)) { blocked = true; sub = holder.name + " could not cover " + r2n; } else sub = "Swap: " + holder.name + " takes " + r2n;
+      if (!canDoOn(holder, r2, sel.d)) { blocked = true; sub = holder.name + " could not cover " + r2n; } else sub = "Swap: " + holder.name + " takes " + r2n;
     }
     return `<li><button class="${blocked ? "opacity-50" : ""}" ${blocked ? "disabled" : ""} data-act="assign" data-d="${sel.d}" data-r="${sel.r}" data-p="${p.id}"><span class="font-medium">${esc(p.name)}</span><span class="text-xs ${blocked ? "text-error" : "opacity-70"}">${esc(sub)}</span></button></li>`;
   }).join("");
