@@ -48,7 +48,7 @@ export const RULES = [
     help: "**Once per block** roles go to a person on one day of the block at most.",
     breaks: (c) => !!(c.role.oncePerBlock && c.usedGroup) },
   { key: "emptyOnlyIfImpossible", id: "H13", kind: "structural",
-    help: "An essential role is only left empty when nobody Present can take it. You'll see a warning, and you can fill it by hand." }
+    help: "An essential role is only left empty when nobody Present can take it. If there are not enough people for every essential role, the ones lower in the Roles and groups list are left empty first. You'll see a warning, and you can fill it by hand." }
 ];
 
 /** Rules the given pass ("essential" | "nonEssential") enforces as never-break / as penalties. */

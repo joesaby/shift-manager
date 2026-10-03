@@ -44,6 +44,7 @@ function hungarian(a) {
 
 const FORBID = 1e12; /* breaks a "hard" rule for this pass (see rules.js) */
 const EMPTY = 1e8;   /* leaving an essential role unfilled */
+const EMPTY_STEP = 1e6; /* H13: each place down the Roles list makes leaving a role empty cheaper, so earlier roles win */
 const SOFT = 1e4;    /* per "soft" rule broken (see rules.js) */
 
 /** Facts the rule checks need for one person × role on day d. */
@@ -77,7 +78,7 @@ function fillEssentialWithBias(roleIds, free, assign, count, bias, prev, d, used
     const base = Math.min(...free.filter((_, j) => soft[j] != null).map((id) => count(id, r)), 0);
     const row = free.map((id, j) => (soft[j] == null ? FORBID
       : count(id, r) - base + soft[j] * SOFT + bias(id) + Math.random() * 1e-7));
-    for (let k = 0; k < n; k++) row.push(k === cost.length ? EMPTY : FORBID);
+    for (let k = 0; k < n; k++) row.push(k === cost.length ? EMPTY + (n - k) * EMPTY_STEP : FORBID);
     cost.push(row);
   });
   for (let k = 0; k < m; k++) cost.push(new Array(N).fill(0));
@@ -157,7 +158,9 @@ export function generate() {
   const n = D().blocks.current.shifts.length;
   for (let d = 0; d < n; d++) {
     const dayRoles = rolesForDay(d);
-    const essentialIds = dayRoles.filter((r) => r.essential !== false && !isFilesRole(r.id)).map((r) => r.id);
+    const essentialIds = dayRoles.filter((r) => r.essential !== false && !isFilesRole(r.id))
+      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+      .map((r) => r.id);
     const nonEssentialIds = dayRoles
       .filter((r) => r.essential === false && !isFilesRole(r.id))
       .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))

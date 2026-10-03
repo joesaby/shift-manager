@@ -250,7 +250,7 @@ Generated from [`src/js/rules.js`](../src/js/rules.js) — the same list drives 
 | 9 | H75 | `probationers` | structural | order of work | order of work | Two people ticked **Probationer** are not put in the same group on the same day when anyone else can be swapped in. Files is not counted. |
 | 10 | H11 | `hardNights` | soft | gives way if no other way | gives way if no other way | On the second night, nobody gets a hard role if they had a hard role the night before, when someone else can cover. |
 | 11 | H70 | `oncePerBlock` | filter | never broken | never broken | **Once per block** roles go to a person on one day of the block at most. |
-| 12 | H13 | `emptyOnlyIfImpossible` | structural | order of work | order of work | An essential role is only left empty when nobody Present can take it. You'll see a warning, and you can fill it by hand. |
+| 12 | H13 | `emptyOnlyIfImpossible` | structural | order of work | order of work | An essential role is only left empty when nobody Present can take it. If there are not enough people for every essential role, the ones lower in the Roles and groups list are left empty first. You'll see a warning, and you can fill it by hand. |
 
 <!-- rules:end -->
 
