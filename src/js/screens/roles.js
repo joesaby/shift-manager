@@ -1,19 +1,12 @@
 import { esc, uid } from "../util.js";
-import { D, roleById, removeRoleEverywhere, markStale } from "../model.js";
+import { D, roleById, removeRoleEverywhere, markStale, rolesInListOrder } from "../model.js";
 import { ph } from "../ui-kit.js";
 import { S, touch, toast, askConfirm } from "../state.js";
 import { logAudit } from "../audit.js";
 
 const FIELD_MAP = { name: "name", group: "groupId", day: "usedAtDay", night: "usedAtNight", hard: "hard", essential: "essential", once: "oncePerBlock", files: "files" };
 
-function rolesOrdered() {
-  return D().roles.slice().sort((a, b) => {
-    const ae = a.essential !== false ? 0 : 1;
-    const be = b.essential !== false ? 0 : 1;
-    if (ae !== be) return ae - be;
-    return (a.sortOrder || 0) - (b.sortOrder || 0);
-  });
-}
+const rolesOrdered = rolesInListOrder;
 
 export function vRol() {
   const gopts = (sel) => D().groups.map((g) => `<option value="${g.id}"${g.id === sel ? " selected" : ""}>${esc(g.name)}</option>`).join("");

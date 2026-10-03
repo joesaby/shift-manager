@@ -6,6 +6,7 @@ export const DEFAULT_STATUSES = [
   { id: "present", label: "Present", allocates: true, printColor: "#EAF4EC" },
   { id: "annual_leave", label: "Annual leave", allocates: false, printColor: "#BBDEFB" },
   { id: "sick_leave", label: "Sick leave", allocates: false, printColor: "#BBDEFB" },
+  { id: "paternity_leave", label: "Paternity leave", allocates: false, printColor: "#BBDEFB" },
   { id: "duty_away", label: "Duty away", allocates: false, printColor: "#BBDEFB" },
   { id: "rest_day", label: "Rest day", allocates: false, printColor: "#BBDEFB" }
 ];
@@ -14,6 +15,7 @@ const LABEL_TO_STATUS = {
   Present: "present",
   "Annual leave": "annual_leave",
   "Sick leave": "sick_leave",
+  "Paternity leave": "paternity_leave",
   "Duty away": "duty_away",
   "Rest day": "rest_day"
 };
@@ -21,6 +23,7 @@ const STATUS_TO_LABEL = {
   present: "Present",
   annual_leave: "Annual leave",
   sick_leave: "Sick leave",
+  paternity_leave: "Paternity leave",
   duty_away: "Duty away",
   rest_day: "Rest day"
 };
@@ -205,6 +208,8 @@ function normalizeV2(d) {
     d.settings.statuses.forEach((s) => {
       if (byId[s.id]) s.printColor = byId[s.id].printColor;
     });
+    /* Statuses added in later versions (e.g. Paternity leave) appear in files saved before them. */
+    DEFAULT_STATUSES.forEach((s) => { if (!d.settings.statuses.some((x) => x.id === s.id)) d.settings.statuses.push({ ...s }); });
   }
   if (!d.personRoles) d.personRoles = [];
   if (!d.blocks) d.blocks = { current: null, history: [] };
@@ -260,6 +265,15 @@ export const blockLen = () => (D().settings && D().settings.blockLengthDays) || 
 export const dateOf = (d) => addDays(block().startDate, d);
 export const shiftOf = (d) => block().shifts[d];
 export const rolesForDay = (d) => D().roles.filter((r) => (shiftOf(d) === "Day" ? r.usedAtDay !== false : r.usedAtNight));
+/** Roles in the order shown on Roles and groups: essential first, then the rest, each by sortOrder. */
+export function rolesInListOrder() {
+  return D().roles.slice().sort((a, b) => {
+    const ae = a.essential !== false ? 0 : 1;
+    const be = b.essential !== false ? 0 : 1;
+    if (ae !== be) return ae - be;
+    return (a.sortOrder || 0) - (b.sortOrder || 0);
+  });
+}
 export const essentialRolesForDay = (d) => rolesForDay(d).filter((r) => r.essential !== false);
 export const isEssentialRole = (r) => !r || r.essential !== false;
 export const dayLabels = () => block().shifts.map((s, d) => ({ label: fmt(dateOf(d)), shift: s, iso: dateOf(d) }));
@@ -306,8 +320,22 @@ export function setStatus(pid, d, label) {
   /* H67: on a day a long-term sick period covers, Present must be stored to override it. */
   if (statusId === "present" && !longTermSickOn(personById(pid), date)) {
     if (i >= 0) rows.splice(i, 1);
-  } else if (i >= 0) rows[i].statusId = statusId;
+  } else if (i >= 0) { rows[i].statusId = statusId; if (statusId !== "duty_away") delete rows[i].note; }
   else rows.push({ date, personId: pid, statusId });
+}
+
+/** Typed description for a Duty away day (attendance row `note`); "" for any other status. Still counts as Duty away. */
+export function dutyAwayNote(pid, d) {
+  const date = dateOf(d);
+  const row = block().attendance.find((a) => a.personId === pid && a.date === date);
+  return row && row.statusId === "duty_away" ? String(row.note || "") : "";
+}
+export function setDutyAwayNote(pid, d, text) {
+  const date = dateOf(d);
+  const row = block().attendance.find((a) => a.personId === pid && a.date === date);
+  if (!row || row.statusId !== "duty_away") return;
+  const t = String(text || "").trim().slice(0, 60);
+  if (t) row.note = t; else delete row.note;
 }
 
 /** H66: active people on day d per attendance status, in Attendance order (zero counts kept). */

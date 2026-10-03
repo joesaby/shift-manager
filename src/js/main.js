@@ -156,7 +156,7 @@ function isLiveTypingTarget(el) {
   const id = el.id;
   if (id === "unitName" || id === "peopleSearch" || id === "newPerson" || id === "newRole") return true;
   const ch = el.dataset && el.dataset.ch;
-  return ch === "unitName" || ch === "pname" || ch === "pemp" || ch === "pshldr" || ch === "peopleQ";
+  return ch === "unitName" || ch === "pname" || ch === "pemp" || ch === "pshldr" || ch === "peopleQ" || ch === "awayNote";
 }
 
 /* Every data mutation goes through touch() in state.js; when a workspace folder is
@@ -333,7 +333,7 @@ document.addEventListener("input", (e) => {
     touch();
     syncSaveStatus();
   }
-  if (k === "pemp" || k === "pshldr") {
+  if (k === "pemp" || k === "pshldr" || k === "awayNote") {
     CHANGES[k](el.value, el.dataset);
     touch();
     syncSaveStatus();

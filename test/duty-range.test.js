@@ -115,13 +115,13 @@ describe("attendanceForRange", () => {
       { date: "2026-09-23", personId: "p1", statusId: "annual_leave" }
     ] });
     assert.deepEqual(byLabel(attendanceForRange("p1", { from: "2026-09-01", to: "2026-09-30" }).rows),
-      { Present: 2, "Annual leave": 1, "Sick leave": 1, "Duty away": 0, "Rest day": 0 });
+      { Present: 2, "Annual leave": 1, "Sick leave": 1, "Paternity leave": 0, "Duty away": 0, "Rest day": 0 });
   });
 
   it("adds saved log entries (their per-day records) and respects the dates", () => {
     load({ history: [augBlock] });
     const all = attendanceForRange("p1", { from: "2026-08-01", to: "2026-09-30" });
-    assert.deepEqual(byLabel(all.rows), { Present: 6, "Annual leave": 1, "Sick leave": 1, "Duty away": 0, "Rest day": 0 });
+    assert.deepEqual(byLabel(all.rows), { Present: 6, "Annual leave": 1, "Sick leave": 1, "Paternity leave": 0, "Duty away": 0, "Rest day": 0 });
     assert.equal(all.days, 8);
     const aug11 = attendanceForRange("p1", { from: "2026-08-11", to: "2026-08-11" });
     assert.equal(byLabel(aug11.rows)["Sick leave"], 1);

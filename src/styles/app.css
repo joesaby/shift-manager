@@ -211,6 +211,8 @@ tr.row-moved>td{animation:rowflash 1.4s ease-out}
   /* H65: opt-in black grid lines (body class set from the Roster "Black borders" checkbox). */
   body.print-black-borders .rota td,body.print-black-borders .rota th{border:1px solid #000!important}
   body.print-black-borders .rota{border-color:#000}
+  /* The dark date / column heading keeps white dividers (black ones vanish on it). */
+  body.print-black-borders .rota thead th{border:1px solid #fff!important}
   .rota tr.row-sel td.stickycol{background:transparent!important}
 }
 
@@ -236,6 +238,8 @@ tr.row-moved>td{animation:rowflash 1.4s ease-out}
   .rota thead{display:table-header-group}
   .printScroll{max-height:none!important;min-height:0!important;overflow:visible!important}
   .rota-freeze thead th{position:static!important}
+  /* A sticky name column drops its cell borders when printed (border-collapse) — print it in normal flow. */
+  .rota .stickycol,.rota-freeze thead .unalloc-row td{position:static!important}
   .rota-freeze tfoot td{position:static!important;background:#fff!important}
   .tally-menu{display:none!important}
   /* H59: day briefing sheet — fixed readable size (portrait, fewer columns). */
