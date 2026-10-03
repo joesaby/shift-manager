@@ -39,6 +39,8 @@ export const RULES = [
   { key: "sameGroup", id: "H71", kind: "soft", essential: "soft", nonEssential: "hard",
     help: "Nobody gets a role from the same group (e.g. Car) two days running when someone else can cover.",
     breaks: (c) => !!(c.prevRole && c.prevRole.groupId === c.role.groupId) },
+  { key: "probationers", id: "H75", kind: "structural",
+    help: "Two people ticked **Probationer** are not put in the same group on the same day when anyone else can be swapped in. Files is not counted." },
   { key: "hardNights", id: "H11", kind: "soft", essential: "soft", nonEssential: "soft",
     help: "On the second night, nobody gets a hard role if they had a hard role the night before, when someone else can cover.",
     breaks: (c) => !!(c.night && c.prevNight && c.role.hard && c.prevRole && c.prevRole.hard) },
@@ -46,7 +48,7 @@ export const RULES = [
     help: "**Once per block** roles go to a person on one day of the block at most.",
     breaks: (c) => !!(c.role.oncePerBlock && c.usedGroup) },
   { key: "emptyOnlyIfImpossible", id: "H13", kind: "structural",
-    help: "An essential role is only left empty when nobody Present can take it. You'll see a warning, and you can fill it by hand." }
+    help: "An essential role is only left empty when nobody Present can take it. If there are not enough people for every essential role, the ones lower in the Roles and groups list are left empty first. You'll see a warning, and you can fill it by hand." }
 ];
 
 /** Rules the given pass ("essential" | "nonEssential") enforces as never-break / as penalties. */

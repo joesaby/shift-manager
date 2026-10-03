@@ -1,6 +1,6 @@
 import { esc, NAV, icon, STAT } from "./util.js";
 import { S } from "./state.js";
-import { activePeople, canDo, isPresent, roleOfPerson, roleById, personById, dayLabels, hasRoster, rosterDays, unitName } from "./model.js";
+import { activePeople, canDoOn, isPresent, roleOfPerson, roleById, personById, dayLabels, hasRoster, rosterDays, unitName } from "./model.js";
 import { supportsWorkspace, hasWorkspace, workspaceName } from "./workspace.js";
 import { LOGO_DATA_URI } from "../assets/logo.js";
 import { getSessionUser } from "./audit.js";
@@ -91,7 +91,7 @@ export function shell(inner) {
    <div class="drawer-content flex flex-col min-w-0">
     <div class="navbar bg-base-100 border-b border-base-300 px-4 sticky top-0 z-30 print:hidden">
      <div class="flex-none${collapsed ? "" : " lg:hidden"}"><label for="navToggle" class="btn btn-square btn-ghost" aria-label="Open menu"><svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></label></div>
-     <div class="flex-1 gap-2">${S.dirty ? '<span id="saveStatus" class="badge badge-warning gap-1">Unsaved changes</span>' : '<span id="saveStatus" class="badge badge-ghost">All changes saved</span>'}${unit ? `<span id="navUnitBadge" class="badge badge-ghost hidden sm:inline-flex">${esc(unit)}</span>` : '<span id="navUnitBadge" class="badge badge-ghost hidden sm:inline-flex" style="display:none"></span>'}</div>
+     <div class="flex-1 gap-2">${S.dirty ? '<span id="saveStatus" class="badge badge-unsaved gap-1" title="Data file not saved yet (the roster Log has its own Saved badge on Roster)">Data file not saved</span>' : '<span id="saveStatus" class="badge badge-ghost">Data file saved</span>'}${unit ? `<span id="navUnitBadge" class="badge badge-ghost hidden sm:inline-flex">${esc(unit)}</span>` : '<span id="navUnitBadge" class="badge badge-ghost hidden sm:inline-flex" style="display:none"></span>'}</div>
      <div class="flex-none flex gap-2">${fileControls()}</div>
     </div>
     <main class="p-4 md:p-8 space-y-6 max-w-7xl w-full mx-auto${wide ? " main-wide" : ""}">${inner}</main>
@@ -109,12 +109,12 @@ export function vSelModal() {
   const day = ros[sel.d]; const role = roleById(sel.r); if (!role) return "";
   const holderId = day.assign[sel.r]; const holder = holderId ? personById(holderId) : null;
   const present = activePeople().filter((p) => isPresent(p, sel.d));
-  const elig = present.filter((p) => canDo(p, sel.r) && p.id !== holderId);
+  const elig = present.filter((p) => canDoOn(p, sel.r, sel.d) && p.id !== holderId);
   const items = elig.map((p) => {
     const r2 = roleOfPerson(day, p.id); const r2n = r2 ? (roleById(r2) || { name: "" }).name : "";
     let blocked = false, sub = r2 ? "Currently " + r2n : "Currently unassigned";
     if (r2 && holder) {
-      if (!canDo(holder, r2)) { blocked = true; sub = holder.name + " could not cover " + r2n; } else sub = "Swap: " + holder.name + " takes " + r2n;
+      if (!canDoOn(holder, r2, sel.d)) { blocked = true; sub = holder.name + " could not cover " + r2n; } else sub = "Swap: " + holder.name + " takes " + r2n;
     }
     return `<li><button class="${blocked ? "opacity-50" : ""}" ${blocked ? "disabled" : ""} data-act="assign" data-d="${sel.d}" data-r="${sel.r}" data-p="${p.id}"><span class="font-medium">${esc(p.name)}</span><span class="text-xs ${blocked ? "text-error" : "opacity-70"}">${esc(sub)}</span></button></li>`;
   }).join("");

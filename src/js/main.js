@@ -3,6 +3,7 @@ import { S, setRenderer, loadLocal, wireFileInput, applyLoaded, tryLoadMockData,
 import { shell, vSelModal, vBulk, vConfirm, vNamePrompt, printBorders } from "./ui-kit.js";
 import { tryRestoreWorkspace, hasWorkspace, readWorkspaceData, writeWorkspaceData } from "./workspace.js";
 import { logAudit } from "./audit.js";
+import { isRosterUnsaved } from "./snapshot.js";
 import { swapPeople, assignParkedRole, canTakeParkedRole, canDropPersonOnPerson, adjacentPersonId } from "./generator.js";
 
 import { vStart, actions as startActions, changes as startChanges } from "./screens/start.js";
@@ -122,8 +123,8 @@ setRenderer(render);
 function syncSaveStatus() {
   const el = document.getElementById("saveStatus");
   if (!el) return;
-  el.className = S.dirty ? "badge badge-warning gap-1" : "badge badge-ghost";
-  el.textContent = S.dirty ? "Unsaved changes" : "All changes saved";
+  el.className = S.dirty ? "badge badge-unsaved gap-1" : "badge badge-ghost";
+  el.textContent = S.dirty ? "Data file not saved" : "Data file saved";
 }
 
 function syncUnitLabels(raw) {
@@ -366,7 +367,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && (S.ui.sel || S.ui.rowSel || S.ui.tallyOpen || S.ui.confirm || S.ui.bulk)) { S.ui.sel = null; S.ui.rowSel = null; S.ui.tallyOpen = false; S.ui.confirm = null; S.ui.bulk = null; render(); }
 });
 
-window.addEventListener("beforeunload", (e) => { if (S.dirty) { e.preventDefault(); e.returnValue = ""; } });
+window.addEventListener("beforeunload", (e) => { if (S.dirty || isRosterUnsaved()) { e.preventDefault(); e.returnValue = ""; } });
 
 async function boot() {
   wireFileInput();

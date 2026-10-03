@@ -72,7 +72,7 @@ export function vRos() {
   const genBtn = regenOk
     ? `<button class="btn btn-ghost btn-sm" data-act="askRegenerate" title="Reshuffles everyone and discards manual edits">Start over / Regenerate</button>`
     : `<span class="badge badge-neutral no-print" title="This block has passed. Cells can be corrected, but the roster can't be regenerated.">Past roster · corrections only</span>`;
-  const unsavedBadge = unsaved ? `<span class="badge badge-warning no-print">Unsaved changes</span>` : `<span class="badge badge-ghost no-print">Saved</span>`;
+  const unsavedBadge = unsaved ? `<span class="badge badge-unsaved no-print" title="This roster is not saved to the Log yet — press Save roster">Unsaved changes</span>` : `<span class="badge badge-ghost no-print">Saved</span>`;
   const printBtn = unsaved
     ? `<button class="btn btn-sm btn-primary" data-act="saveAndPrint">Save &amp; print</button>`
     : `<button class="btn btn-sm btn-primary" data-act="print">Print in colour</button>`;
