@@ -1,7 +1,7 @@
 /* ------------------------------------------------------------------ formatting + id helpers */
-export const STAT = ["Present", "Annual leave", "Sick leave", "Duty away", "Rest day"];
+export const STAT = ["Present", "Annual leave", "Sick leave", "Paternity leave", "Duty away", "Rest day"];
 /* Present = green; every other attendance status = same blue (unavailable). Used by Attendance + Print. */
-export const SBG = { "Present": "#EAF4EC", "Annual leave": "#BBDEFB", "Sick leave": "#BBDEFB", "Duty away": "#BBDEFB", "Rest day": "#BBDEFB" };
+export const SBG = { "Present": "#EAF4EC", "Annual leave": "#BBDEFB", "Sick leave": "#BBDEFB", "Paternity leave": "#BBDEFB", "Duty away": "#BBDEFB", "Rest day": "#BBDEFB" };
 /** How far to scroll so a row [top, bottom] sits inside the visible band [viewTop, viewBottom]; 0 if it already does. */
 export const revealDelta = (top, bottom, viewTop, viewBottom) => (top < viewTop ? top - viewTop : bottom > viewBottom ? bottom - viewBottom : 0);
 /** Pixels to scroll per tick while dragging at pointer y: negative = up, positive = down, 0 mid-table. */

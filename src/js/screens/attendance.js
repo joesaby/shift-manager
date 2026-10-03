@@ -1,5 +1,5 @@
 import { esc, STAT, SBG } from "../util.js";
-import { D, block, dayLabels, activePeople, essentialRolesForDay, isPresent, getStatus, statusCountsForDay, canRegenerate, setStatus, roleById, personById, markStale } from "../model.js";
+import { D, block, dayLabels, activePeople, essentialRolesForDay, isPresent, getStatus, statusCountsForDay, canRegenerate, setStatus, roleById, personById, markStale, dutyAwayNote, setDutyAwayNote } from "../model.js";
 import { ph, noPeople, unitBanner } from "../ui-kit.js";
 import { logAudit } from "../audit.js";
 
@@ -14,7 +14,9 @@ export function vAtt() {
     const allAL = days.every((d, i) => getStatus(p.id, i) === "Annual leave");
     return `<tr class="hover"><td class="stickycol font-medium whitespace-nowrap"><div class="att-name"><span>${esc(p.name)}${p.fixedRoleId ? `<div class="text-xs text-base-content/60 font-normal">Only ${esc((roleById(p.fixedRoleId) || { name: "" }).name)}</div>` : ""}</span><label class="att-al" title="Annual leave for all days of this block. Unticking sets every day back to Present."><input type="checkbox" class="checkbox checkbox-sm" data-ch="allAL" data-p="${p.id}" ${allAL ? "checked" : ""}> AL</label></div></td>` + days.map((d, i) => {
       const v = getStatus(p.id, i);
-      return `<td class="min-w-40"><select class="select select-bordered select-sm w-full" style="background:${SBG[v]}" data-ch="status" data-p="${p.id}" data-d="${i}" aria-label="${esc(p.name)}, ${esc(d.label)}">${STAT.map((x) => `<option${x === v ? " selected" : ""}>${x}</option>`).join("")}</select></td>`;
+      return `<td class="min-w-40"><select class="select select-bordered select-sm w-full" style="background:${SBG[v]}" data-ch="status" data-p="${p.id}" data-d="${i}" aria-label="${esc(p.name)}, ${esc(d.label)}">${STAT.map((x) => `<option${x === v ? " selected" : ""}>${x}</option>`).join("")}</select>${v === "Duty away"
+        ? `<input class="input input-bordered input-sm w-full att-away-note" maxlength="60" placeholder="Duty away: type the reason" value="${esc(dutyAwayNote(p.id, i))}" data-ch="awayNote" data-p="${p.id}" data-d="${i}" aria-label="Duty away reason, ${esc(p.name)}, ${esc(d.label)}">`
+        : ""}</td>`;
     }).join("") + "</tr>";
   }).join("");
   const short = info.filter((x) => x.pc < x.need);
@@ -32,6 +34,7 @@ export const changes = {
     const p = personById(ds.p);
     logAudit("ATTENDANCE_STATUS_CHANGED", (p ? p.name : ds.p) + " day=" + ds.d + " status=" + v);
   },
+  awayNote: (v, ds) => { setDutyAwayNote(ds.p, +ds.d, v); },
   shift: (v, ds) => { block().shifts[+ds.d] = v; markStale(); },
   start: (v) => { if (v) block().startDate = v; },
   allAL: (v, ds) => {

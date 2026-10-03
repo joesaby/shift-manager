@@ -205,6 +205,14 @@ function runGenerate() {
   logAudit("ROSTER_GENERATED", "block_start=" + block().startDate);
 }
 
+/* Briefing-sheet print swaps the page for a portrait sheet; this puts the roster back. Called from afterprint
+   (fires when the print dialog / preview closes) and before any other print. No timer: a print preview can stay
+   open for minutes, and redrawing under it would blank the preview. */
+let endDayBriefPrint = null;
+function finishDayBriefPrint() {
+  if (endDayBriefPrint) endDayBriefPrint();
+}
+
 export const actions = {
   generate: () => runGenerate(),
   askRegenerate: () => {
@@ -215,7 +223,7 @@ export const actions = {
       () => runGenerate()
     );
   },
-  print: () => window.print(),
+  print: () => { finishDayBriefPrint(); window.print(); },
   printDay: (a) => {
     const d = +a.d;
     const brief = buildDayBrief(d);
@@ -223,6 +231,7 @@ export const actions = {
       toast("Nobody assigned for that day.");
       return;
     }
+    finishDayBriefPrint();
     /* main.js re-renders after the action; swap #printArea once the grid is back. */
     setTimeout(() => {
       const el = document.getElementById("printArea");
@@ -237,18 +246,15 @@ export const actions = {
         document.head.appendChild(pageStyle);
       }
       pageStyle.textContent = "@page{size:A4 portrait;margin:10mm}";
-      let done = false;
       const restore = () => {
-        if (done) return;
-        done = true;
+        endDayBriefPrint = null;
         document.body.classList.remove("print-day-brief");
         if (pageStyle.parentNode) pageStyle.parentNode.removeChild(pageStyle);
         window.removeEventListener("afterprint", restore);
-        clearTimeout(fallback);
         render();
       };
+      endDayBriefPrint = restore;
       window.addEventListener("afterprint", restore);
-      const fallback = setTimeout(restore, 2000);
       window.print();
     }, 0);
   },
@@ -257,6 +263,7 @@ export const actions = {
     toast("Roster saved");
   },
   saveAndPrint: () => {
+    finishDayBriefPrint();
     persistRoster();
     toast("Roster saved");
     /* Remount so #printArea reflects the saved state, then print. */

@@ -4,7 +4,7 @@ import {
   roleOfPersonOnDay, rosterDays, rolesForDay, unitName, vacatedEssential,
   findHistoryIndexForStart, history, upsertHistoryEntry, snapshotBlockForHistory,
   historicRosterModel, personById, canEditHistory, historyStart, loadHistoryForEdit,
-  isFilesRole
+  isFilesRole, dutyAwayNote, rolesInListOrder
 } from "./model.js";
 import { LOGO_DATA_URI } from "../assets/logo.js";
 import { getSessionUser, logAudit } from "./audit.js";
@@ -22,7 +22,7 @@ export function buildSnapshot() {
       const wasRid = roleOfPersonOnDay(d, p.id);
       const wasName = wasRid ? ((roleById(wasRid) || {}).name || "") : "";
       /* "was:" is screen-only (roster view); the printed / saved text stays the status. */
-      return { kind: "status", text: st, color: SBG[st] || "#EEEEEE", wasRole: wasName || null };
+      return { kind: "status", text: dutyAwayNote(p.id, d) || st, color: SBG[st] || "#EEEEEE", wasRole: wasName || null };
     }
     const rid = ros ? roleOfPerson(ros[d], p.id) : null;
     if (rid) {
@@ -65,10 +65,10 @@ export function buildSnapshot() {
   };
 }
 
-const AWAY_ORDER = ["Annual leave", "Sick leave", "Rest day", "Duty away"];
+const AWAY_ORDER = ["Annual leave", "Sick leave", "Paternity leave", "Rest day", "Duty away"];
 
 /**
- * H72: one-day briefing rows — Present + assigned only, sorted by role group sortOrder, then role sortOrder, then role name, then person name.
+ * H72: one-day briefing rows — Present + assigned only, in the order of the Roles and groups list (essential first, then the rest), then person name.
  * @param {number} d day index
  * @returns {{ day: {label:string,shift:string,iso:string}, unitName: string, rows: Array<{roleId:string,roleName:string,groupSort:number,sortOrder:number,personName:string,employeeNo:string,shoulderNo:string,color:string}> }}
  */
@@ -78,10 +78,12 @@ export function buildDayBrief(d) {
   const ros = rosterDays();
   const rows = [];
   const away = [];
+  const listPos = {};
+  rolesInListOrder().forEach((r, i) => { listPos[r.id] = i; });
   if (day && ros) {
     activePeople().forEach((p) => {
       if (!isPresent(p, d)) {
-        away.push({ personName: p.name, status: getStatus(p.id, d), employeeNo: p.employeeNo || "", shoulderNo: p.shoulderNo || "" });
+        away.push({ personName: p.name, status: getStatus(p.id, d), note: dutyAwayNote(p.id, d), employeeNo: p.employeeNo || "", shoulderNo: p.shoulderNo || "" });
         return;
       }
       const rid = roleOfPerson(ros[d], p.id);
@@ -93,13 +95,14 @@ export function buildDayBrief(d) {
         roleName: role.name || "",
         groupSort: group ? (group.sortOrder == null ? 9999 : group.sortOrder) : 9999,
         sortOrder: role.sortOrder == null ? 9999 : role.sortOrder,
+        listPos: listPos[rid] == null ? 9999 : listPos[rid],
         personName: p.name,
         employeeNo: p.employeeNo || "",
         shoulderNo: p.shoulderNo || "",
         color: group.color
       });
     });
-    rows.sort((a, b) => (a.groupSort - b.groupSort) || (a.sortOrder - b.sortOrder) || a.roleName.localeCompare(b.roleName) || a.personName.localeCompare(b.personName));
+    rows.sort((a, b) => (a.listPos - b.listPos) || a.roleName.localeCompare(b.roleName) || a.personName.localeCompare(b.personName));
     const ord = (s) => { const i = AWAY_ORDER.indexOf(s); return i < 0 ? AWAY_ORDER.length : i; };
     away.sort((a, b) => (ord(a.status) - ord(b.status)) || a.personName.localeCompare(b.personName));
   }
@@ -180,7 +183,7 @@ export function dayBriefHTML(brief) {
   const rows = (brief.rows || []).map((r) =>
     `<tr><td class="p-2 font-semibold whitespace-nowrap" style="background:${r.color};color:#1f2937">${esc(r.roleName)}</td><td class="p-2 whitespace-nowrap">${esc(r.personName)}</td><td class="numcol numcol-e">${esc(r.employeeNo || "")}</td><td class="numcol numcol-s">${esc(r.shoulderNo || "")}</td></tr>`
   ).join("") + (brief.away || []).map((a) =>
-    `<tr><td class="p-2 whitespace-nowrap" style="background:${SBG[a.status] || "#EEEEEE"};color:#1f2937">${esc(a.status)}</td><td class="p-2 whitespace-nowrap">${esc(a.personName)}</td><td class="numcol numcol-e">${esc(a.employeeNo || "")}</td><td class="numcol numcol-s">${esc(a.shoulderNo || "")}</td></tr>`
+    `<tr><td class="p-2 whitespace-nowrap" style="background:${SBG[a.status] || "#EEEEEE"};color:#1f2937">${esc(a.note || a.status)}</td><td class="p-2 whitespace-nowrap">${esc(a.personName)}</td><td class="numcol numcol-e">${esc(a.employeeNo || "")}</td><td class="numcol numcol-s">${esc(a.shoulderNo || "")}</td></tr>`
   ).join("");
   return `<div id="printArea" class="bg-white text-black border border-base-300 rounded-box p-6 shadow-sm day-brief">
     ${header}

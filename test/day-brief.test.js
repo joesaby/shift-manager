@@ -9,8 +9,8 @@ stubLocalStorage();
 globalThis.window = globalThis.window || {};
 
 const { S } = await import("../src/js/state.js");
-const { migrateToV2, setStatus, writeRoster } = await import("../src/js/model.js");
-const { buildDayBrief, dayBriefHTML } = await import("../src/js/snapshot.js");
+const { migrateToV2, setStatus, writeRoster, getStatus, isPresent, personById, statusCountsForDay, dutyAwayNote, setDutyAwayNote } = await import("../src/js/model.js");
+const { buildDayBrief, dayBriefHTML, buildSnapshot } = await import("../src/js/snapshot.js");
 
 function load(doc) {
   S.data = migrateToV2(doc);
@@ -164,59 +164,75 @@ describe("H59 dayBriefHTML", () => {
   });
 });
 
-describe("H72 briefing sheet grouping", () => {
-  it("groups roles by their group sortOrder, then role sortOrder", () => {
+describe("H72 briefing sheet order", () => {
+  it("follows the Roles and groups list (essential first, then list order), not the group order", () => {
     load(baseDoc({
       groups: [
         { id: "g_car", name: "Car", color: "#F8BBD0", sortOrder: 1 },
         { id: "g_beat", name: "Beat", color: "#C8E6C9", sortOrder: 2 }
       ],
       roles: [
-        role("r_beat1", "Beat 1", 3, "g_beat"),
-        role("r_car", "Car Driver", 1, "g_car"),
-        role("r_beat3", "Beat 3", 5, "g_beat"),
-        role("r_obs", "Car Observer", 2, "g_car")
+        { ...role("r_obs", "Car Observer", 3, "g_car") },
+        { ...role("r_opt", "Optional Desk", 1, "g_beat"), essential: false },
+        { ...role("r_beat1", "Beat 1", 2, "g_beat") },
+        { ...role("r_car", "Car Driver", 1, "g_car") }
       ],
-      people: [
-        person("p1", "Aoife"),
-        person("p2", "Kieran"),
-        person("p3", "Fionn"),
-        person("p4", "Grania")
-      ],
+      people: [person("p1", "Aoife"), person("p2", "Kieran"), person("p3", "Fionn"), person("p4", "Grania")],
       personRoles: [
-        { personId: "p1", roleId: "r_beat1" },
-        { personId: "p2", roleId: "r_beat3" },
-        { personId: "p3", roleId: "r_car" },
-        { personId: "p4", roleId: "r_obs" }
+        { personId: "p1", roleId: "r_beat1" }, { personId: "p2", roleId: "r_opt" },
+        { personId: "p3", roleId: "r_car" }, { personId: "p4", roleId: "r_obs" }
       ]
     }));
-
     writeRoster([
-      {
-        assign: {
-          r_beat1: "p1",
-          r_beat3: "p2",
-          r_car: "p3",
-          r_obs: "p4"
-        }
-      },
-      { assign: {} },
-      { assign: {} },
-      { assign: {} }
+      { assign: { r_beat1: "p1", r_opt: "p2", r_car: "p3", r_obs: "p4" } },
+      { assign: {} }, { assign: {} }, { assign: {} }
     ]);
+    // Roles screen order: Car Driver (1), Beat 1 (2), Car Observer (3), then non-essential Optional Desk.
+    assert.deepEqual(buildDayBrief(0).rows.map((r) => r.roleName), ["Car Driver", "Beat 1", "Car Observer", "Optional Desk"]);
+  });
+});
 
+describe("Paternity leave and Duty away description", () => {
+  const setup = () => {
+    load(baseDoc({
+      roles: [role("r1", "Beat 1", 1)],
+      people: [person("p1", "Ann One"), person("p2", "Pat Dad"), person("p3", "Di Away")],
+      personRoles: [{ personId: "p1", roleId: "r1" }]
+    }));
+    writeRoster([{ assign: { r1: "p1" } }, { assign: {} }, { assign: {} }, { assign: {} }]);
+  };
+
+  it("Paternity leave is a status: not Present, counted, listed on the briefing sheet", () => {
+    setup();
+    setStatus("p2", 0, "Paternity leave");
+    assert.equal(getStatus("p2", 0), "Paternity leave");
+    assert.equal(isPresent(personById("p2"), 0), false);
+    assert.equal(statusCountsForDay(0).find((x) => x.label === "Paternity leave").n, 1);
+    assert.deepEqual(buildDayBrief(0).away.map((a) => [a.personName, a.status]), [["Pat Dad", "Paternity leave"]]);
+  });
+
+  it("Duty away keeps its typed description but still counts as Duty away", () => {
+    setup();
+    setStatus("p3", 0, "Duty away");
+    setDutyAwayNote("p3", 0, "  Court – Dublin  ");
+    assert.equal(dutyAwayNote("p3", 0), "Court – Dublin");
+    assert.equal(getStatus("p3", 0), "Duty away");
+    assert.equal(statusCountsForDay(0).find((x) => x.label === "Duty away").n, 1);
+    const cell = buildSnapshot().cells[2][0];
+    assert.equal(cell.text, "Court – Dublin");
     const brief = buildDayBrief(0);
-    // Check that rows are sorted by group sortOrder first, then role sortOrder
-    // Expected order: g_car (sortOrder 1), then roles: Car Driver (1), Car Observer (2)
-    //               then g_beat (sortOrder 2), then roles: Beat 1 (3), Beat 3 (5)
-    assert.deepEqual(brief.rows.map((r) => r.roleName), [
-      "Car Driver", "Car Observer", "Beat 1", "Beat 3"
-    ]);
-    // Also verify groupSort is in each row
-    assert.ok(brief.rows.every((r) => r.groupSort !== undefined));
-    assert.equal(brief.rows[0].groupSort, 1); // Car group
-    assert.equal(brief.rows[1].groupSort, 1); // Car group
-    assert.equal(brief.rows[2].groupSort, 2); // Beat group
-    assert.equal(brief.rows[3].groupSort, 2); // Beat group
+    assert.equal(brief.away[0].status, "Duty away");
+    assert.match(dayBriefHTML(brief), /Court – Dublin/);
+  });
+
+  it("changing the status away from Duty away drops the description", () => {
+    setup();
+    setStatus("p3", 0, "Duty away");
+    setDutyAwayNote("p3", 0, "Course");
+    setStatus("p3", 0, "Rest day");
+    assert.equal(dutyAwayNote("p3", 0), "");
+    setStatus("p3", 0, "Duty away");
+    assert.equal(dutyAwayNote("p3", 0), "");
+    assert.equal(buildSnapshot().cells[2][0].text, "Duty away");
   });
 });

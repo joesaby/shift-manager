@@ -85,7 +85,7 @@ Written from the shift manager's side: **As a shift manager, I …**. Grouped by
 | ID | Priority | Requirement | Spec |
 | --- | --- | --- | --- |
 | H4 | Must | As a shift manager, I set the block start date and Day or Night for each of the four days. | S6 |
-| H5 | Must | As a shift manager, I set each person's status for each day — Present, Annual leave, Sick leave, Duty away, Rest day — and tick AL beside a name to put them on Annual leave for the whole block. | S6 |
+| H5 | Must | As a shift manager, I set each person's status for each day — Present, Annual leave, Sick leave, Paternity leave, Duty away, Rest day — and tick AL beside a name to put them on Annual leave for the whole block. For Duty away I can type the exact reason, which shows on the roster, print and briefing sheet while still counting as Duty away. | S6 |
 | H33 | Must | As a shift manager, I can mark a Rest day, which isn't allocated and shows as a status on the Roster and print. | S6 |
 | H41 | Must | As a shift manager, I see the same status colours on Attendance and Roster (Present green; all the unavailable statuses one shared blue). | S6 |
 | H40 | Must | As a shift manager, I see each day's date prominently with how many are present and how many essential roles there are to fill. | S6 |
@@ -137,7 +137,7 @@ Written from the shift manager's side: **As a shift manager, I …**. Grouped by
 | H57 | Must | As a shift manager, I get the print scaled to fit one page for typical team sizes (20–45 people) while staying readable. | S10 |
 | H52 | Must | As a shift manager, I print only what's saved: if there are unsaved changes the button says "Save & print" and saves first. | S10 |
 | H65 | Must | As a shift manager, I can switch on black borders for the printed grid when I want it crisper. | S10 |
-| H72 | Must | As a shift manager, I can print a one-page briefing sheet for a single day, grouped by role group, with those away listed at the bottom — without having to save first. | S11 |
+| H72 | Must | As a shift manager, I can print a one-page briefing sheet for a single day, in the same order as the Roles and groups list, with those away listed at the bottom — without having to save first. | S11 |
 
 ### 3.7 Saving, reopening and the Log
 
@@ -352,7 +352,8 @@ When serving over `http` next to `data/shift-manager-data.json`, mock may auto-l
       "stale": false,
       "generatedAt": null,
       "attendance": [
-        { "date": "2026-09-21", "personId": "p_demo1", "statusId": "present" }
+        { "date": "2026-09-21", "personId": "p_demo1", "statusId": "present" },
+        { "date": "2026-09-22", "personId": "p_demo2", "statusId": "duty_away", "note": "Court – Dublin" }
       ],
       "assignments": [
         {
@@ -444,7 +445,7 @@ Source is modular under `src/js/` and bundled to one HTML via `npm run build`:
 | Network | None required at runtime |
 | Delivery | Single offline HTML (~350 KB) or zip of that file |
 | Performance | Generate four days for ~25 people / 16 roles in well under 2s |
-| Print | Colour; A4 landscape ~10mm margins; crest + unit + optional “Prepared by” (print-only on Roster screen); scale-to-fit one page when possible (H57); day header + parking lot frozen on screen (H38); collapsible sidebar (H58); per-day briefing print A4 portrait grouped by role group (H72) |
+| Print | Colour; A4 landscape ~10mm margins; crest + unit + optional “Prepared by” (print-only on Roster screen); scale-to-fit one page when possible (H57); day header + parking lot frozen on screen (H38); collapsible sidebar (H58); per-day briefing print A4 portrait in Roles-list order (H72) |
 | Resilience | Folder backups; `localStorage`; dirty badge; confirm before destructive clear |
 | Security | Local only; no telemetry |
 
@@ -474,7 +475,7 @@ Source is modular under `src/js/` and bundled to one HTML via `npm run build`:
 20. Roster is full-width with a single compact toolbar; on-screen print header is hidden; table body scrolls within the remaining viewport; ~30 compact rows fit 1080p without scrolling when chrome is minimal; parking-lot chips wrap/scroll inside a height cap.
 21. Print preview at 20 / 28 / 35 / 45 people: one page down to the readable minimum scale; second page only beyond that; `thead` repeats; rows do not split mid-row.
 22. Sidebar collapses/expands via hamburger at all widths; choice persists per viewer in `localStorage` when available; default collapsed on narrow, expanded on wide.
-23. Roster **Briefing sheet** bar offers one Print button per day (e.g. Print Thu): portrait sheet lists that day’s Present+assigned people sorted by role `sortOrder`, with Role / Name / Employee / Shoulder and group colours; leave / sick / rest / duty away listed at the bottom, Unassigned omitted; live roster (no Save); full-block Print unchanged. (H72)
+23. Roster **Briefing sheet** bar offers one Print button per day (e.g. Print Thu): portrait sheet lists that day’s Present+assigned people in the order of the Roles and groups list, with Role / Name / Employee / Shoulder and group colours; leave / sick / rest / duty away listed at the bottom, Unassigned omitted; live roster (no Save); full-block Print unchanged. (H72)
 24. Duty stats shows a person × role table with counts; the ▲ / ▼ at the top of a role column sorts by that role (▼ = most first), clicking the heading name toggles; Person sorts A–Z / Z–A; Hard / Total columns and a Total row tally at the end; there are no Day / Night columns.
 25. Duty stats opens on **All time** (earliest data to today); choosing This year / This month or entering From / To dates changes the table and tiles; clicking a name opens a report with every role's count and the person's attendance counts (Present / Annual leave / Sick leave / Duty away / Rest day) for the same period, and Print this report prints only that person.
 26. *(Retired 2026-09-29 with the Historic roster screen — see [`PRD_Deprecated.md`](PRD_Deprecated.md).)*
