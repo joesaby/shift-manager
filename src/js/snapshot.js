@@ -178,7 +178,7 @@ export function dayBriefHTML(brief) {
   const title = day.iso
     ? `Briefing sheet: ${fmt(day.iso)} · ${day.shift || ""}`
     : "Briefing sheet";
-  const header = `<div class="flex items-center gap-3 mb-4"><img src="${LOGO_DATA_URI}" alt="An Garda Síochána" class="w-12 h-12 object-contain shrink-0" width="48" height="48"><div><div class="text-xs font-semibold uppercase tracking-wide opacity-70">An Garda Síochána</div>${unitLine}<h2 class="text-xl font-semibold">${esc(title)}</h2></div></div>`;
+  const header = `<div class="flex items-center gap-3 mb-4"><img src="${LOGO_DATA_URI}" alt="An Garda Síochána" class="w-12 h-12 object-contain shrink-0" width="48" height="48"><div><div class="text-xs font-semibold uppercase tracking-wide opacity-70">An Garda Síochána</div>${unitLine}<h2 class="text-xl font-semibold">${esc(title)}</h2></div><div class="print-title">Duty Detail</div></div>${printStampHTML()}`;
   const head = `<tr><th class="bg-neutral text-neutral-content text-left p-2">Role</th><th class="bg-neutral text-neutral-content text-left p-2">Name</th><th class="bg-neutral text-neutral-content numcol numcol-e">Employee no.</th><th class="bg-neutral text-neutral-content numcol numcol-s">Shoulder no.</th></tr>`;
   const rows = (brief.rows || []).map((r) =>
     `<tr><td class="p-2 font-semibold whitespace-nowrap" style="background:${r.color};color:#1f2937">${esc(r.roleName)}</td><td class="p-2 whitespace-nowrap">${esc(r.personName)}</td><td class="numcol numcol-e">${esc(r.employeeNo || "")}</td><td class="numcol numcol-s">${esc(r.shoulderNo || "")}</td></tr>`
@@ -235,6 +235,17 @@ export function saveRoster() {
   return entry;
 }
 
+/** Printed date/time, shown in the bottom-right corner of every printed page (filled in by stampPrintTime). */
+export function printStampHTML() {
+  return `<div class="print-stamp"></div>`;
+}
+
+/** Fill every .print-stamp with the moment of printing; wired to beforeprint in main.js. */
+export function stampPrintTime() {
+  const t = new Date().toLocaleString("en-IE", { dateStyle: "medium", timeStyle: "short" });
+  document.querySelectorAll(".print-stamp").forEach((el) => { el.textContent = "Printed " + t; });
+}
+
 function headerBlock(snap) {
   const first = snap.days[0];
   const last = snap.days[snap.days.length - 1];
@@ -242,7 +253,7 @@ function headerBlock(snap) {
   const unitLine = unit ? `<div class="text-base font-semibold">${esc(unit)}</div>` : "";
   const by = (snap.savedBy || "").trim();
   const byLine = by ? `<div class="text-xs opacity-70">Prepared by ${esc(by)}</div>` : "";
-  return `<div class="flex items-center gap-3 mb-4"><img src="${LOGO_DATA_URI}" alt="An Garda Síochána" class="w-12 h-12 object-contain shrink-0" width="48" height="48"><div><div class="text-xs font-semibold uppercase tracking-wide opacity-70">An Garda Síochána</div>${unitLine}<h2 class="text-xl font-semibold">Duty rota: ${esc(fmt(first.iso))} to ${esc(fmtLong(last.iso))}</h2>${byLine}</div></div>`;
+  return `<div class="flex items-center gap-3 mb-4"><img src="${LOGO_DATA_URI}" alt="An Garda Síochána" class="w-12 h-12 object-contain shrink-0" width="48" height="48"><div><div class="text-xs font-semibold uppercase tracking-wide opacity-70">An Garda Síochána</div>${unitLine}<h2 class="text-xl font-semibold">Duty rota: ${esc(fmt(first.iso))} to ${esc(fmtLong(last.iso))}</h2>${byLine}</div><div class="print-title">Duty Detail</div></div>${printStampHTML()}`;
 }
 
 function leaveTables(snap) {

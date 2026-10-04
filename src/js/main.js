@@ -3,7 +3,7 @@ import { S, setRenderer, loadLocal, wireFileInput, applyLoaded, tryLoadMockData,
 import { shell, vSelModal, vBulk, vConfirm, vNamePrompt, printBorders } from "./ui-kit.js";
 import { tryRestoreWorkspace, hasWorkspace, readWorkspaceData, writeWorkspaceData } from "./workspace.js";
 import { logAudit } from "./audit.js";
-import { isRosterUnsaved } from "./snapshot.js";
+import { isRosterUnsaved, stampPrintTime } from "./snapshot.js";
 import { swapPeople, assignParkedRole, canTakeParkedRole, canDropPersonOnPerson, adjacentPersonId } from "./generator.js";
 
 import { vStart, actions as startActions, changes as startChanges } from "./screens/start.js";
@@ -398,3 +398,5 @@ async function boot() {
   render();
 }
 boot();
+
+window.addEventListener("beforeprint", stampPrintTime);

@@ -5,7 +5,7 @@ import {
   personById, isPresent, qual, roleOfPerson, rosterDays, vacatedEssential, openRolesForDay, unassignedReason,
   unitName, activePeople, statusCountsForDay, canRegenerate, isFilesRole, lastFilesDate
 } from "../model.js";
-import { buildSnapshot, saveRoster as persistRoster, isRosterUnsaved, printFitStyle, buildDayBrief, dayBriefHTML } from "../snapshot.js";
+import { buildSnapshot, saveRoster as persistRoster, isRosterUnsaved, printFitStyle, buildDayBrief, dayBriefHTML, printStampHTML } from "../snapshot.js";
 import { generate as generateRoster, swapPeople, assignRoleToPerson, assignParkedRole, unassignPerson, canTakeParkedRole, canDropPersonOnPerson } from "../generator.js";
 import { ph, noPeople, printBorders, setPrintBorders, tallyLabels, toggleTallyLabel } from "../ui-kit.js";
 import { logAudit } from "../audit.js";
@@ -26,7 +26,7 @@ function headerHTML(snap) {
   const unitLine = unit ? `<div class="text-base font-semibold">${esc(unit)}</div>` : "";
   const by = (snap.savedBy || "").trim();
   const byLine = by ? `<div class="text-xs opacity-70">Prepared by ${esc(by)}</div>` : "";
-  return `<div class="flex items-center gap-3 mb-4"><img src="${LOGO_DATA_URI}" alt="An Garda Síochána" class="w-12 h-12 object-contain shrink-0" width="48" height="48"><div><div class="text-xs font-semibold uppercase tracking-wide opacity-70">An Garda Síochána</div>${unitLine}<h2 class="text-xl font-semibold">Duty rota: ${esc(fmt(first.iso))} to ${esc(fmtLong(last.iso))}</h2>${byLine}</div></div>`;
+  return `<div class="flex items-center gap-3 mb-4"><img src="${LOGO_DATA_URI}" alt="An Garda Síochána" class="w-12 h-12 object-contain shrink-0" width="48" height="48"><div><div class="text-xs font-semibold uppercase tracking-wide opacity-70">An Garda Síochána</div>${unitLine}<h2 class="text-xl font-semibold">Duty rota: ${esc(fmt(first.iso))} to ${esc(fmtLong(last.iso))}</h2>${byLine}</div><div class="print-title">Duty Detail</div></div>${printStampHTML()}`;
 }
 
 /** Interactive person × day roster (unified former Print + Roster). */

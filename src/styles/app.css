@@ -20,6 +20,8 @@ html,body{font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helve
 .hist-selectors .hist-period{min-width:16rem;flex:1 1 16rem}
 .roster-alert{padding:.35rem .75rem;min-height:0;font-size:.85rem}
 .print-only{display:none}
+.print-title{margin-left:auto;align-self:flex-start;font-size:1.5rem;font-weight:700;letter-spacing:.02em}
+.print-stamp{display:none}
 .printScroll.roster-scroll{max-height:calc(100vh - 14.5rem);max-height:calc(100dvh - 14.5rem);min-height:14rem}
 .roster-compact td{padding-top:.125rem;padding-bottom:.125rem}
 .roster-compact .roster-cell-inner{min-height:1.5rem}
@@ -216,13 +218,16 @@ tr.row-moved>td{animation:rowflash 1.4s ease-out}
   .rota tr.row-sel td.stickycol{background:transparent!important}
 }
 
-@page{size:A4 landscape;margin:10mm}
+/* Zero page margin suppresses the browser's own date / title header and footer; #printArea supplies the 10mm instead. */
+@page{size:A4 landscape;margin:0}
 @media print{
   body *{visibility:hidden}
   #printArea,#printArea *{visibility:visible}
   #printArea{position:absolute;left:0;top:0;width:100%;box-shadow:none!important;border:0!important}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  #printArea{padding:0!important}
+  html,body{background:#fff!important}
+  #printArea{padding:10mm 10mm 14mm!important;box-sizing:border-box;border-radius:0!important}
+  .print-stamp{display:block;position:fixed;right:10mm;bottom:5mm;font-size:10px;color:#4b5563}
   #printArea h2{font-size:16px!important;margin-bottom:6px!important}
   #printArea h3{margin-top:8px!important;margin-bottom:3px!important;font-size:12px!important}
   /* H57: --pfs / --ppad are set on #printArea from the headcount so the roster fits one page. */
