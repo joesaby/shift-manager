@@ -96,6 +96,10 @@ export function vStart() {
         </div>
         <div class="home-status-fields">
           <label class="form-control home-status-unit">
+            <span class="label-text font-semibold">Station name</span>
+            <input id="stationName" class="input input-bordered w-full" placeholder="e.g. Cedar Quay" value="${esc((D().meta && D().meta.stationName) || "")}" data-ch="stationName" autocomplete="organization">
+          </label>
+          <label class="form-control home-status-unit">
             <span class="label-text font-semibold">Unit name</span>
             <input id="unitName" class="input input-bordered w-full" placeholder="e.g. Cedar Quay" value="${esc(unit)}" data-ch="unitName" autocomplete="organization">
           </label>
@@ -194,6 +198,10 @@ export function vStart() {
 export const actions = {};
 
 export const changes = {
+  stationName: (v) => {
+    if (!D().meta) D().meta = {};
+    D().meta.stationName = String(v || "");
+  },
   unitName: (v) => {
     if (!D().meta) D().meta = {};
     D().meta.unitName = String(v || "");

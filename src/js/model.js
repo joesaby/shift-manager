@@ -249,6 +249,7 @@ export function isValidDocument(d) {
 export const D = () => S.data;
 export const block = () => D().blocks.current;
 export const history = () => D().blocks.history;
+export const stationName = () => ((D().meta && D().meta.stationName) || "").trim();
 export const unitName = () => ((D().meta && D().meta.unitName) || "").trim();
 
 export const roleById = (id) => D().roles.find((r) => r.id === id);
