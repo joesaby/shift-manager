@@ -20,7 +20,9 @@ html,body{font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helve
 .hist-selectors .hist-period{min-width:16rem;flex:1 1 16rem}
 .roster-alert{padding:.35rem .75rem;min-height:0;font-size:.85rem}
 .print-only{display:none}
-.print-title{margin-left:auto;align-self:flex-start;font-size:1.5rem;font-weight:700;letter-spacing:.02em}
+.hdr-row{font-size:.875rem}
+.hdr-label{display:inline-block;min-width:5.5rem;font-weight:600}
+.print-title{margin-left:auto;align-self:flex-start;font-size:1.25rem;font-weight:700;letter-spacing:.02em}
 .print-stamp{display:none}
 .printScroll.roster-scroll{max-height:calc(100vh - 14.5rem);max-height:calc(100dvh - 14.5rem);min-height:14rem}
 .roster-compact td{padding-top:.125rem;padding-bottom:.125rem}

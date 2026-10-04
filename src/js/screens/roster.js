@@ -5,7 +5,7 @@ import {
   personById, isPresent, qual, roleOfPerson, rosterDays, vacatedEssential, openRolesForDay, unassignedReason,
   unitName, activePeople, statusCountsForDay, canRegenerate, isFilesRole, lastFilesDate
 } from "../model.js";
-import { buildSnapshot, saveRoster as persistRoster, isRosterUnsaved, printFitStyle, buildDayBrief, dayBriefHTML, printStampHTML } from "../snapshot.js";
+import { buildSnapshot, saveRoster as persistRoster, isRosterUnsaved, printFitStyle, buildDayBrief, dayBriefHTML, headerBlock, shiftLabel } from "../snapshot.js";
 import { generate as generateRoster, swapPeople, assignRoleToPerson, assignParkedRole, unassignPerson, canTakeParkedRole, canDropPersonOnPerson } from "../generator.js";
 import { ph, noPeople, printBorders, setPrintBorders, tallyLabels, toggleTallyLabel } from "../ui-kit.js";
 import { logAudit } from "../audit.js";
@@ -19,15 +19,7 @@ export function rosterWarn(d, rid, pid) {
   return "";
 }
 
-function headerHTML(snap) {
-  const first = snap.days[0];
-  const last = snap.days[snap.days.length - 1];
-  const unit = (snap.unitName || unitName() || "").trim();
-  const unitLine = unit ? `<div class="text-base font-semibold">${esc(unit)}</div>` : "";
-  const by = (snap.savedBy || "").trim();
-  const byLine = by ? `<div class="text-xs opacity-70">Prepared by ${esc(by)}</div>` : "";
-  return `<div class="flex items-center gap-3 mb-4"><img src="${LOGO_DATA_URI}" alt="An Garda Síochána" class="w-12 h-12 object-contain shrink-0" width="48" height="48"><div><div class="text-xs font-semibold uppercase tracking-wide opacity-70">An Garda Síochána</div>${unitLine}<h2 class="text-xl font-semibold">Duty rota: ${esc(fmt(first.iso))} to ${esc(fmtLong(last.iso))}</h2>${byLine}</div><div class="print-title">Duty Detail</div></div>${printStampHTML()}`;
-}
+const headerHTML = headerBlock;
 
 /** Interactive person × day roster (unified former Print + Roster). */
 /** Unfilled roles this person can take on day d (essential first), as a screen-only "Add role" select. */
@@ -97,7 +89,7 @@ export function vRos() {
     : '<span class="text-sm opacity-60">No unit name — set it on <a class="link link-primary" data-act="nav" data-s="start">Home</a></span>'}<span class="text-sm opacity-70">${esc(fmt(firstDay.iso))} – ${esc(fmtLong(lastDay.iso))}</span><span class="roster-toolbar-actions">${actionsBar}</span></div>`;
 
   const head = snap.days.map((d) =>
-    `<th class="bg-neutral text-neutral-content text-center p-2 align-bottom"><div>${esc(d.label)}</div><div class="font-normal opacity-80 text-xs">${esc(d.shift)}</div></th>`
+    `<th class="bg-neutral text-neutral-content text-center p-2 align-bottom"><div>${esc(d.label)}</div><div class="font-normal opacity-80 text-xs">${esc(shiftLabel(d.shift))}</div></th>`
   ).join("");
 
   /* H59: outside the sticky/clipped day header so Print day is always visible. */

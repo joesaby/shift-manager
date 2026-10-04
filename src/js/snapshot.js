@@ -1,7 +1,7 @@
 import { esc, fmt, fmtLong, SBG } from "./util.js";
 import {
   block, dayLabels, activePeople, roleById, groupById, getStatus, isPresent, roleOfPerson,
-  roleOfPersonOnDay, rosterDays, rolesForDay, unitName, vacatedEssential,
+  roleOfPersonOnDay, rosterDays, rolesForDay, unitName, stationName, vacatedEssential,
   findHistoryIndexForStart, history, upsertHistoryEntry, snapshotBlockForHistory,
   historicRosterModel, personById, canEditHistory, historyStart, loadHistoryForEdit,
   isFilesRole, dutyAwayNote, rolesInListOrder
@@ -48,6 +48,7 @@ export function buildSnapshot() {
 
   return {
     layout: "person-day",
+    stationName: stationName(),
     unitName: unitName(),
     savedBy: getSessionUser() || "",
     start: block().startDate,
@@ -246,14 +247,22 @@ export function stampPrintTime() {
   document.querySelectorAll(".print-stamp").forEach((el) => { el.textContent = "Printed " + t; });
 }
 
-function headerBlock(snap) {
+/** Day / Night column heading text with the duty hours (print + screen). */
+export function shiftLabel(shift) {
+  const t = { Day: "7am-7pm", Night: "7pm-7am" }[shift];
+  return t ? `${shift} (${t})` : shift;
+}
+
+/** Print header: crest, Station / Unit / Period / Prepared by, "Duty Detail" top-right. */
+export function headerBlock(snap) {
   const first = snap.days[0];
   const last = snap.days[snap.days.length - 1];
+  const station = (snap.stationName || stationName() || "").trim();
   const unit = (snap.unitName || unitName() || "").trim();
-  const unitLine = unit ? `<div class="text-base font-semibold">${esc(unit)}</div>` : "";
   const by = (snap.savedBy || "").trim();
-  const byLine = by ? `<div class="text-xs opacity-70">Prepared by ${esc(by)}</div>` : "";
-  return `<div class="flex items-center gap-3 mb-4"><img src="${LOGO_DATA_URI}" alt="An Garda Síochána" class="w-12 h-12 object-contain shrink-0" width="48" height="48"><div><div class="text-xs font-semibold uppercase tracking-wide opacity-70">An Garda Síochána</div>${unitLine}<h2 class="text-xl font-semibold">Duty rota: ${esc(fmt(first.iso))} to ${esc(fmtLong(last.iso))}</h2>${byLine}</div><div class="print-title">Duty Detail</div></div>${printStampHTML()}`;
+  const row = (label, v) => `<div class="hdr-row"><span class="hdr-label">${label}</span>${v ? esc(v) : "—"}</div>`;
+  const period = `${fmt(first.iso)} to ${fmtLong(last.iso)}`;
+  return `<div class="flex items-center gap-3 mb-4"><img src="${LOGO_DATA_URI}" alt="An Garda Síochána" class="w-12 h-12 object-contain shrink-0" width="48" height="48"><div><div class="text-xs font-semibold uppercase tracking-wide opacity-70">An Garda Síochána</div>${row("Station", station)}${row("Unit", unit)}${row("Period", period)}${row("Prepared by", by)}</div><div class="print-title">Duty Detail</div></div>${printStampHTML()}`;
 }
 
 function leaveTables(snap) {
@@ -295,7 +304,7 @@ export const printFitStyle = (nPeople) => {
 function rotaHTMLPersonDay(snap, editable) {
   const withNums = snapHasPersonNumbers(snap);
   const head = snap.days.map((d) =>
-    `<th class="bg-neutral text-neutral-content text-center p-2 align-bottom"><div>${esc(d.label)}</div><div class="font-normal opacity-80 text-xs">${esc(d.shift)}</div></th>`
+    `<th class="bg-neutral text-neutral-content text-center p-2 align-bottom"><div>${esc(d.label)}</div><div class="font-normal opacity-80 text-xs">${esc(shiftLabel(d.shift))}</div></th>`
   ).join("");
   const numHead = `<tr><th class="bg-neutral text-neutral-content text-left p-2 stickycol">Person</th>${withNums
     ? '<th class="bg-neutral text-neutral-content numcol numcol-e">Employee no.</th><th class="bg-neutral text-neutral-content numcol numcol-s">Shoulder no.</th>'
