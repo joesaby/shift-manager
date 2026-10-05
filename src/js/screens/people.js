@@ -1,7 +1,7 @@
 import { esc, uid } from "../util.js";
 import { S, toast } from "../state.js";
 import {
-  D, block, personById, setLongTermSick, clearLongTermSick, roleById, groupById, qual, qualCount, setQual,
+  D, block, personById, setLongTermSick, clearLongTermSick, roleById, roleColor, qual, qualCount, setQual,
   removePersonEverywhere, markStale, personLoadByMonth, currentMonthKey, monthLabel
 } from "../model.js";
 import { ph } from "../ui-kit.js";
@@ -118,7 +118,7 @@ export function vPpl() {
   if (sel) {
     const tog = D().roles.map((r) => {
       const on = qual(sel, r.id);
-      return `<label class="flex items-center gap-2 border rounded-lg px-3 py-2 cursor-pointer" style="background:${on ? groupById(r.groupId).color : "#fff"}"><input type="checkbox" class="checkbox checkbox-sm" ${on ? "checked" : ""} data-ch="qual" data-p="${sel.id}" data-r="${r.id}"><span class="flex-1 text-sm">${esc(r.name)}</span></label>`;
+      return `<label class="flex items-center gap-2 border rounded-lg px-3 py-2 cursor-pointer" style="background:${on ? roleColor(r) : "#fff"}"><input type="checkbox" class="checkbox checkbox-sm" ${on ? "checked" : ""} data-ch="qual" data-p="${sel.id}" data-r="${r.id}"><span class="flex-1 text-sm">${esc(r.name)}</span></label>`;
     }).join("");
     const onlyOpts = `<option value="">None (any role they are ticked for)</option>` + D().roles.filter((r) => qual(sel, r.id)).map((r) => `<option value="${r.id}"${sel.fixedRoleId === r.id ? " selected" : ""}>${esc(r.name)}</option>`).join("");
     const curKey = currentMonthKey();
@@ -153,7 +153,7 @@ export function vPpl() {
         <label class="form-control ppl-shldr"><span class="label-text font-semibold">Shoulder no.</span><input class="input input-bordered" value="${esc(sel.shoulderNo || "")}" data-ch="pshldr" data-p="${sel.id}" inputmode="numeric" autocomplete="off"></label>
       </div>
       <label class="flex items-center gap-3"><input type="checkbox" class="toggle toggle-primary" ${sel.active !== false ? "checked" : ""} data-ch="pactive" data-p="${sel.id}"><span>Active (untick when someone leaves; use Long-term sick below for a long absence)</span></label>
-      <label class="flex items-center gap-3"><input type="checkbox" class="toggle toggle-primary" ${sel.probationer ? "checked" : ""} data-ch="pprob" data-p="${sel.id}"><span><b>Probationer</b> (never put in the same group on the same day as another Probationer, where it can be avoided)</span></label>
+      <label class="flex items-center gap-3"><input type="checkbox" class="toggle toggle-primary" ${sel.probationer ? "checked" : ""} data-ch="pprob" data-p="${sel.id}"><span><b>Probationer</b> (never put in the same probationer group on the same day as another Probationer, where it can be avoided)</span></label>
       <div class="lts-box">
         <label class="flex items-center gap-3"><input type="checkbox" class="toggle toggle-primary" ${sel.longTermSick ? "checked" : ""} data-ch="plts" data-p="${sel.id}"><span>Long-term sick</span></label>
         <div class="text-sm opacity-70 mt-1">Every day in this period is Sick leave on Attendance, in every block, so you don't have to set it daily. Change a single day on Attendance to override it.</div>

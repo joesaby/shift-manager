@@ -44,10 +44,11 @@ export function emptyData() {
       blockLengthDays: 4
     },
     groups: [
-      { id: "g1", name: "Car", color: "#F8BBD0", sortOrder: 1 },
-      { id: "g2", name: "Beat", color: "#C8E6C9", sortOrder: 2 },
-      { id: "g3", name: "Inside", color: "#FFE0B2", sortOrder: 3 }
+      { id: "g1", name: "Car", sortOrder: 1 },
+      { id: "g2", name: "Beat", sortOrder: 2 },
+      { id: "g3", name: "Inside", sortOrder: 3 }
     ],
+    probationerGroups: [],
     roles: [],
     people: [],
     personRoles: [],
@@ -109,7 +110,7 @@ export function migrateToV2(raw) {
 
   const groups = (raw.groups || []).map((g, i) => ({
     id: g.id, name: g.name, color: g.color, sortOrder: i + 1
-  }));
+  })); /* colour is moved onto the roles by normalizeV2 */
   const roles = (raw.roles || []).map((r, i) => ({
     id: r.id,
     name: r.name,
@@ -236,6 +237,23 @@ function normalizeV2(d) {
     if (p.shoulderNo == null) p.shoulderNo = "";
   });
   d.groups.forEach((g, i) => { if (g.sortOrder == null) g.sortOrder = i + 1; });
+  /* H20: print colour lives on the role. Files saved with colours on groups: copy onto roles, drop from groups. */
+  d.roles.forEach((r) => { if (!r.color) r.color = (d.groups.find((g) => g.id === r.groupId) || {}).color || DEFAULT_ROLE_COLOR; });
+  d.groups.forEach((g) => { delete g.color; });
+  /* H75: Probationers are kept apart only within probationer groups. Files saved before this applied the rule
+     to every group, so with a Probationer on file make one probationer group per group that has roles. */
+  if (!Array.isArray(d.probationerGroups)) {
+    d.probationerGroups = [];
+    if (d.people.some((p) => p.probationer)) {
+      d.groups.forEach((g) => {
+        const rs = d.roles.filter((r) => r.groupId === g.id);
+        if (!rs.length) return;
+        const pg = { id: "pg_" + g.id, name: g.name, sortOrder: d.probationerGroups.length + 1 };
+        d.probationerGroups.push(pg);
+        rs.forEach((r) => { r.probGroupId = pg.id; });
+      });
+    }
+  }
   return d;
 }
 
@@ -254,7 +272,10 @@ export const unitName = () => ((D().meta && D().meta.unitName) || "").trim();
 
 export const roleById = (id) => D().roles.find((r) => r.id === id);
 export const personById = (id) => D().people.find((p) => p.id === id);
-export const groupById = (id) => D().groups.find((g) => g.id === id) || { name: "", color: "#E5E7EB" };
+export const groupById = (id) => D().groups.find((g) => g.id === id) || { name: "" };
+export const DEFAULT_ROLE_COLOR = "#BFDBFE";
+/** H20: print / roster colour of a role (by id or object). */
+export const roleColor = (r) => { const ro = typeof r === "string" ? roleById(r) : r; return (ro && ro.color) || "#E5E7EB"; };
 export const activePeople = () => D().people.filter((p) => p.active !== false);
 
 /** H73: the Files role, or null if not configured. */

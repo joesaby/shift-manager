@@ -40,7 +40,7 @@ export const RULES = [
     help: "Nobody gets a role from the same group (e.g. Car) two days running when someone else can cover.",
     breaks: (c) => !!(c.prevRole && c.prevRole.groupId === c.role.groupId) },
   { key: "probationers", id: "H75", kind: "structural",
-    help: "Two people ticked **Probationer** are not put in the same group on the same day when anyone else can be swapped in. Files is not counted." },
+    help: "Two people ticked **Probationer** are not put in the same **probationer group** (set up on Roles and groups) on the same day when anyone else can be swapped in. Files is not counted." },
   { key: "hardNights", id: "H11", kind: "soft", essential: "soft", nonEssential: "soft",
     help: "On the second night, nobody gets a hard role if they had a hard role the night before, when someone else can cover.",
     breaks: (c) => !!(c.night && c.prevNight && c.role.hard && c.prevRole && c.prevRole.hard) },

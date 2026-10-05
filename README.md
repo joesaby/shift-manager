@@ -18,7 +18,7 @@ Data stays in that folder (`shift-manager-data.json`, `backups/`, `logs/`). You 
 | --- | --- |
 | Unit + manager names, workspace folder | Home |
 | Duty roles, print colours, day/night flags, hard roles, the **Files role** (Up / Down set the order) | Roles and groups |
-| People, qualifications (tick every role each person can do — **Select all**, then untick the one or two they can't), optional fixed role (on a day they are taken off it, they can be given Files or another role on Roster), optional **Probationer** tick (two Probationers are not put in the same role group on the same day where it can be avoided) | People |
+| People, qualifications (tick every role each person can do — **Select all**, then untick the one or two they can't), optional fixed role (on a day they are taken off it, they can be given Files or another role on Roster), optional **Probationer** tick (two Probationers are not put in the same **probationer group** — set up on Roles and groups — on the same day where it can be avoided) | People |
 
 Untick **Active** on People when someone leaves. For a long sickness, tick **Long-term sick** on that person (with a From date and an optional To date): every Attendance day in that period is Sick leave automatically, in every block. Change a single day on Attendance to override it.
 

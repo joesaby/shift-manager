@@ -113,12 +113,12 @@ function fillNonEssentialWithBias(roleIds, free, assign, count, bias, prev, d, u
  */
 function separateProbationers(assign, free, prev, d, used) {
   const prob = (id) => !!(personById(id) || {}).probationer;
-  const grp = (r) => roleById(r).groupId;
+  const grp = (r) => roleById(r).probGroupId || null; /* H75: only roles in a probationer group count */
   const pass = (r) => (roleById(r).essential !== false ? "essential" : "nonEssential");
   const ok = (id, r) => judge(pass(r), ruleCtx(id, roleById(r), prev, d, used)) != null;
   const probIn = (g) => Object.keys(assign).filter((r) => assign[r] && prob(assign[r]) && grp(r) === g);
   for (let guard = 0; guard < 50; guard++) {
-    const groups = [...new Set(Object.keys(assign).filter((r) => assign[r] && prob(assign[r])).map(grp))];
+    const groups = [...new Set(Object.keys(assign).filter((r) => assign[r] && prob(assign[r])).map(grp))].filter(Boolean);
     let moved = false;
     for (const g of groups) {
       const rs = probIn(g);
@@ -128,7 +128,7 @@ function separateProbationers(assign, free, prev, d, used) {
         if (personById(P).fixedRoleId) continue;
         const swap = Object.keys(assign).find((r2) => {
           const Q = assign[r2];
-          return Q && grp(r2) !== g && !prob(Q) && !personById(Q).fixedRoleId && probIn(grp(r2)).length === 0
+          return Q && grp(r2) !== g && !prob(Q) && !personById(Q).fixedRoleId && (grp(r2) == null || probIn(grp(r2)).length === 0)
             && canDo(personById(Q), r) && canDo(personById(P), r2) && ok(Q, r) && ok(P, r2);
         });
         if (swap) { const Q = assign[swap]; assign[swap] = P; assign[r] = Q; moved = true; break; }
