@@ -1,6 +1,6 @@
 import { esc, fmt, fmtLong, SBG } from "./util.js";
 import {
-  block, dayLabels, activePeople, roleById, groupById, getStatus, isPresent, roleOfPerson,
+  block, dayLabels, activePeople, roleById, groupById, roleColor, getStatus, isPresent, roleOfPerson,
   roleOfPersonOnDay, rosterDays, rolesForDay, unitName, stationName, vacatedEssential,
   findHistoryIndexForStart, history, upsertHistoryEntry, snapshotBlockForHistory,
   historicRosterModel, personById, canEditHistory, historyStart, loadHistoryForEdit,
@@ -27,7 +27,7 @@ export function buildSnapshot() {
     const rid = ros ? roleOfPerson(ros[d], p.id) : null;
     if (rid) {
       const role = roleById(rid) || { name: "", groupId: "" };
-      return { kind: "role", text: role.name, color: groupById(role.groupId).color, roleId: rid };
+      return { kind: "role", text: role.name, color: roleColor(role), roleId: rid };
     }
     return { kind: "spare", text: "", color: "#FFFFFF" };
   }));
@@ -100,7 +100,7 @@ export function buildDayBrief(d) {
         personName: p.name,
         employeeNo: p.employeeNo || "",
         shoulderNo: p.shoulderNo || "",
-        color: group.color
+        color: roleColor(role)
       });
     });
     rows.sort((a, b) => (a.listPos - b.listPos) || a.roleName.localeCompare(b.roleName) || a.personName.localeCompare(b.personName));
@@ -146,7 +146,7 @@ export function personDaySnapFromHistory(entry) {
     const rid = roleOfPerson(model.roster[d], p.id);
     if (rid) {
       const role = roleById(rid) || { name: "", groupId: "" };
-      return { kind: "role", text: role.name, color: groupById(role.groupId).color, roleId: rid };
+      return { kind: "role", text: role.name, color: roleColor(role), roleId: rid };
     }
     return { kind: "spare", text: "", color: "#FFFFFF" };
   }));

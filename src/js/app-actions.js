@@ -23,7 +23,7 @@ export const actions = {
     if (S.ui.bulk.k === "people") lines.forEach((n) => D().people.push({ id: uid(), name: n, active: true, fixedRoleId: null, employeeNo: "", shoulderNo: "" }));
     else lines.forEach((n) => D().roles.push({
       id: uid(), name: n, groupId: D().groups[0] ? D().groups[0].id : "",
-      usedAtDay: true, usedAtNight: true, hard: false, skillRestricted: false, essential: true, sortOrder: D().roles.length + 1
+      color: "#BFDBFE", usedAtDay: true, usedAtNight: true, hard: false, skillRestricted: false, essential: true, sortOrder: D().roles.length + 1
     }));
     S.ui.bulk = null; touch(); toast(lines.length + " added");
   },

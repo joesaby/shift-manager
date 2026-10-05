@@ -67,8 +67,8 @@ describe("rule checks", () => {
   it("qualification and once per block", () => {
     assert.equal(rule("qualified").breaks({ qualified: false }), true);
     assert.equal(rule("qualified").breaks({ qualified: true }), false);
-    assert.equal(rule("oncePerBlock").breaks({ role: { oncePerBlock: true }, usedGroup: true }), true);
-    assert.equal(rule("oncePerBlock").breaks({ role: { oncePerBlock: false }, usedGroup: true }), false);
+    assert.equal(rule("oncePerBlock").breaks({ role: { oncePerBlock: true }, usedRole: true }), true);
+    assert.equal(rule("oncePerBlock").breaks({ role: { oncePerBlock: false }, usedRole: true, usedGroup: true }), false);
   });
 });
 

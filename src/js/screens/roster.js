@@ -1,7 +1,7 @@
 import { esc, fmt, fmtLong, STAT, SBG } from "../util.js";
 import { S, toast, askConfirm, render } from "../state.js";
 import {
-  D, block, hasRoster, isStale, groupById,
+  D, block, hasRoster, isStale, roleColor,
   personById, isPresent, qual, roleOfPerson, rosterDays, vacatedEssential, openRolesForDay, unassignedReason,
   unitName, activePeople, statusCountsForDay, canRegenerate, isFilesRole, lastFilesDate
 } from "../model.js";
@@ -104,7 +104,7 @@ export function vRos() {
     }
     const chips = items.map((it) => {
       const role = D().roles.find((r) => r.id === it.roleId);
-      const color = groupById(role ? role.groupId : "").color;
+      const color = roleColor(role);
       const was = it.wasName ? ` — was: ${esc(it.wasName)}` : "";
       const selRole = sel && sel.kind === "role" && +sel.d === d && sel.r === it.roleId;
       return `<button type="button" class="unalloc-chip ${selRole ? "unalloc-chip-sel" : ""}" style="border-left:4px solid ${color}" draggable="true" data-drag-role="${it.roleId}" data-drag-day="${d}" data-act="pickRole" data-d="${d}" data-r="${it.roleId}" title="Drag onto a person to assign">${esc(it.name)}${was}</button>`;
