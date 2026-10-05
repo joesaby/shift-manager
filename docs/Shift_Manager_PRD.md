@@ -77,7 +77,7 @@ Written from the shift manager's side: **As a shift manager, I …**. Grouped by
 | H20 | Should | As a shift manager, I manage role groups, and give each role its own print colour (roles in a group can share one), so the roster is easy to read at a glance. | S4 |
 | H35 | Must | As a shift manager, I say whether a role is used by day, at night or both, so each shift only gets the roles it needs. | S4 |
 | H43 | Must | As a shift manager, I mark roles as essential, and essential roles are listed first, so the ones that must be covered are clear. | S4 |
-| H70 | Must | As a shift manager, I can mark a role, or a whole group of roles, "once per block", so nobody gets that duty (e.g. Files 1–5) twice in a block. | S5 |
+| H70 | Must | As a shift manager, I can mark roles "once per block", so nobody gets that kind of duty (e.g. Files 1–5) twice in a block. | S5 |
 | H73 | Must | As a shift manager, I can mark one role as the Files role, so everyone still free after the real roles are filled (and ticked for Files) lands on Files instead of being left with nothing. | S5 |
 
 ### 3.3 Planning the block and attendance
@@ -249,7 +249,7 @@ Generated from [`src/js/rules.js`](../src/js/rules.js) — the same list drives 
 | 8 | H71 | `sameGroup` | soft | gives way if no other way | never broken | Nobody gets a role from the same group (e.g. Car) two days running when someone else can cover. |
 | 9 | H75 | `probationers` | structural | order of work | order of work | Two people ticked **Probationer** are not put in the same **probationer group** (set up on Roles and groups) on the same day when anyone else can be swapped in. Files is not counted. |
 | 10 | H11 | `hardNights` | soft | gives way if no other way | gives way if no other way | On the second night, nobody gets a hard role if they had a hard role the night before, when someone else can cover. |
-| 11 | H70 | `oncePerBlock` | filter | never broken | never broken | A role ticked **Once per block** goes to a person on one day of the block at most; a group ticked **Once per block** does the same across all roles in that group. |
+| 11 | H70 | `oncePerBlock` | filter | never broken | never broken | **Once per block** roles go to a person on one day of the block at most. |
 | 12 | H13 | `emptyOnlyIfImpossible` | structural | order of work | order of work | An essential role is only left empty when nobody Present can take it. If there are not enough people for every essential role, the ones lower in the Roles and groups list are left empty first. You'll see a warning, and you can fill it by hand. |
 
 <!-- rules:end -->
@@ -401,7 +401,7 @@ Notes:
 | --- | --- |
 | `meta` | File identity; **`unitName` required for clear prints** |
 | `settings` | Statuses, default shifts, block length |
-| `groups` | Role groups (`name`, `oncePerBlock`); colours are on `roles[].color` |
+| `groups` | Role groups (`name`); colours are on `roles[].color` |
 | `probationerGroups` | H75 probationer groups (`name`); a role joins one via `roles[].probGroupId` |
 | `roles` | Catalogue + day / night / hard / **essential** / once per block / order (legacy `skillRestricted` kept, unused) |
 | `people` | Team; `fixedRoleId`; `active`; optional `employeeNo` / `shoulderNo` (strings) |

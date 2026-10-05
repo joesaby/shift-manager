@@ -1,5 +1,5 @@
 /**
- * Role colours (H20), group once-per-block (H70), probationer groups (H75).
+ * Role colours (H20), probationer groups (H75).
  */
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
@@ -10,7 +10,6 @@ stubLocalStorage();
 const { S } = await import("../src/js/state.js");
 const { migrateToV2, rosterDays, roleById, personById, roleColor } = await import("../src/js/model.js");
 const { generate } = await import("../src/js/generator.js");
-const { RULES } = await import("../src/js/rules.js");
 
 const role = (id, groupId, o = {}) => ({ id, name: id, groupId, usedAtDay: true, usedAtNight: true, hard: false, skillRestricted: false, essential: true, sortOrder: 1, ...o });
 const person = (id, o = {}) => ({ id, name: id, active: true, fixedRoleId: null, ...o });
@@ -33,37 +32,6 @@ describe("H20 colours live on roles", () => {
     assert.equal(roleById("c").color, "#112233");
     assert.ok(S.data.groups.every((g) => g.color === undefined));
     assert.equal(roleColor("a"), "#F8BBD0");
-  });
-});
-
-describe("H70 once per block on a group", () => {
-  it("a group ticked once-per-block gives nobody two days in that group", () => {
-    for (let t = 0; t < 20; t++) {
-      const roles = [role("f1", "g1"), role("f2", "g1"), role("x", "g2")];
-      const people = ["p1", "p2", "p3", "p4"].map((id) => person(id));
-      load({ groups: [{ id: "g1", name: "Files", oncePerBlock: true, sortOrder: 1 }, { id: "g2", name: "Other", sortOrder: 2 }], ...withQuals(roles, people) });
-      generate();
-      const days = {};
-      rosterDays().forEach((day) => Object.keys(day.assign).forEach((rid) => {
-        const pid = day.assign[rid];
-        if (pid && roleById(rid).groupId === "g1") days[pid] = (days[pid] || 0) + 1;
-      }));
-      Object.values(days).forEach((n) => assert.ok(n <= 1, "someone had two days in a once-per-block group"));
-    }
-  });
-
-  it("migrates: a group whose roles had Once per block gets the group tick", () => {
-    load({ groups: [{ id: "g1", name: "A", sortOrder: 1 }, { id: "g2", name: "B", sortOrder: 2 }], roles: [role("a", "g1", { oncePerBlock: true }), role("b", "g2")], people: [], personRoles: [] });
-    assert.equal(S.data.groups[0].oncePerBlock, true);
-    assert.equal(S.data.groups[1].oncePerBlock, false);
-  });
-
-  it("role flag blocks the same role again; group flag blocks any role in the group", () => {
-    const r = RULES.find((x) => x.key === "oncePerBlock");
-    assert.equal(r.breaks({ role: { oncePerBlock: true }, usedRole: true }), true);
-    assert.equal(r.breaks({ role: { oncePerBlock: true }, usedRole: false, usedGroup: true }), false);
-    assert.equal(r.breaks({ role: {}, usedRole: true }), false);
-    assert.equal(r.breaks({ role: {}, usedGroup: true, groupOnce: true }), true);
   });
 });
 

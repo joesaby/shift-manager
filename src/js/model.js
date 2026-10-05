@@ -240,8 +240,6 @@ function normalizeV2(d) {
   /* H20: print colour lives on the role. Files saved with colours on groups: copy onto roles, drop from groups. */
   d.roles.forEach((r) => { if (!r.color) r.color = (d.groups.find((g) => g.id === r.groupId) || {}).color || DEFAULT_ROLE_COLOR; });
   d.groups.forEach((g) => { delete g.color; });
-  /* H70: Once per block on a group; a group whose roles were ticked keeps the old per-group behaviour. */
-  d.groups.forEach((g) => { if (g.oncePerBlock == null) g.oncePerBlock = d.roles.some((r) => r.groupId === g.id && r.oncePerBlock); });
   /* H75: Probationers are kept apart only within probationer groups. Files saved before this applied the rule
      to every group, so with a Probationer on file make one probationer group per group that has roles. */
   if (!Array.isArray(d.probationerGroups)) {

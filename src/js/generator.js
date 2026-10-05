@@ -1,7 +1,7 @@
 import { S, touch, toast } from "./state.js";
 import { RULES, hardRules, softRules } from "./rules.js";
 import {
-  D, activePeople, rolesForDay, isPresent, qual, canDo, personById, roleById, groupById, shiftOf,
+  D, activePeople, rolesForDay, isPresent, qual, canDo, personById, roleById, shiftOf,
   roleOfPerson, writeRoster, rosterDays, writeDayAssign, dayLabels, historicRoleCounts,
   filesRole, isFilesRole, setFiles, canDoOn
 } from "./model.js";
@@ -52,19 +52,10 @@ function ruleCtx(id, role, prev, d, used) {
   const pr = prev[id] ? roleById(prev[id]) : null;
   return {
     role, prevRole: pr || null, qualified: qual(personById(id), role.id),
-    usedRole: !!used[id + "|r|" + role.id],
-    usedGroup: !!used[id + "|g|" + role.groupId],
-    groupOnce: !!(groupById(role.groupId) || {}).oncePerBlock,
+    usedGroup: !!used[id + "|" + role.groupId],
     night: shiftOf(d) === "Night", prevNight: d > 0 && shiftOf(d - 1) === "Night"
   };
 }
-
-/** H70: has this person already used up the role's / its group's once-per-block allowance? */
-const onceUsed = (id, role, used) => {
-  const g = groupById(role.groupId) || {};
-  return !!((role.oncePerBlock && used[id + "|r|" + role.id]) || (g.oncePerBlock && used[id + "|g|" + role.groupId]));
-};
-const markUsed = (id, role, used) => { used[id + "|r|" + role.id] = true; used[id + "|g|" + role.groupId] = true; };
 
 /** For a pass: null if a hard rule is broken, else how many soft rules are. */
 function judge(pass, ctx) {
@@ -178,7 +169,7 @@ export function generate() {
     const rl = essentialIds.concat(nonEssentialIds);
     const files = [];
     const filesToday = !!fr && dayRoles.some((r) => r.id === fr.id);
-    const bias = (id) => (filesToday && canDo(personById(id), fr.id) && !onceUsed(id, fr, used) ? FILES_W * (1 - filesShare(id)) : 0);
+    const bias = (id) => (filesToday && canDo(personById(id), fr.id) && !(fr.oncePerBlock && used[id + "|" + fr.groupId]) ? FILES_W * (1 - filesShare(id)) : 0);
     people.filter((p) => isPresent(p, d)).forEach((p) => {
       if (p.fixedRoleId && isFilesRole(p.fixedRoleId)) {
         // H73: fixed Files person goes into files list
@@ -198,7 +189,7 @@ export function generate() {
     // H73: Files role — everyone still free who is qualified and (oncePerBlock rule allows)
     if (filesToday) {
       free.filter((id) => {
-        return canDo(personById(id), fr.id) && !onceUsed(id, fr, used);
+        return canDo(personById(id), fr.id) && (!fr.oncePerBlock || !used[id + "|" + fr.groupId]);
       }).forEach((id) => files.push(id));
     }
 
@@ -206,14 +197,14 @@ export function generate() {
     Object.keys(assign).forEach((r) => {
       const id = assign[r]; if (!id) return;
       prev[id] = r; counts[id + "|" + r] = (counts[id + "|" + r] || 0) + 1; totals[id] = (totals[id] || 0) + 1;
-      const ro = roleById(r); if (ro) markUsed(id, ro, used);
+      const ro = roleById(r); if (ro && ro.oncePerBlock) used[id + "|" + ro.groupId] = true;
     });
     // H73: bump counts/totals for Files people
     files.forEach((id) => {
       prev[id] = fr.id;
       counts[id + "|" + fr.id] = (counts[id + "|" + fr.id] || 0) + 1;
       totals[id] = (totals[id] || 0) + 1;
-      markUsed(id, fr, used);
+      if (fr.oncePerBlock) used[id + "|" + fr.groupId] = true;
     });
     out.push({ assign, files });
   }

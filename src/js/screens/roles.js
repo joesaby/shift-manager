@@ -23,15 +23,15 @@ export function vRol() {
     <td class="text-center"><input type="checkbox" class="checkbox checkbox-sm" ${r.usedAtDay !== false ? "checked" : ""} data-ch="rf" data-r="${r.id}" data-f="day"></td>
     <td class="text-center"><input type="checkbox" class="checkbox checkbox-sm" ${r.usedAtNight ? "checked" : ""} data-ch="rf" data-r="${r.id}" data-f="night"></td>
     <td class="text-center"><input type="checkbox" class="checkbox checkbox-sm" ${r.hard ? "checked" : ""} data-ch="rf" data-r="${r.id}" data-f="hard"></td>
-    <td class="text-center"><input type="checkbox" class="checkbox checkbox-sm" ${r.oncePerBlock ? "checked" : ""} data-ch="rf" data-r="${r.id}" data-f="once" title="Same person never gets this role twice in a block"></td>
+    <td class="text-center"><input type="checkbox" class="checkbox checkbox-sm" ${r.oncePerBlock ? "checked" : ""} data-ch="rf" data-r="${r.id}" data-f="once" title="Same person at most one day per block (per group)"></td>
     <td class="text-center"><input type="checkbox" class="checkbox checkbox-sm" ${r.files ? "checked" : ""} data-ch="rf" data-r="${r.id}" data-f="files" title="Takes everyone still free after the other roles; any number per day"></td>
     <td class="whitespace-nowrap"><button class="btn btn-xs" data-act="moveRole" data-r="${r.id}" data-n="-1" ${upOk ? "" : "disabled"} aria-label="Move up">Up</button> <button class="btn btn-xs" data-act="moveRole" data-r="${r.id}" data-n="1" ${downOk ? "" : "disabled"} aria-label="Move down">Down</button> <button class="btn btn-xs btn-outline btn-error" data-act="askDelRole" data-r="${r.id}">Delete</button></td></tr>`;
   }).join("");
-  const grps = D().groups.map((g) => `<div class="flex items-center gap-2"><input class="input input-bordered input-sm" value="${esc(g.name)}" data-ch="gname" data-g="${g.id}"><label class="flex items-center gap-1 text-sm"><input type="checkbox" class="checkbox checkbox-sm" ${g.oncePerBlock ? "checked" : ""} data-ch="gonce" data-g="${g.id}" title="Same person at most one day per block on any role in this group">Once per block</label><button class="btn btn-xs btn-outline btn-error" data-act="delGroup" data-g="${g.id}">Delete</button></div>`).join("");
+  const grps = D().groups.map((g) => `<div class="flex items-center gap-2"><input class="input input-bordered input-sm" value="${esc(g.name)}" data-ch="gname" data-g="${g.id}"><button class="btn btn-xs btn-outline btn-error" data-act="delGroup" data-g="${g.id}">Delete</button></div>`).join("");
   const pgrps = (D().probationerGroups || []).map((g) => `<div class="flex items-center gap-2"><input class="input input-bordered input-sm" value="${esc(g.name)}" data-ch="pgname" data-pg="${g.id}"><button class="btn btn-xs btn-outline btn-error" data-act="delProbGroup" data-pg="${g.id}">Delete</button></div>`).join("");
   return `${ph("Roles and groups", "Essential roles must be filled. Unticked roles are for spare people (filled after essentials, in this list order).", '<input id="newRole" class="input input-bordered w-44" placeholder="Role name"><button class="btn btn-primary" data-act="addRole">Add role</button><button class="btn btn-outline" data-act="bulk" data-k="roles">Paste many</button>')}
    <div class="card bg-base-100 shadow-sm border border-base-300 overflow-x-auto"><table class="table table-sm"><thead><tr><th>Role</th><th>Group</th><th>Probationer group</th><th class="text-center">Essential</th><th class="text-center">Used by day</th><th class="text-center">Used at night</th><th class="text-center">Hard role</th><th class="text-center">Once per block</th><th class="text-center">Files role</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="10" class="opacity-70">No roles yet.</td></tr>'}</tbody></table></div>
-   <div class="text-sm text-base-content/70"><b>Essential</b>: must be filled (warnings if empty). Unticked roles are optional work, filled from whoever is left in this list order (Up / Down). <b>Hard role</b>: not given on back-to-back nights. <b>Once per block</b> (role): a person never gets that role twice in a block; tick it on a group (below) to cover every role in the group. Nobody gets a role from the same group two days running. Colours are set per role. Untick <b>Used by day</b> or <b>Used at night</b> to make a role only available on the other shift. <b>Files role</b> (one role only, never essential): once the other roles are filled, everyone still free gets it — any number a day — and who ends up spare is rotated. Tick Files for people on <b>People</b> (Select all). Who can do each role is ticked on People.</div>
+   <div class="text-sm text-base-content/70"><b>Essential</b>: must be filled (warnings if empty). Unticked roles are optional work, filled from whoever is left in this list order (Up / Down). <b>Hard role</b>: not given on back-to-back nights. <b>Once per block</b>: a person gets at most one day on roles in that group per block. Nobody gets a role from the same group two days running. Colours are set per role. Untick <b>Used by day</b> or <b>Used at night</b> to make a role only available on the other shift. <b>Files role</b> (one role only, never essential): once the other roles are filled, everyone still free gets it — any number a day — and who ends up spare is rotated. Tick Files for people on <b>People</b> (Select all). Who can do each role is ticked on People.</div>
    <div class="card bg-base-100 shadow-sm border border-base-300"><div class="card-body"><h2 class="card-title">Groups</h2><div class="space-y-2">${grps}</div>
     <div class="flex gap-2 mt-2"><input id="newGroup" class="input input-bordered input-sm" placeholder="New group name"><button class="btn btn-sm btn-primary" data-act="addGroup">Add group</button></div></div></div>
    <div class="card bg-base-100 shadow-sm border border-base-300"><div class="card-body"><h2 class="card-title">Probationer groups</h2><p class="text-sm text-base-content/70">Two people ticked <b>Probationer</b> are not put in the same probationer group on the same day. Choose each role's probationer group in the table above; roles in no probationer group are not restricted.</p><div class="space-y-2">${pgrps || '<div class="opacity-70 text-sm">No probationer groups yet.</div>'}</div>
@@ -79,7 +79,7 @@ export const actions = {
   },
   addGroup: () => {
     const el = document.getElementById("newGroup"); const n = el && el.value.trim(); if (!n) return;
-    D().groups.push({ id: uid(), name: n, oncePerBlock: false, sortOrder: D().groups.length + 1 });
+    D().groups.push({ id: uid(), name: n, sortOrder: D().groups.length + 1 });
     touch();
   },
   delGroup: (a) => {
@@ -112,7 +112,6 @@ export const changes = {
     markStale();
   },
   gname: (v, ds) => { const g = D().groups.find((x) => x.id === ds.g); if (v.trim()) g.name = v.trim(); },
-  gonce: (v, ds) => { D().groups.find((x) => x.id === ds.g).oncePerBlock = !!v; markStale(); },
   pgname: (v, ds) => { const g = D().probationerGroups.find((x) => x.id === ds.pg); if (v.trim()) g.name = v.trim(); },
   rcolor: (v, ds) => { roleById(ds.r).color = v; }
 };
