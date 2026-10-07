@@ -168,3 +168,42 @@ describe("H76 borrowed people: print and log", () => {
     assert.ok(!model.people.some((p) => p.name === b.id));
   });
 });
+
+describe("H76 borrowed people: Overtime tick", () => {
+  it("is off by default and can be ticked for a borrowed person only", () => {
+    load(shortDoc());
+    const b = addBorrowed("Murphy");
+    assert.equal(!!b.overtime, false);
+    M.setOvertime(b.id, true);
+    assert.equal(personById(b.id).overtime, true);
+    M.setOvertime("a", true);
+    assert.equal(personById("a").overtime, undefined);
+    M.setOvertime(b.id, false);
+    assert.equal(!!personById(b.id).overtime, false);
+  });
+
+  it("prints 'Overtime' beside the name only when ticked", async () => {
+    const { rotaHTML } = await import("../src/js/snapshot.js");
+    load(shortDoc());
+    const b = addBorrowed("Murphy");
+    assignRoleToPerson(0, "r2", b.id);
+    const row = (html) => html.match(/<tr><td[^>]*>Murphy[^]*?<\/td>/)[0];
+    assert.doesNotMatch(row(rotaHTML(buildSnapshot())), /Overtime/);
+    M.setOvertime(b.id, true);
+    const snap = buildSnapshot();
+    assert.equal(snap.people[1].overtime, true);
+    assert.equal(snap.people[0].overtime, undefined);
+    assert.match(row(rotaHTML(snap)), /Murphy[^<]*<span class="overtime-tag">Overtime<\/span>/);
+  });
+
+  it("is saved with the roster and restored on Edit", () => {
+    load(shortDoc());
+    const b = addBorrowed("Murphy");
+    assignRoleToPerson(0, "r2", b.id);
+    M.setOvertime(b.id, true);
+    M.upsertHistoryEntry(M.snapshotBlockForHistory(buildSnapshot()));
+    removeBorrowed(b.id);
+    M.loadHistoryForEdit(M.history()[0].id);
+    assert.equal(borrowedPeople()[0].overtime, true);
+  });
+});

@@ -61,7 +61,8 @@ export function buildSnapshot() {
       name: p.name,
       employeeNo: p.employeeNo || "",
       shoulderNo: p.shoulderNo || "",
-      ...(p.borrowed ? { borrowed: true } : {})
+      ...(p.borrowed ? { borrowed: true } : {}),
+      ...(p.overtime ? { overtime: true } : {})
     })),
     cells,
     unfilled,
@@ -326,7 +327,8 @@ function rotaHTMLPersonDay(snap, editable) {
     const nums = withNums
       ? `<td class="numcol numcol-e">${esc(p.employeeNo || "")}</td><td class="numcol numcol-s">${esc(p.shoulderNo || "")}</td>`
       : "";
-    return `<tr><td class="p-2 font-semibold whitespace-nowrap stickycol">${esc(p.name)}</td>${nums}${cells}</tr>`;
+    const ot = p.overtime ? ' <span class="overtime-tag">Overtime</span>' : "";
+    return `<tr><td class="p-2 font-semibold whitespace-nowrap stickycol">${esc(p.name)}${ot}</td>${nums}${cells}</tr>`;
   }).join("");
   const unfBits = snap.days.map((d, i) => (snap.unfilled && snap.unfilled[i] && snap.unfilled[i].length) ? `${d.label}: ${snap.unfilled[i].join(", ")}` : "").filter(Boolean);
   const unf = unfBits.length ? `<div class="text-xs text-error mb-2 print:mb-1">Unfilled — ${esc(unfBits.join(" · "))}</div>` : "";
