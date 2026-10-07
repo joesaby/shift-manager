@@ -12,6 +12,8 @@ html,body{font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Helve
 .menu li>a.active,.menu li>a.active:hover{background-color:oklch(var(--p))!important;color:oklch(var(--pc))!important}
 /* Attendance / Roster: full-width main (sidebar collapses by default there). */
 .main-wide{max-width:none!important;padding:.75rem 1rem!important}
+/* Roles and groups: a wider (but still capped) main so every column fits without sideways scrolling. */
+.main-roles{max-width:96rem!important}
 /* Roster chrome (H55/H56): one toolbar row, compact alerts, table sized to the viewport. */
 .main-wide>*+*{margin-top:.5rem!important}
 .roster-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .75rem}
