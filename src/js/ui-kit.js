@@ -94,7 +94,7 @@ export function shell(inner) {
      <div class="flex-1 gap-2">${S.dirty ? '<span id="saveStatus" class="badge badge-unsaved gap-1" title="Data file not saved yet (the roster Log has its own Saved badge on Roster)">Data file not saved</span>' : '<span id="saveStatus" class="badge badge-ghost">Data file saved</span>'}${unit ? `<span id="navUnitBadge" class="badge badge-ghost hidden sm:inline-flex">${esc(unit)}</span>` : '<span id="navUnitBadge" class="badge badge-ghost hidden sm:inline-flex" style="display:none"></span>'}</div>
      <div class="flex-none flex gap-2">${fileControls()}</div>
     </div>
-    <main class="p-4 md:p-8 space-y-6 max-w-7xl w-full mx-auto${wide ? " main-wide" : ""}">${inner}</main>
+    <main class="p-4 md:p-8 space-y-6 max-w-7xl w-full mx-auto${wide ? " main-wide" : S.ui.screen === "rol" ? " main-roles" : ""}">${inner}</main>
    </div>
    <div class="drawer-side z-40 print:hidden">
     <label for="navToggle" class="drawer-overlay" aria-label="Close menu"></label>

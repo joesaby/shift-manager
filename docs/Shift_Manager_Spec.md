@@ -225,7 +225,7 @@ How the requirements in [`Shift_Manager_PRD.md`](Shift_Manager_PRD.md) are built
 
 ### S16 · Collapsible sidebar
 
-**H58** — **Collapsible sidebar:** drop permanent `lg:drawer-open` when the user collapses; show the hamburger at every width. Default: collapsed on Attendance, Roster and Duty stats (wide tables), pinned open elsewhere; an explicit Hide / Pin choice overrides the default on every screen. Remember the choice per viewer in `localStorage` (try/catch; render correctly if storage is unavailable). Keep mobile overlay drawer behaviour. Do **not** move nav into the top bar (possible later — see §11)
+**H58** — **Collapsible sidebar:** drop permanent `lg:drawer-open` when the user collapses; show the hamburger at every width. Default: collapsed on Attendance, Roster and Duty stats (wide tables), pinned open elsewhere; an explicit Hide / Pin choice overrides the default on every screen. Remember the choice per viewer in `localStorage` (try/catch; render correctly if storage is unavailable). Keep mobile overlay drawer behaviour. **Roles and groups** keeps the sidebar pinned but uses a wider capped main (`.main-roles`, `max-width:96rem`) so the whole table fits without sideways scrolling on laptop screens. Do **not** move nav into the top bar (possible later — see §11)
 
 
 ---

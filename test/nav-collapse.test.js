@@ -69,5 +69,8 @@ describe("sidebar collapse", () => {
     assert.ok(shell("x").includes("main-wide"));
     S.ui.screen = "ppl";
     assert.ok(!shell("x").includes("main-wide"));
+    assert.ok(!shell("x").includes("main-roles"));
+    S.ui.screen = "rol";
+    assert.ok(shell("x").includes("main-roles") && !shell("x").includes("main-wide"));
   });
 });
