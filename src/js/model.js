@@ -1,4 +1,4 @@
-import { iso, addDays, fmt, fmtLong, STAT } from "./util.js";
+import { iso, addDays, fmt, fmtLong, STAT, uid } from "./util.js";
 import { S } from "./state.js";
 import { LOOKBACK_MONTHS } from "./rules.js";
 
@@ -61,7 +61,8 @@ export function emptyData() {
         generatedAt: null,
         attendance: [],
         assignments: [],
-        spareNotes: []
+        spareNotes: [],
+        borrowed: []
       },
       history: []
     },
@@ -219,6 +220,8 @@ function normalizeV2(d) {
   const c = d.blocks.current;
   if (!c.attendance) c.attendance = [];
   if (!c.assignments) c.assignments = [];
+  /* H76: people borrowed from another unit for this block (additive; never part of `people`). */
+  if (!Array.isArray(c.borrowed)) c.borrowed = [];
   /* H37: spare notes / HVB deprecated — always clear on open. */
   c.spareNotes = [];
   if (c.generatedAt === undefined) c.generatedAt = c.assignments.length ? new Date().toISOString() : null;
@@ -271,7 +274,8 @@ export const stationName = () => ((D().meta && D().meta.stationName) || "").trim
 export const unitName = () => ((D().meta && D().meta.unitName) || "").trim();
 
 export const roleById = (id) => D().roles.find((r) => r.id === id);
-export const personById = (id) => D().people.find((p) => p.id === id);
+/** H76: also resolves this block's borrowed people (they live outside `people`, so the fixed team is untouched). */
+export const personById = (id) => D().people.find((p) => p.id === id) || borrowedPeople().find((p) => p.id === id);
 export const groupById = (id) => D().groups.find((g) => g.id === id) || { name: "" };
 export const DEFAULT_ROLE_COLOR = "#BFDBFE";
 /** H20: print / roster colour of a role (by id or object). */
@@ -372,7 +376,7 @@ export function personRoleIds(pid) {
   return D().personRoles.filter((pr) => pr.personId === pid).map((pr) => pr.roleId);
 }
 
-export const qual = (p, rid) => D().personRoles.some((pr) => pr.personId === p.id && pr.roleId === rid);
+export const qual = (p, rid) => p.borrowed ? !isFilesRole(rid) : D().personRoles.some((pr) => pr.personId === p.id && pr.roleId === rid);
 export const canDo = (p, rid) => qual(p, rid) && (!p.fixedRoleId || p.fixedRoleId === rid);
 /** Manual edits on day d: a fixed-role person who is no longer on their fixed role that day is free to take any role they are ticked for. */
 export const canDoOn = (p, rid, d) => {
@@ -404,6 +408,28 @@ export function removePersonEverywhere(pid) {
   D().personRoles = D().personRoles.filter((pr) => pr.personId !== pid);
   const b = block();
   b.attendance = b.attendance.filter((a) => a.personId !== pid);
+  b.assignments = b.assignments.filter((a) => a.personId !== pid);
+}
+
+/* H76: people borrowed from another unit for the current block. Stored on the block, not in `people`, so
+   Generate, People, Attendance counts and rotation history never see them. They count as Present every day
+   and may take any role except Files. */
+export const borrowedPeople = () => ((D().blocks && D().blocks.current && D().blocks.current.borrowed) || []);
+const sameName = (a, b) => a.trim().toLowerCase() === String(b || "").trim().toLowerCase();
+
+/** Add a borrowed person by typed name; null when blank or the name is already on the roster. */
+export function addBorrowed(name) {
+  const n = String(name || "").trim().slice(0, 40);
+  if (!n) return null;
+  if (D().people.some((p) => p.active !== false && sameName(n, p.name)) || borrowedPeople().some((p) => sameName(n, p.name))) return null;
+  const p = { id: "bw_" + uid(), name: n, active: true, fixedRoleId: null, borrowed: true };
+  block().borrowed.push(p);
+  return p;
+}
+
+export function removeBorrowed(pid) {
+  const b = block();
+  b.borrowed = b.borrowed.filter((p) => p.id !== pid);
   b.assignments = b.assignments.filter((a) => a.personId !== pid);
 }
 
@@ -593,6 +619,7 @@ export function writeRoster(days, source) {
   });
   const b = block();
   b.assignments = assignments;
+  b.borrowed = [];  // H76: Start over also clears borrowed people
   b.generatedAt = new Date().toISOString();
   b.stale = false;
   touchMeta();
@@ -643,6 +670,7 @@ export function snapshotBlockForHistory(snap) {
     shifts: b.shifts.slice(),
     attendance: b.attendance.map((a) => ({ ...a })),
     assignments: b.assignments.map((a) => ({ ...a })),
+    borrowed: (b.borrowed || []).map((p) => ({ ...p })),
     spareNotes: [],
     snap,
     records: snap.records
@@ -681,6 +709,7 @@ export function loadHistoryForEdit(id) {
   c.shifts = h.shifts.slice();
   c.attendance = h.attendance.map((a) => ({ ...a }));
   c.assignments = h.assignments.map((a) => ({ ...a }));
+  c.borrowed = (h.borrowed || []).map((p) => ({ ...p }));
   c.generatedAt = h.savedAt || new Date().toISOString();
   c.stale = false;
   c.spareNotes = [];
@@ -758,7 +787,7 @@ export function historicRosterModel(entry) {
   D().people.forEach((p) => { peopleMap[p.id] = { id: p.id, name: p.name, active: p.active !== false }; });
   (entry.assignments || []).forEach((a) => {
     if (a.personId && !peopleMap[a.personId]) {
-      const live = personById(a.personId);
+      const live = personById(a.personId) || (entry.borrowed || []).find((p) => p.id === a.personId);
       peopleMap[a.personId] = live ? { id: live.id, name: live.name, active: true } : { id: a.personId, name: a.personId, active: true };
     }
   });
