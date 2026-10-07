@@ -1,9 +1,10 @@
 import { esc, fmt, fmtLong, STAT, SBG } from "../util.js";
-import { S, toast, askConfirm, render } from "../state.js";
+import { S, toast, askConfirm, render, touch } from "../state.js";
 import {
   D, block, hasRoster, isStale, roleColor,
   personById, isPresent, qual, roleOfPerson, rosterDays, vacatedEssential, openRolesForDay, unassignedReason,
-  unitName, activePeople, statusCountsForDay, canRegenerate, isFilesRole, lastFilesDate
+  unitName, activePeople, statusCountsForDay, canRegenerate, isFilesRole, lastFilesDate,
+  addBorrowed, removeBorrowed
 } from "../model.js";
 import { buildSnapshot, saveRoster as persistRoster, isRosterUnsaved, printFitStyle, buildDayBrief, dayBriefHTML, headerBlock, shiftLabel } from "../snapshot.js";
 import { generate as generateRoster, swapPeople, assignRoleToPerson, assignParkedRole, unassignPerson, canTakeParkedRole, canDropPersonOnPerson } from "../generator.js";
@@ -29,16 +30,19 @@ const NO_OPTION_HINT = {
   "not-qualified": "Not qualified for the roles still open today"
 };
 
-function addRoleSelect(d, pid) {
+function addRoleSelect(d, pid, borrowed) {
   const open = openRolesForDay(d).filter((r) => canTakeParkedRole(d, r.id, pid));
+  /* H76: a borrowed person is blank, not "Unassigned", on days they are not used. */
+  const label = borrowed ? "Add role" : "Unassigned";
   if (!open.length) {
+    if (borrowed) return `<span class="spare-empty no-print" title="${esc(NO_OPTION_HINT["none-open"])}">—</span>`;
     const hint = NO_OPTION_HINT[unassignedReason(d, pid)] || "";
     return `<span class="spare-empty" title="${esc(hint)}">Unassigned</span>`;
   }
   const opts = open
     .sort((a, b) => (a.essential !== false ? 0 : 1) - (b.essential !== false ? 0 : 1))
     .map((r) => `<option value="${r.id}">${esc(r.name)}${r.essential === false ? " (optional)" : ""}</option>`).join("");
-  return `<select class="select select-bordered select-xs no-print" data-ch="addRole" data-d="${d}" data-p="${pid}" aria-label="Add a role for this day"><option value="">Unassigned</option>${opts}</select><span class="spare-empty role-print-only">Unassigned</span>`;
+  return `<select class="select select-bordered select-xs no-print" data-ch="addRole" data-d="${d}" data-p="${pid}" aria-label="Add a role for this day"><option value="">${label}</option>${opts}</select>${borrowed ? "" : '<span class="spare-empty role-print-only">Unassigned</span>'}`;
 }
 
 export function vRos() {
@@ -132,7 +136,7 @@ export function vRos() {
         return `<td class="p-1 text-center rostercell ${selected ? "cell-sel" : ""} ${hot ? "drop-hot" : ""} ${dimChip || dimPerson ? "drop-dim" : ""}" data-drop-person="${p.id}" data-drop-day="${d}" style="background:#ffffff">
           <div class="roster-cell-inner">
             <button type="button" class="drag-handle no-print" draggable="true" data-drag-person="${p.id}" data-drag-day="${d}" data-act="pickPerson" data-d="${d}" data-p="${p.id}" title="Drag or click to swap" aria-label="Select ${esc(p.name)}">⋮⋮</button>
-            ${addRoleSelect(d, p.id)}
+            ${addRoleSelect(d, p.id, p.borrowed)}
           </div>
         </td>`;
       }
@@ -150,7 +154,7 @@ export function vRos() {
       </td>`;
     }).join("");
     return `<tr class="${p.id === rowSel ? "row-sel" : ""}">
-      <td class="p-2 font-semibold whitespace-nowrap stickycol rowpick" data-act="pickRow" data-p="${p.id}" title="Click to highlight this row; ↑ ↓ change row, Esc or click again to clear" aria-selected="${p.id === rowSel}">${esc(p.name)}</td>
+      <td class="p-2 font-semibold whitespace-nowrap stickycol rowpick" data-act="pickRow" data-p="${p.id}" title="Click to highlight this row; ↑ ↓ change row, Esc or click again to clear" aria-selected="${p.id === rowSel}">${esc(p.name)}${p.borrowed ? `<span class="borrowed-tag no-print">Borrowed</span><button type="button" class="borrowed-remove no-print" data-act="removeBorrowed" data-p="${p.id}" title="Remove ${esc(p.name)} from this roster" aria-label="Remove ${esc(p.name)} from this roster">×</button>` : ""}</td>
       <td class="numcol numcol-e">${esc(p.employeeNo || "")}</td>
       <td class="numcol numcol-s">${esc(p.shoulderNo || "")}</td>
       ${cells}
@@ -162,6 +166,9 @@ export function vRos() {
     : sel && sel.kind === "person"
       ? `<div role="status" class="alert alert-info no-print roster-alert"><span>Selected — click another person on the <b>same day</b> to swap.</span><button class="btn btn-sm" data-act="clearSel">Cancel</button></div>`
       : `<div class="text-sm opacity-70 no-print mb-2">Drag a parking-lot chip onto a person to fill a vacated essential role (or click chip, then person). Drag people to swap. × unassigns.</div>`;
+
+  /* H76: screen-only; borrowed people appear as extra rows at the bottom of the table. */
+  const borrowBar = `<div class="borrow-bar no-print"><label for="newBorrowed" class="text-sm opacity-70">Short-staffed? Add someone borrowed from another unit</label><input id="newBorrowed" class="input input-bordered input-sm w-48" maxlength="40" placeholder="Name" autocomplete="off"><button type="button" class="btn btn-sm btn-outline" data-act="addBorrowed">Add to roster</button></div>`;
 
   return `${toolbar}
     ${isStale() ? `<div role="alert" class="alert alert-warning no-print roster-alert"><span>Roles or Day/Night setup changed since this roster was generated. Manual edits are kept until you Start over / Regenerate (that reshuffles everyone).</span></div>` : ""}
@@ -187,7 +194,8 @@ export function vRos() {
           ${tallyRow}
         </table></div>
       </div>
-    </div>`;
+    </div>
+    ${borrowBar}`;
 }
 
 function runGenerate() {
@@ -210,7 +218,7 @@ export const actions = {
   askRegenerate: () => {
     askConfirm(
       "Start over / Regenerate?",
-      "This reshuffles everyone and discards manual edits for this block.",
+      "This reshuffles everyone and discards manual edits for this block, including any borrowed people you added.",
       "Regenerate",
       () => runGenerate()
     );
@@ -292,6 +300,26 @@ export const actions = {
     S.ui.sel = { kind: "role", d, r };
   },
   unassign: (a) => { unassignPerson(+a.d, a.p); S.ui.sel = null; },
+  addBorrowed: () => {
+    const el = document.getElementById("newBorrowed");
+    const n = el ? el.value.trim() : "";
+    if (!n) { toast("Type the person's name first."); return; }
+    const p = addBorrowed(n);
+    if (!p) { toast(n + " is already on this roster."); return; }
+    S.ui.rowSel = p.id;
+    logAudit("BORROWED_ADDED", n);
+    touch();
+    /* The table scrolls on its own: bring the new row into view once the grid is redrawn. */
+    setTimeout(() => { const row = document.querySelector("tr.row-sel"); if (row && row.scrollIntoView) row.scrollIntoView({ block: "nearest" }); }, 0);
+  },
+  removeBorrowed: (a) => {
+    const p = personById(a.p);
+    if (!p) return;
+    const del = () => { removeBorrowed(a.p); if (S.ui.rowSel === a.p) S.ui.rowSel = null; S.ui.sel = null; logAudit("BORROWED_REMOVED", p.name); touch(); };
+    const holds = block().assignments.some((x) => x.personId === a.p);
+    if (holds) askConfirm("Remove " + p.name + "?", "Their duties on this roster go back to unfilled.", "Remove", del);
+    else del();
+  },
   clearSel: () => { S.ui.sel = null; },
   pickRow: (a) => { S.ui.rowSel = S.ui.rowSel === a.p ? null : a.p; },
   toggleTallyMenu: () => { S.ui.tallyOpen = !S.ui.tallyOpen; },

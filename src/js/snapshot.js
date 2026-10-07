@@ -4,7 +4,7 @@ import {
   roleOfPersonOnDay, rosterDays, rolesForDay, unitName, stationName, vacatedEssential,
   findHistoryIndexForStart, history, upsertHistoryEntry, snapshotBlockForHistory,
   historicRosterModel, personById, canEditHistory, historyStart, loadHistoryForEdit,
-  isFilesRole, dutyAwayNote, rolesInListOrder
+  isFilesRole, dutyAwayNote, rolesInListOrder, borrowedPeople
 } from "./model.js";
 import { LOGO_DATA_URI } from "../assets/logo.js";
 import { getSessionUser, logAudit } from "./audit.js";
@@ -14,7 +14,8 @@ import { touch, toast, askConfirm, S } from "./state.js";
 export function buildSnapshot() {
   const days = dayLabels();
   const ros = rosterDays();
-  const people = activePeople();
+  /* H76: borrowed people (other units) follow the team as extra rows. */
+  const people = activePeople().concat(borrowedPeople());
 
   const cells = people.map((p) => days.map((day, d) => {
     if (!isPresent(p, d)) {
@@ -29,7 +30,8 @@ export function buildSnapshot() {
       const role = roleById(rid) || { name: "", groupId: "" };
       return { kind: "role", text: role.name, color: roleColor(role), roleId: rid };
     }
-    return { kind: "spare", text: "", color: "#FFFFFF" };
+    /* H76: a borrowed person is blank (not "Unassigned") on days they were not used. */
+    return p.borrowed ? { kind: "spare", text: "", color: "#FFFFFF", blank: true } : { kind: "spare", text: "", color: "#FFFFFF" };
   }));
 
   const unfilled = days.map((day, d) => rolesForDay(d)
@@ -43,6 +45,7 @@ export function buildSnapshot() {
   const records = [];
   days.forEach((day, d) => people.forEach((p) => {
     const st = getStatus(p.id, d); const rid = ros ? roleOfPerson(ros[d], p.id) : null;
+    if (p.borrowed && !rid) return;
     records.push({ date: day.iso, shift: day.shift, person: p.name, status: st, role: st === "Present" ? (rid ? (roleById(rid) || { name: "" }).name : "Spare") : "" });
   }));
 
@@ -57,7 +60,8 @@ export function buildSnapshot() {
       id: p.id,
       name: p.name,
       employeeNo: p.employeeNo || "",
-      shoulderNo: p.shoulderNo || ""
+      shoulderNo: p.shoulderNo || "",
+      ...(p.borrowed ? { borrowed: true } : {})
     })),
     cells,
     unfilled,
@@ -82,7 +86,7 @@ export function buildDayBrief(d) {
   const listPos = {};
   rolesInListOrder().forEach((r, i) => { listPos[r.id] = i; });
   if (day && ros) {
-    activePeople().forEach((p) => {
+    activePeople().concat(borrowedPeople()).forEach((p) => {
       if (!isPresent(p, d)) {
         away.push({ personName: p.name, status: getStatus(p.id, d), note: dutyAwayNote(p.id, d), employeeNo: p.employeeNo || "", shoulderNo: p.shoulderNo || "" });
         return;
@@ -313,6 +317,7 @@ function rotaHTMLPersonDay(snap, editable) {
     const cells = snap.cells[pi].map((c, d) => {
       if (c.kind === "spare") {
         /* Older saved rotas may carry a typed note (e.g. "HVB"); keep printing it. */
+        if (c.blank) return `<td class="p-1 text-center" style="background:#ffffff"></td>`;
         return `<td class="p-1 text-center" style="background:#ffffff">${c.text ? `<span class="text-sm font-medium">${esc(c.text)}</span>` : '<span class="spare-empty">Unassigned</span>'}</td>`;
       }
       const style = `background:${c.color};color:#1f2937`;

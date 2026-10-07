@@ -145,6 +145,8 @@ How the requirements in [`Shift_Manager_PRD.md`](Shift_Manager_PRD.md) are built
 **H74** — **Last on Files (screen only):** on Roster, each Files cell shows a small second line with the date that person last had Files before that day (saved rosters plus earlier days of this block; Present days only), or “first time”. Derived, never stored in the data file or snapshots, and **not printed** (Roster print, briefing sheet) — helps pick who to move into an essential role at short notice
 
 
+**H76** — **Borrowed people (other units).** Under the Roster table (screen only): "Short-staffed? Add someone borrowed from another unit", a name box (max 40 characters, Enter or **Add to roster**) — blank names and names already on the roster are refused with a toast. Each one becomes an extra row **after the team**, tagged **Borrowed** with a screen-only × to remove (confirmation when they hold a duty; their roles go back to unfilled). Stored on `blocks.current.borrowed[]` (not `people[]`), so Generate, People, Attendance counts, Tally, Duty stats and rotation history never see them; **Start over / Regenerate clears them**. They count as Present every day, are qualified for every role **except Files**, and take roles through the same paths as H37 (Add role select, parking-lot chip, swap). Their cell is blank (not "Unassigned") on days with no duty, in print and in the saved snap (`blank: true`); their row, the duty detail and the Day briefing sheet carry the name and role. Saved to the Log with the roster (`borrowed[]` on the entry) so **Edit** and Historic roster show the name. Audit lines `BORROWED_ADDED` / `BORROWED_REMOVED`
+
 ---
 
 ### S10 · Print the roster
