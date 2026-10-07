@@ -427,6 +427,13 @@ export function addBorrowed(name) {
   return p;
 }
 
+/** Tick / untick Overtime on a borrowed person (printed beside their name). Team members are ignored. */
+export function setOvertime(pid, on) {
+  const p = borrowedPeople().find((x) => x.id === pid);
+  if (!p) return;
+  if (on) p.overtime = true; else delete p.overtime;
+}
+
 export function removeBorrowed(pid) {
   const b = block();
   b.borrowed = b.borrowed.filter((p) => p.id !== pid);
