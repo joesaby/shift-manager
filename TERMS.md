@@ -1,17 +1,21 @@
 # Terms of use
 
-Shift Manager is free software under the [MIT License](LICENSE). By using it, you agree to those terms.
+Shift Manager is free software under the [GNU Affero General Public License v3 or later](LICENSE) (AGPL). By using it, you agree to those terms.
 
-This page restates the important points in plain language for operators and ICT reviewers. If anything here conflicts with `LICENSE`, **the MIT licence wins**.
+This page restates the important points in plain language for operators and ICT reviewers. If anything here conflicts with `LICENSE`, **the AGPL wins**.
 
 ## What you may do
 
-Subject to keeping the copyright and permission notice (see `LICENSE`):
+Under the AGPL (see `LICENSE`):
 
 - use the app for official duty-rota work  
 - copy, share, and install approved release builds  
 - modify the source and build your own versions  
 - combine it with other systems under your organisation’s control  
+
+If you distribute a modified version, or let others use it over a network, you must make the corresponding source available under the AGPL. Using an unmodified release internally carries no such obligation.
+
+Versions released before the AGPL change remain available under the MIT License to those who received them.
 
 ## No warranty
 
@@ -53,7 +57,7 @@ See also [`SECURITY.md`](SECURITY.md) and [`docs/THIRD_PARTY.md`](docs/THIRD_PAR
 
 ## Third-party components
 
-Bundled styling (Tailwind CSS, DaisyUI) and build tools are separate MIT-licensed works. Notices: [`docs/THIRD_PARTY.md`](docs/THIRD_PARTY.md).
+Bundled styling (Tailwind CSS, DaisyUI) and build tools are separate MIT-licensed works, compatible with the AGPL. Notices: [`docs/THIRD_PARTY.md`](docs/THIRD_PARTY.md).
 
 ## Governing licence text
 

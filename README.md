@@ -68,9 +68,9 @@ Every push to `main` publishes a patch release and keeps only the **latest 3** G
 | [`.cursor/skills/`](.cursor/skills/), [`.agents/skills/`](.agents/skills/), [`.claude/skills/`](.claude/skills/) | architect / tdd / verify (same content) |
 | [`.cursor/hooks.json`](.cursor/hooks.json) / [`.claude/settings.json`](.claude/settings.json) | Architect gate: Mode A before edits; Mode B on stop after feature work |
 | [`SECURITY.md`](SECURITY.md) | Offline posture, data stores, deployment |
-| [`TERMS.md`](TERMS.md) | Plain-language use terms; MIT / no warranty |
+| [`TERMS.md`](TERMS.md) | Plain-language use terms; AGPL-3.0-or-later / no warranty |
 | [`docs/THIRD_PARTY.md`](docs/THIRD_PARTY.md) | Tailwind, DaisyUI, esbuild |
 | [`docs/Shift_Manager_PRD.md`](docs/Shift_Manager_PRD.md) | Product requirements (shift-manager stories) |
 | [`docs/Shift_Manager_Spec.md`](docs/Shift_Manager_Spec.md) | Technical / design spec the PRD points to |
 | [`docs/PRD_Deprecated.md`](docs/PRD_Deprecated.md) | Retired / superseded requirements |
-| [`LICENSE`](LICENSE) | MIT |
+| [`LICENSE`](LICENSE) | GNU AGPL v3 or later |
