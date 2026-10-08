@@ -154,9 +154,11 @@ export function vRos() {
       </td>`;
     }).join("");
     return `<tr class="${p.id === rowSel ? "row-sel" : ""}">
-      <td class="p-2 font-semibold whitespace-nowrap stickycol rowpick" data-act="pickRow" data-p="${p.id}" title="Click to highlight this row; ↑ ↓ change row, Esc or click again to clear" aria-selected="${p.id === rowSel}">${esc(p.name)}${p.overtime ? '<span class="overtime-tag role-print-only">Overtime</span>' : ""}${p.borrowed ? `<span class="borrowed-tag no-print">Borrowed</span><label class="borrowed-ot no-print" title="Print Overtime beside this name"><input type="checkbox" data-act="toggleOvertime" data-p="${p.id}"${p.overtime ? " checked" : ""}> Overtime</label><button type="button" class="borrowed-remove no-print" data-act="removeBorrowed" data-p="${p.id}" title="Remove ${esc(p.name)} from this roster" aria-label="Remove ${esc(p.name)} from this roster">×</button>` : ""}</td>
-      <td class="numcol numcol-e">${esc(p.employeeNo || "")}</td>
-      <td class="numcol numcol-s">${esc(p.shoulderNo || "")}</td>
+      <td class="p-2 font-semibold whitespace-nowrap stickycol rowpick" data-act="pickRow" data-p="${p.id}" title="Click to highlight this row; ↑ ↓ change row, Esc or click again to clear" aria-selected="${p.id === rowSel}">${esc(p.name)}${p.overtime ? '<span class="overtime-tag role-print-only">Overtime</span>' : ""}</td>
+      ${p.borrowed
+    ? `<td class="numcol borrowed-ctl-cell" colspan="2"><span class="borrowed-ctl no-print"><span class="borrowed-tag no-print">Borrowed</span><label class="borrowed-ot no-print" title="Print Overtime beside this name"><input type="checkbox" data-act="toggleOvertime" data-p="${p.id}"${p.overtime ? " checked" : ""}> Overtime</label><button type="button" class="borrowed-remove no-print" data-act="removeBorrowed" data-p="${p.id}" title="Remove ${esc(p.name)} from this roster" aria-label="Remove ${esc(p.name)} from this roster">×</button></span></td>`
+    : `<td class="numcol numcol-e">${esc(p.employeeNo || "")}</td>
+      <td class="numcol numcol-s">${esc(p.shoulderNo || "")}</td>`}
       ${cells}
     </tr>`;
   }).join("");
