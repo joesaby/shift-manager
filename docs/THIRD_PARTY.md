@@ -53,7 +53,7 @@ Managers should distribute the **release zip / HTML**, not a development `node_m
 
 ## Licence obligations (MIT components)
 
-Tailwind CSS, DaisyUI, and esbuild are MIT-licensed. The Shift Manager project is also MIT (`LICENSE`).
+Tailwind CSS, DaisyUI, and esbuild are MIT-licensed. Shift Manager itself is GNU AGPL v3 or later (`LICENSE`); the MIT components above keep their own licence and are compatible with it.
 
 For MIT, retain copyright and permission notices for those components when redistributing. This file, together with upstream licence texts at the URLs above, is intended to satisfy that notice requirement for reviewers.
 

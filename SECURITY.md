@@ -146,4 +146,4 @@ For operational ICT incidents involving unit data on a workstation or share, fol
 
 ## Terms
 
-Use of Shift Manager is under the [MIT License](LICENSE). Plain-language summary (no warranty, no liability, no SLA unless separately agreed): [`TERMS.md`](TERMS.md).
+Use of Shift Manager is under the [GNU AGPL v3 or later](LICENSE). Plain-language summary (no warranty, no liability, no SLA unless separately agreed): [`TERMS.md`](TERMS.md).
