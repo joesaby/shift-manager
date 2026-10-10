@@ -417,12 +417,13 @@ export function removePersonEverywhere(pid) {
 export const borrowedPeople = () => ((D().blocks && D().blocks.current && D().blocks.current.borrowed) || []);
 const sameName = (a, b) => a.trim().toLowerCase() === String(b || "").trim().toLowerCase();
 
-/** Add a borrowed person by typed name; null when blank or the name is already on the roster. */
-export function addBorrowed(name) {
+/** Add a borrowed person by typed name (+ optional employee / shoulder no.); null when blank or the name is already on the roster. */
+export function addBorrowed(name, employeeNo, shoulderNo) {
   const n = String(name || "").trim().slice(0, 40);
   if (!n) return null;
   if (D().people.some((p) => p.active !== false && sameName(n, p.name)) || borrowedPeople().some((p) => sameName(n, p.name))) return null;
-  const p = { id: "bw_" + uid(), name: n, active: true, fixedRoleId: null, borrowed: true };
+  const p = { id: "bw_" + uid(), name: n, active: true, fixedRoleId: null, borrowed: true,
+    employeeNo: String(employeeNo || "").trim().slice(0, 20), shoulderNo: String(shoulderNo || "").trim().slice(0, 20) };
   block().borrowed.push(p);
   return p;
 }

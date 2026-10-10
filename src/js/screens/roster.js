@@ -156,7 +156,8 @@ export function vRos() {
     return `<tr class="${p.id === rowSel ? "row-sel" : ""}">
       <td class="p-2 font-semibold whitespace-nowrap stickycol rowpick" data-act="pickRow" data-p="${p.id}" title="Click to highlight this row; ↑ ↓ change row, Esc or click again to clear" aria-selected="${p.id === rowSel}">${esc(p.name)}${p.overtime ? '<span class="overtime-tag role-print-only">Overtime</span>' : ""}</td>
       ${p.borrowed
-    ? `<td class="numcol borrowed-ctl-cell" colspan="2"><span class="borrowed-ctl no-print"><span class="borrowed-tag no-print">Borrowed</span><label class="borrowed-ot no-print" title="Print Overtime beside this name"><input type="checkbox" data-act="toggleOvertime" data-p="${p.id}"${p.overtime ? " checked" : ""}> Overtime</label><button type="button" class="borrowed-remove no-print" data-act="removeBorrowed" data-p="${p.id}" title="Remove ${esc(p.name)} from this roster" aria-label="Remove ${esc(p.name)} from this roster">×</button></span></td>`
+    ? `<td class="numcol numcol-e borrowed-ctl-cell"><span class="role-print-only">${esc(p.employeeNo || "")}</span><span class="borrowed-ctl no-print"><span class="borrowed-tag no-print"${p.employeeNo || p.shoulderNo ? ` title="${esc([p.employeeNo ? "Employee no. " + p.employeeNo : "", p.shoulderNo ? "Shoulder no. " + p.shoulderNo : ""].filter(Boolean).join(" · "))}"` : ""}>Borrowed</span><label class="borrowed-ot no-print" title="Print Overtime beside this name"><input type="checkbox" data-act="toggleOvertime" data-p="${p.id}"${p.overtime ? " checked" : ""}> Overtime</label><button type="button" class="borrowed-remove no-print" data-act="removeBorrowed" data-p="${p.id}" title="Remove ${esc(p.name)} from this roster" aria-label="Remove ${esc(p.name)} from this roster">×</button></span></td>
+      <td class="numcol numcol-s"><span class="role-print-only">${esc(p.shoulderNo || "")}</span></td>`
     : `<td class="numcol numcol-e">${esc(p.employeeNo || "")}</td>
       <td class="numcol numcol-s">${esc(p.shoulderNo || "")}</td>`}
       ${cells}
@@ -170,7 +171,7 @@ export function vRos() {
       : `<div class="text-sm opacity-70 no-print mb-2">Drag a parking-lot chip onto a person to fill a vacated essential role (or click chip, then person). Drag people to swap. × unassigns.</div>`;
 
   /* H76: screen-only; borrowed people appear as extra rows at the bottom of the table. */
-  const borrowBar = `<div class="borrow-bar no-print"><label for="newBorrowed" class="text-sm opacity-70">Short-staffed? Add someone borrowed from another unit</label><input id="newBorrowed" class="input input-bordered input-sm w-48" maxlength="40" placeholder="Name" autocomplete="off"><button type="button" class="btn btn-sm btn-outline" data-act="addBorrowed">Add to roster</button></div>`;
+  const borrowBar = `<div class="borrow-bar no-print"><label for="newBorrowed" class="text-sm opacity-70">Short-staffed? Add someone borrowed from another unit</label><input id="newBorrowed" class="input input-bordered input-sm w-48" maxlength="40" placeholder="Name" autocomplete="off"><input id="newBorrowedEmp" class="input input-bordered input-sm borrowed-num" maxlength="20" placeholder="Employee no." inputmode="numeric" autocomplete="off" aria-label="Employee number (optional)"><input id="newBorrowedShldr" class="input input-bordered input-sm borrowed-num" maxlength="20" placeholder="Shoulder no." inputmode="numeric" autocomplete="off" aria-label="Shoulder number (optional)"><button type="button" class="btn btn-sm btn-outline" data-act="addBorrowed">Add to roster</button></div>`;
 
   return `${toolbar}
     ${isStale() ? `<div role="alert" class="alert alert-warning no-print roster-alert"><span>Roles or Day/Night setup changed since this roster was generated. Manual edits are kept until you Start over / Regenerate (that reshuffles everyone).</span></div>` : ""}
@@ -306,7 +307,8 @@ export const actions = {
     const el = document.getElementById("newBorrowed");
     const n = el ? el.value.trim() : "";
     if (!n) { toast("Type the person's name first."); return; }
-    const p = addBorrowed(n);
+    const val = (id) => { const e = document.getElementById(id); return e ? e.value : ""; };
+    const p = addBorrowed(n, val("newBorrowedEmp"), val("newBorrowedShldr"));
     if (!p) { toast(n + " is already on this roster."); return; }
     S.ui.rowSel = p.id;
     logAudit("BORROWED_ADDED", n);

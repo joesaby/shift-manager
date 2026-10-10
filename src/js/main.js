@@ -355,7 +355,7 @@ document.addEventListener("focusin", (e) => {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && e.target.id === "newPerson") { ACT.addPerson(); render(); }
   if (e.key === "Enter" && e.target.id === "newRole") { ACT.addRole(); render(); }
-  if (e.key === "Enter" && e.target.id === "newBorrowed") { ACT.addBorrowed(); render(); }
+  if (e.key === "Enter" && (e.target.id === "newBorrowed" || e.target.id === "newBorrowedEmp" || e.target.id === "newBorrowedShldr")) { ACT.addBorrowed(); render(); }
   if (e.key === "Enter" && e.target.id === "sessionUserInput") { ACT.submitSessionUser(); }
   /* H64: with a Roster row highlighted, ↑/↓ move the highlight to the row above / below. */
   if ((e.key === "ArrowUp" || e.key === "ArrowDown") && S.ui.rowSel && S.ui.screen === "ros" &&

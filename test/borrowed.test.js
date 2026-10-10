@@ -207,3 +207,37 @@ describe("H76 borrowed people: Overtime tick", () => {
     assert.equal(borrowedPeople()[0].overtime, true);
   });
 });
+
+describe("H76 borrowed people: employee and shoulder numbers", () => {
+  it("addBorrowed stores optional employee and shoulder numbers, trimmed", () => {
+    load(shortDoc());
+    const b = addBorrowed("Murphy", " 12345 ", "678");
+    assert.equal(b.employeeNo, "12345");
+    assert.equal(b.shoulderNo, "678");
+    const c = addBorrowed("Kelly");
+    assert.equal(c.employeeNo, "");
+    assert.equal(c.shoulderNo, "");
+  });
+
+  it("numbers flow to the snapshot and the rota print like any team member's", async () => {
+    const { rotaHTML } = await import("../src/js/snapshot.js");
+    load(shortDoc());
+    const b = addBorrowed("Murphy", "12345", "678");
+    assignRoleToPerson(0, "r2", b.id);
+    const snap = buildSnapshot();
+    assert.equal(snap.people[1].employeeNo, "12345");
+    assert.equal(snap.people[1].shoulderNo, "678");
+    assert.match(rotaHTML(snap), /Murphy[^]*?numcol-e">12345<\/td><td class="numcol numcol-s">678</);
+  });
+
+  it("numbers are saved with the roster and restored on Edit", () => {
+    load(shortDoc());
+    const b = addBorrowed("Murphy", "12345", "678");
+    assignRoleToPerson(0, "r2", b.id);
+    M.upsertHistoryEntry(M.snapshotBlockForHistory(buildSnapshot()));
+    removeBorrowed(b.id);
+    M.loadHistoryForEdit(M.history()[0].id);
+    assert.equal(borrowedPeople()[0].employeeNo, "12345");
+    assert.equal(borrowedPeople()[0].shoulderNo, "678");
+  });
+});
