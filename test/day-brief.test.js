@@ -193,6 +193,8 @@ describe("H72 briefing sheet order", () => {
 });
 
 describe("Paternity leave and Duty away description", () => {
+  /* Rows are in surname order (H34), so look a person's cell up by id rather than by position. */
+  const cellOf = (pid, d) => { const s = buildSnapshot(); return s.cells[s.people.findIndex((p) => p.id === pid)][d]; };
   const setup = () => {
     load(baseDoc({
       roles: [role("r1", "Beat 1", 1)],
@@ -218,7 +220,7 @@ describe("Paternity leave and Duty away description", () => {
     assert.equal(dutyAwayNote("p3", 0), "Court – Dublin");
     assert.equal(getStatus("p3", 0), "Duty away");
     assert.equal(statusCountsForDay(0).find((x) => x.label === "Duty away").n, 1);
-    const cell = buildSnapshot().cells[2][0];
+    const cell = cellOf("p3", 0);
     assert.equal(cell.text, "Court – Dublin");
     const brief = buildDayBrief(0);
     assert.equal(brief.away[0].status, "Duty away");
@@ -233,6 +235,6 @@ describe("Paternity leave and Duty away description", () => {
     assert.equal(dutyAwayNote("p3", 0), "");
     setStatus("p3", 0, "Duty away");
     assert.equal(dutyAwayNote("p3", 0), "");
-    assert.equal(buildSnapshot().cells[2][0].text, "Duty away");
+    assert.equal(cellOf("p3", 0).text, "Duty away");
   });
 });

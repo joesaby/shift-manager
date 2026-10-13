@@ -1,11 +1,11 @@
 import { esc, STAT, SBG } from "../util.js";
-import { D, block, dayLabels, activePeople, essentialRolesForDay, isPresent, getStatus, statusCountsForDay, canRegenerate, setStatus, roleById, personById, markStale, dutyAwayNote, setDutyAwayNote } from "../model.js";
+import { D, block, dayLabels, activePeopleBySurname, essentialRolesForDay, isPresent, getStatus, statusCountsForDay, canRegenerate, setStatus, roleById, personById, markStale, dutyAwayNote, setDutyAwayNote } from "../model.js";
 import { ph, noPeople, unitBanner } from "../ui-kit.js";
 import { logAudit } from "../audit.js";
 
 export function vAtt() {
   if (!D().people.length) return noPeople();
-  const days = dayLabels(); const ppl = activePeople();
+  const days = dayLabels(); const ppl = activePeopleBySurname();
   const info = days.map((d, i) => ({ d: d, need: essentialRolesForDay(i).length, pc: ppl.filter((p) => isPresent(p, i)).length, away: statusCountsForDay(i).filter((c) => c.label !== "Present" && c.n > 0) }));
   /* Summary lives in each day's column header so it lines up with the status column below. */
   const summary = (x) => `<div class="att-sum font-normal"><div class="text-xs font-semibold ${x.pc < x.need ? "text-error" : "text-success"}">${x.pc} present, ${x.need} roles to fill</div><div class="att-away">${x.away.length ? x.away.map((c) => `<span class="att-away-chip" style="background:${SBG[c.label]}">${esc(c.label)} <b>${c.n}</b></span>`).join("") : '<span class="opacity-60 text-xs">Everyone present</span>'}</div></div>`;
