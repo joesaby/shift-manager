@@ -3,7 +3,7 @@ import { RULES, hardRules, softRules } from "./rules.js";
 import {
   D, activePeople, rolesForDay, isPresent, qual, canDo, personById, roleById, shiftOf,
   roleOfPerson, writeRoster, rosterDays, writeDayAssign, dayLabels, historicRoleCounts,
-  filesRole, isFilesRole, setFiles, canDoOn
+  filesRole, isFilesRole, setFiles, canDoOn, lastFilesShiftByPerson
 } from "./model.js";
 
 /** H64: id of the visible row above (-1) / below (+1) this person, or null. Selection only — never reorders. */
@@ -154,6 +154,11 @@ export function generate() {
      Files; nobody is held back for Files they cannot have today (not in today's roles / once per block used). */
   const FILES_W = 0.25;
   const filesShare = (id) => (totals[id] ? (counts[id + "|" + fr.id] || 0) / totals[id] : 0);
+  /* H73 day / night rotation: a smaller extra cost on giving a real role to someone whose last Files was on the
+     other kind of shift, so they are the one left free for Files this time. Fair share (above) still counts for more. */
+  const FILES_SHIFT_W = 0.1;
+  const lastFilesShift = fr ? lastFilesShiftByPerson() : {};
+  const isNightShift = (s) => /night/i.test(String(s || ""));
   const out = []; const used = {}; let prev = {};
   const n = D().blocks.current.shifts.length;
   for (let d = 0; d < n; d++) {
@@ -169,7 +174,10 @@ export function generate() {
     const rl = essentialIds.concat(nonEssentialIds);
     const files = [];
     const filesToday = !!fr && dayRoles.some((r) => r.id === fr.id);
-    const bias = (id) => (filesToday && canDo(personById(id), fr.id) && !(fr.oncePerBlock && used[id + "|" + fr.groupId]) ? FILES_W * (1 - filesShare(id)) : 0);
+    const todayShift = D().blocks.current.shifts[d];
+    const switchesShift = (id) => !!lastFilesShift[id] && isNightShift(lastFilesShift[id]) !== isNightShift(todayShift);
+    const bias = (id) => (filesToday && canDo(personById(id), fr.id) && !(fr.oncePerBlock && used[id + "|" + fr.groupId])
+      ? FILES_W * (1 - filesShare(id)) + (switchesShift(id) ? FILES_SHIFT_W : 0) : 0);
     people.filter((p) => isPresent(p, d)).forEach((p) => {
       if (p.fixedRoleId && isFilesRole(p.fixedRoleId)) {
         // H73: fixed Files person goes into files list
@@ -205,6 +213,7 @@ export function generate() {
       counts[id + "|" + fr.id] = (counts[id + "|" + fr.id] || 0) + 1;
       totals[id] = (totals[id] || 0) + 1;
       if (fr.oncePerBlock) used[id + "|" + fr.groupId] = true;
+      lastFilesShift[id] = todayShift;
     });
     out.push({ assign, files });
   }

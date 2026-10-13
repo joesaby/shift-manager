@@ -649,3 +649,57 @@ describe("H73 Home setup step for the Files role", () => {
     assert.match(filesStep(), /1 person can do Files/);
   });
 });
+
+describe("H73 Files rotates between day and night", () => {
+  /* Ann and Bob are level on R1 and on their share of Files, so only the day / night rule can separate them.
+     Ann's last Files was on a Day, Bob's on a Night. */
+  function setup(shift) {
+    load(baseDoc({
+      groups: GROUPS,
+      roles: [
+        role("r1", "R1", "g1", { essential: true }),
+        role("files", "Files", "g2", { files: true, essential: false })
+      ],
+      people: [{ id: "a", name: "Ann", active: true }, { id: "b", name: "Bob", active: true }],
+      personRoles: [
+        { personId: "a", roleId: "r1" }, { personId: "a", roleId: "files" },
+        { personId: "b", roleId: "r1" }, { personId: "b", roleId: "files" }
+      ]
+    }));
+    S.data.blocks.current.shifts = [shift];
+    S.data.blocks.history.push({
+      id: "h1", startDate: "2026-08-01", shifts: ["Day", "Night", "Day"], attendance: [], records: [],
+      assignments: [
+        { date: "2026-08-01", roleId: "files", personId: "a" }, { date: "2026-08-01", roleId: "r1", personId: "b" },
+        { date: "2026-08-02", roleId: "files", personId: "b" }, { date: "2026-08-02", roleId: "r1", personId: "a" }
+      ]
+    });
+  }
+
+  it("on a Day, Files goes to the person whose last Files was on a Night", () => {
+    for (let run = 0; run < 10; run++) {
+      setup("Day"); generate();
+      const ros = rosterDays();
+      assert.equal(ros[0].assign.r1, "a");
+      assert.deepEqual(ros[0].files, ["b"]);
+    }
+  });
+
+  it("on a Night, Files goes to the person whose last Files was on a Day", () => {
+    for (let run = 0; run < 10; run++) {
+      setup("Night"); generate();
+      const ros = rosterDays();
+      assert.equal(ros[0].assign.r1, "b");
+      assert.deepEqual(ros[0].files, ["a"]);
+    }
+  });
+
+  it("is only a preference: Files still goes to someone when the day / night order cannot be kept", () => {
+    setup("Day");
+    S.data.blocks.history[0].assignments = S.data.blocks.history[0].assignments.filter((a) => a.personId !== "b" || a.roleId !== "files");
+    generate();
+    const ros = rosterDays();
+    assert.equal(ros[0].files.length, 1, "someone is on Files");
+    assert.ok(ros[0].assign.r1, "R1 is filled");
+  });
+});

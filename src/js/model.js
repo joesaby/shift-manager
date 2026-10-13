@@ -991,6 +991,25 @@ export function lastFilesDate(pid, d) {
   return lastDate;
 }
 
+/** H73: each person's latest Files shift ("Day" / "Night" ...) in the saved rosters, so Generate can rotate it. */
+export function lastFilesShiftByPerson() {
+  const fr = filesRole();
+  const out = {};
+  if (!fr) return out;
+  const lastDate = {};
+  const currentStart = block().startDate;
+  history().forEach((h) => {
+    if (historyStart(h) === currentStart) return;
+    const shiftOn = shiftMapForEntry(h);
+    (h.assignments || []).forEach((a) => {
+      if (a.roleId !== fr.id || !a.personId || !shiftOn[a.date] || a.date >= currentStart) return;
+      if (!presentOnInHistory(h, a.personId, a.date)) return;
+      if (!lastDate[a.personId] || a.date > lastDate[a.personId]) { lastDate[a.personId] = a.date; out[a.personId] = shiftOn[a.date]; }
+    });
+  });
+  return out;
+}
+
 function shiftMapForEntry(h) {
   const map = {};
   const start = h.startDate || h.start;
