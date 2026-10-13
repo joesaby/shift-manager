@@ -281,6 +281,9 @@ export const DEFAULT_ROLE_COLOR = "#BFDBFE";
 /** H20: print / roster colour of a role (by id or object). */
 export const roleColor = (r) => { const ro = typeof r === "string" ? roleById(r) : r; return (ro && ro.color) || "#E5E7EB"; };
 export const activePeople = () => D().people.filter((p) => p.active !== false);
+/** H34: the same people by surname, then given name, for every list the manager reads (the stored order is untouched). */
+export const activePeopleBySurname = () => activePeople().sort((a, b) =>
+  surnameOf(a.name).localeCompare(surnameOf(b.name), "en-IE") || String(a.name).localeCompare(String(b.name), "en-IE"));
 
 /** H73: the Files role, or null if not configured. */
 export const filesRole = () => D().roles.find((r) => r.files) || null;

@@ -4,7 +4,7 @@ import {
   roleOfPersonOnDay, rosterDays, rolesForDay, unitName, stationName, vacatedEssential,
   findHistoryIndexForStart, history, upsertHistoryEntry, snapshotBlockForHistory,
   historicRosterModel, personById, canEditHistory, historyStart, loadHistoryForEdit,
-  isFilesRole, dutyAwayNote, rolesInListOrder, borrowedPeople
+  isFilesRole, dutyAwayNote, rolesInListOrder, borrowedPeople, activePeopleBySurname
 } from "./model.js";
 import { LOGO_DATA_URI } from "../assets/logo.js";
 import { getSessionUser, logAudit } from "./audit.js";
@@ -15,7 +15,7 @@ export function buildSnapshot() {
   const days = dayLabels();
   const ros = rosterDays();
   /* H76: borrowed people (other units) follow the team as extra rows. */
-  const people = activePeople().concat(borrowedPeople());
+  const people = activePeopleBySurname().concat(borrowedPeople());
 
   const cells = people.map((p) => days.map((day, d) => {
     if (!isPresent(p, d)) {
@@ -87,7 +87,7 @@ export function buildDayBrief(d) {
   const listPos = {};
   rolesInListOrder().forEach((r, i) => { listPos[r.id] = i; });
   if (day && ros) {
-    activePeople().concat(borrowedPeople()).forEach((p) => {
+    activePeopleBySurname().concat(borrowedPeople()).forEach((p) => {
       if (!isPresent(p, d)) {
         away.push({ personName: p.name, status: getStatus(p.id, d), note: dutyAwayNote(p.id, d), employeeNo: p.employeeNo || "", shoulderNo: p.shoulderNo || "" });
         return;
