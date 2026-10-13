@@ -36,6 +36,8 @@ export const RULES = [
     score: (c) => (c.total > 0 ? c.count / c.total : 0) },
   { key: "filesFairSpares", id: "H73", kind: "structural",
     help: "Who is left free for Files rotates: people who have had Files **least, as a share of their duties**, are kept back from the other roles first. Fair spread of the other roles still comes first." },
+  { key: "filesDayNight", id: "H73", kind: "structural",
+    help: "Files also rotates between **Day and Night**: when two people are close on share, the one whose last Files was on the other kind of shift is left free for Files. It is only a preference — fair share counts for more, and Files on any shift beats no Files." },
   { key: "sameGroup", id: "H71", kind: "soft", essential: "soft", nonEssential: "hard",
     help: "Nobody gets a role from the same group (e.g. Car) two days running when someone else can cover.",
     breaks: (c) => !!(c.prevRole && c.prevRole.groupId === c.role.groupId) },

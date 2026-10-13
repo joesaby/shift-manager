@@ -247,11 +247,12 @@ Generated from [`src/js/rules.js`](../src/js/rules.js) — the same list drives 
 | 5 | H73 | `filesTakesSpares` | structural | order of work | order of work | The **Files** role (ticked on Roles and groups) goes to everyone still free once the other roles are filled — any number of people a day. With **Once per block** ticked, someone who already had Files this block is left Unassigned. |
 | 6 | H28 | `leastDone` | objective | score | score | Each role goes to whoever has done it **least, as a share of their own duties**, over the last 12 months of rosters saved to the Log plus the earlier days of this block. Only days they were Present count. Ties are picked at random. |
 | 7 | H73 | `filesFairSpares` | structural | order of work | order of work | Who is left free for Files rotates: people who have had Files **least, as a share of their duties**, are kept back from the other roles first. Fair spread of the other roles still comes first. |
-| 8 | H71 | `sameGroup` | soft | gives way if no other way | never broken | Nobody gets a role from the same group (e.g. Car) two days running when someone else can cover. |
-| 9 | H75 | `probationers` | structural | order of work | order of work | Two people ticked **Probationer** are not put in the same **probationer group** (set up on Roles and groups) on the same day when anyone else can be swapped in. Files is not counted. |
-| 10 | H11 | `hardNights` | soft | gives way if no other way | gives way if no other way | On the second night, nobody gets a hard role if they had a hard role the night before, when someone else can cover. |
-| 11 | H70 | `oncePerBlock` | filter | never broken | never broken | **Once per block** roles go to a person on one day of the block at most. |
-| 12 | H13 | `emptyOnlyIfImpossible` | structural | order of work | order of work | An essential role is only left empty when nobody Present can take it. If there are not enough people for every essential role, the ones lower in the Roles and groups list are left empty first. You'll see a warning, and you can fill it by hand. |
+| 8 | H73 | `filesDayNight` | structural | order of work | order of work | Files also rotates between **Day and Night**: when two people are close on share, the one whose last Files was on the other kind of shift is left free for Files. It is only a preference — fair share counts for more, and Files on any shift beats no Files. |
+| 9 | H71 | `sameGroup` | soft | gives way if no other way | never broken | Nobody gets a role from the same group (e.g. Car) two days running when someone else can cover. |
+| 10 | H75 | `probationers` | structural | order of work | order of work | Two people ticked **Probationer** are not put in the same **probationer group** (set up on Roles and groups) on the same day when anyone else can be swapped in. Files is not counted. |
+| 11 | H11 | `hardNights` | soft | gives way if no other way | gives way if no other way | On the second night, nobody gets a hard role if they had a hard role the night before, when someone else can cover. |
+| 12 | H70 | `oncePerBlock` | filter | never broken | never broken | **Once per block** roles go to a person on one day of the block at most. |
+| 13 | H13 | `emptyOnlyIfImpossible` | structural | order of work | order of work | An essential role is only left empty when nobody Present can take it. If there are not enough people for every essential role, the ones lower in the Roles and groups list are left empty first. You'll see a warning, and you can fill it by hand. |
 
 <!-- rules:end -->
 
