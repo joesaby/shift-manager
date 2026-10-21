@@ -3,7 +3,7 @@ import {
   block, dayLabels, activePeople, roleById, groupById, roleColor, getStatus, isPresent, roleOfPerson,
   roleOfPersonOnDay, rosterDays, rolesForDay, unitName, stationName, vacatedEssential,
   findHistoryIndexForStart, history, upsertHistoryEntry, snapshotBlockForHistory,
-  historicRosterModel, personById, canEditHistory, historyStart, loadHistoryForEdit,
+  historicRosterModel, personById, canEditHistory, canDeleteHistory, historyStart, loadHistoryForEdit,
   isFilesRole, dutyAwayNote, rolesInListOrder, borrowedPeople, activePeopleBySurname
 } from "./model.js";
 import { LOGO_DATA_URI } from "../assets/logo.js";
@@ -239,6 +239,18 @@ export function saveRoster() {
   logAudit("ROSTER_SAVED", "block_start=" + block().startDate);
   touch();
   return entry;
+}
+
+/** H77: remove a forward-facing entry from the Log (historic ones are refused). Returns whether it was removed. */
+export function deleteSavedRoster(id, today) {
+  const rows = history();
+  const i = rows.findIndex((x) => x.id === id);
+  if (i < 0 || !canDeleteHistory(rows[i], today)) return false;
+  const start = historyStart(rows[i]);
+  rows.splice(i, 1);
+  logAudit("ROSTER_DELETED", "block_start=" + start);
+  touch();
+  return true;
 }
 
 /** Printed date/time, shown in the bottom-right corner of every printed page (filled in by stampPrintTime). */

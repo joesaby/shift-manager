@@ -150,6 +150,7 @@ Written from the shift manager's side: **As a shift manager, I …**. Grouped by
 | H50 | Must | As a shift manager, I have a trail of every save, kept as text in the folder, even though earlier versions aren't kept. | S12 |
 | H18 | Must | As a shift manager, I set my name once and it is stamped on new saves and prints, without rewriting older ones. | S12 |
 | H68 | Must | As a shift manager, I can open any saved roster with Edit to correct a past one or change a planned one, and nothing is changed until I save. | S13 |
+| H77 | Should | As a shift manager, I can delete a saved roster from the Log while its dates are still ahead (planned or in progress), but never once its dates have passed. | S13 |
 | H24 | — | *Retired 2026-09-29.* Historic roster screen merged into the Log → [`PRD_Deprecated.md`](PRD_Deprecated.md); reopen a saved roster with H68 | — |
 
 ### 3.8 Duty stats
@@ -202,7 +203,7 @@ Roles → People →               (person × day: edit, swap,
 | **2. Roster** | Full-width person × day: compact toolbar; viewport-height table; **parking lot**; same-day chip/person moves; **Unassigned** empty cells; **Save roster**; Print / Save & print (print-only header; scale-to-fit one A4 landscape page); content-sized name / number columns and equal day columns (H63); click a name to highlight a row, ↑ ↓ to move it (H64); optional Tally row (H66) and black print borders (H65) |
 | **People** | Searchable person picker (name + employee/shoulder numbers); qualifications; fixed role; employee/shoulder numbers; this month’s load |
 | **Roles and groups** | Role catalogue, flags (incl. Essential), colours, order; essential roles listed first |
-| **Log** | Saved rotas (not the folder audit files); one entry per block start after upsert; manager column when stamped; **View**, **Edit** (H68) and CSV per entry |
+| **Log** | Saved rotas (not the folder audit files); one entry per block start after upsert; manager column when stamped; **View**, **Edit** (H68), CSV and, while the block's dates have not passed, **Delete** (H77) per entry |
 | **Duty stats** | Person × role pivot over a chosen period (default: everything up to today): counts per role, sortable headings, tallies at the end; click a name for a printable per-person report with attendance |
 
 Retired surfaces (**Print rota** nav, person × role Roster grid) → [`PRD_Deprecated.md`](PRD_Deprecated.md). Print is an action on Roster.
