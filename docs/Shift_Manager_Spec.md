@@ -175,7 +175,7 @@ How the requirements in [`Shift_Manager_PRD.md`](Shift_Manager_PRD.md) are built
 
 ### S12 · Save roster, unsaved state and audit
 
-**H15** — **Save roster** upserts the log entry for the current block start date (match `start` or `startDate` on history rows); replace that entry with the latest snapshot rather than pushing a duplicate. Browse, re-print, **Edit** (H68), CSV export on Log (no delete — see [`PRD_Deprecated.md`](PRD_Deprecated.md)); show manager who saved when known. Changing block start after a save creates a **new** history entry. Pre-existing duplicate rows from older push behaviour are left alone (no cleanup)
+**H15** — **Save roster** upserts the log entry for the current block start date (match `start` or `startDate` on history rows); replace that entry with the latest snapshot rather than pushing a duplicate. Browse, re-print, **Edit** (H68), CSV export on Log (delete only for forward-facing entries — **H77**, S13); show manager who saved when known. Changing block start after a save creates a **new** history entry. Pre-existing duplicate rows from older push behaviour are left alone (no cleanup)
 
 **H49** — **Save roster** upserts by block start (`start` / `startDate`); Log and Duty stats must not double-count the same block after repeated saves
 
@@ -191,6 +191,8 @@ How the requirements in [`Shift_Manager_PRD.md`](Shift_Manager_PRD.md) are built
 ### S13 · Edit a saved roster
 
 **H68** — **Edit a saved roster:** each Log entry (list and viewer) has an **Edit** button that copies the saved block (dates, Day/Night shifts, attendance, assignments) into the working block and opens Roster, with all the usual tools (swap, parking lot, tally, print). Save roster then replaces that block's log entry (H15 upsert), so past rosters can be corrected and planned ones changed. The log entry itself is never modified until you save. If the working roster has **unsaved changes**, a prompt offers **Save & open** (saves it first) or Cancel; if it is only attendance with no roster yet, a warning offers **Open anyway** or Cancel. Older-format entries without dates / shifts / attendance / assignments are view-only (Edit disabled). Opening writes a `ROSTER_EDIT_OPENED` audit line. Old JSON needs no migration
+
+**H77** — **Delete a planned roster:** a Log row shows a **Delete** button only while `canDeleteHistory(entry)` is true — the entry's last day (`startDate` + shifts length − 1, 4 days when unknown) is today or later; once that day has passed there is no button, and `deleteSavedRoster(id)` (`snapshot.js`) refuses too, so it cannot be done by any other route. The button asks a confirm ("Delete this roster?" → **Delete**), then splices the entry out of `blocks.history`, writes a `ROSTER_DELETED` audit line and saves. The working block is not touched (if it was the deleted block it simply shows **Unsaved changes** until saved again). Entries with no readable start date are never deletable. No schema change; Duty stats and Generate history read the shorter Log. Supersedes the 2026-09-29 retirement of Log delete for forward-facing rosters only
 
 
 ---

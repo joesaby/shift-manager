@@ -711,6 +711,14 @@ export const canRegenerate = (today) => !(hasRoster() && isPastBlock(today));
 /** H68: does a log entry carry its own dates, shifts, attendance and assignments (i.e. can it be reopened)? */
 export const canEditHistory = (h) => !!(h && historyStart(h) && Array.isArray(h.shifts) && Array.isArray(h.attendance) && Array.isArray(h.assignments));
 
+/** H77: may this log entry be deleted? Only while its last day has not passed (`today` injectable for tests); unreadable dates are never deletable. */
+export function canDeleteHistory(h, today = iso(new Date())) {
+  const start = historyStart(h);
+  if (!start) return false;
+  const len = Array.isArray(h.shifts) ? h.shifts.length : (h.snap && h.snap.days ? h.snap.days.length : 4);
+  return addDays(start, Math.max(len - 1, 0)) >= today;
+}
+
 /** H68: copy a saved log entry into the working block (deep copy — the log entry is never touched). */
 export function loadHistoryForEdit(id) {
   const h = history().find((x) => x.id === id);

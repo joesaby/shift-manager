@@ -33,7 +33,7 @@ Free-text spare notes are gone: anyone with no role shows **Unassigned**. Notes 
 
 On **Roles and groups**, tick **Essential** for duties that must be filled; leave it unticked for spare work (e.g. Files 1–5). List order among non-essential roles is fill priority.
 
-**Log** (sidebar) holds saved rotas, past and planned. **View** shows one, **Edit** reopens it on the Roster screen to correct it (you are asked to save your current roster first if it has unsaved changes), and Save roster then replaces that entry. A roster whose four days have passed can be corrected but not regenerated. Folder `logs/` is the file audit trail (not shown in the UI).
+**Log** (sidebar) holds saved rotas, past and planned. **View** shows one, **Edit** reopens it on the Roster screen to correct it (you are asked to save your current roster first if it has unsaved changes), and Save roster then replaces that entry. A roster whose four days have passed can be corrected but not regenerated or deleted; one whose dates are still ahead has a **Delete** button (with a confirmation). Folder `logs/` is the file audit trail (not shown in the UI).
 
 ## Screens
 
