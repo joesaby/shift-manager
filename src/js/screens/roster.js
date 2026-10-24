@@ -4,9 +4,9 @@ import {
   D, block, hasRoster, isStale, roleColor,
   personById, isPresent, qual, roleOfPerson, rosterDays, vacatedEssential, openRolesForDay, unassignedReason,
   unitName, activePeople, statusCountsForDay, canRegenerate, isFilesRole, lastFilesDate,
-  addBorrowed, removeBorrowed, setOvertime, isOvertime
+  addBorrowed, removeBorrowed, setOvertime, setOvertimeDay, overtimeDaysOf, dateOf
 } from "../model.js";
-import { buildSnapshot, saveRoster as persistRoster, isRosterUnsaved, printFitStyle, buildDayBrief, dayBriefHTML, headerBlock, shiftLabel } from "../snapshot.js";
+import { buildSnapshot, overtimeLabel, saveRoster as persistRoster, isRosterUnsaved, printFitStyle, buildDayBrief, dayBriefHTML, headerBlock, shiftLabel } from "../snapshot.js";
 import { generate as generateRoster, swapPeople, assignRoleToPerson, assignParkedRole, unassignPerson, canTakeParkedRole, canDropPersonOnPerson } from "../generator.js";
 import { ph, noPeople, printBorders, setPrintBorders, tallyLabels, toggleTallyLabel } from "../ui-kit.js";
 import { logAudit } from "../audit.js";
@@ -29,6 +29,12 @@ const NO_OPTION_HINT = {
   "not-eligible": "Not marked Present today",
   "not-qualified": "Not qualified for the roles still open today"
 };
+
+/** H80: screen-only OT ticks for a team member, one per day; the printed tag then reads "Overtime Sunday". */
+function otTicks(pid, days) {
+  const on = overtimeDaysOf(pid);
+  return `<span class="team-ot no-print" title="Tick each day this person is on overtime — prints Overtime and the day beside the name">OT ${days.map((d) => `<label class="borrowed-ot" title="Overtime on ${esc(d.label)}"><input type="checkbox" data-act="toggleOvertimeDay" data-p="${pid}" data-date="${d.iso}"${on.includes(d.iso) ? " checked" : ""} aria-label="Overtime on ${esc(d.label)}">${esc(d.label.slice(0, 3))}</label>`).join("")}</span>`;
+}
 
 function addRoleSelect(d, pid, borrowed) {
   const open = openRolesForDay(d).filter((r) => canTakeParkedRole(d, r.id, pid));
@@ -154,7 +160,7 @@ export function vRos() {
       </td>`;
     }).join("");
     return `<tr class="${p.id === rowSel ? "row-sel" : ""}">
-      <td class="p-2 font-semibold whitespace-nowrap stickycol rowpick" data-act="pickRow" data-p="${p.id}" title="Click to highlight this row; ↑ ↓ change row, Esc or click again to clear" aria-selected="${p.id === rowSel}">${esc(p.name)}${isOvertime(p) ? '<span class="overtime-tag role-print-only">Overtime</span>' : ""}${p.borrowed ? "" : `<label class="borrowed-ot team-ot no-print" title="On overtime: prints Overtime beside this name"><input type="checkbox" data-act="toggleOvertime" data-p="${p.id}"${isOvertime(p) ? " checked" : ""}> OT</label>`}</td>
+      <td class="p-2 font-semibold whitespace-nowrap stickycol rowpick" data-act="pickRow" data-p="${p.id}" title="Click to highlight this row; ↑ ↓ change row, Esc or click again to clear" aria-selected="${p.id === rowSel}">${esc(p.name)}${p.overtime ? `<span class="overtime-tag role-print-only">${esc(overtimeLabel(p))}</span>` : ""}${p.borrowed ? "" : otTicks(p.id, snap.days)}</td>
       ${p.borrowed
     ? `<td class="numcol numcol-e borrowed-ctl-cell"><span class="role-print-only">${esc(p.employeeNo || "")}</span><span class="borrowed-ctl no-print"><span class="borrowed-tag no-print"${p.employeeNo || p.shoulderNo ? ` title="${esc([p.employeeNo ? "Employee no. " + p.employeeNo : "", p.shoulderNo ? "Shoulder no. " + p.shoulderNo : ""].filter(Boolean).join(" · "))}"` : ""}>Borrowed</span><label class="borrowed-ot no-print" title="Print Overtime beside this name"><input type="checkbox" data-act="toggleOvertime" data-p="${p.id}"${p.overtime ? " checked" : ""}> Overtime</label><button type="button" class="borrowed-remove no-print" data-act="removeBorrowed" data-p="${p.id}" title="Remove ${esc(p.name)} from this roster" aria-label="Remove ${esc(p.name)} from this roster">×</button></span></td>
       <td class="numcol numcol-s"><span class="role-print-only">${esc(p.shoulderNo || "")}</span></td>`
@@ -316,7 +322,8 @@ export const actions = {
     /* The table scrolls on its own: bring the new row into view once the grid is redrawn. */
     setTimeout(() => { const row = document.querySelector("tr.row-sel"); if (row && row.scrollIntoView) row.scrollIntoView({ block: "nearest" }); }, 0);
   },
-  toggleOvertime: (a) => { setOvertime(a.p, !isOvertime(personById(a.p))); touch(); },
+  toggleOvertime: (a) => { const p = personById(a.p); setOvertime(a.p, !(p && p.overtime)); touch(); },
+  toggleOvertimeDay: (a) => { setOvertimeDay(a.p, a.date, !overtimeDaysOf(a.p).includes(a.date)); touch(); },
   removeBorrowed: (a) => {
     const p = personById(a.p);
     if (!p) return;

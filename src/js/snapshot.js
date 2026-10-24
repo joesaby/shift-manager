@@ -4,7 +4,7 @@ import {
   roleOfPersonOnDay, rosterDays, rolesForDay, unitName, stationName, vacatedEssential,
   findHistoryIndexForStart, history, upsertHistoryEntry, snapshotBlockForHistory,
   historicRosterModel, personById, canEditHistory, canDeleteHistory, historyStart, loadHistoryForEdit,
-  isFilesRole, dutyAwayNote, rolesInListOrder, borrowedPeople, activePeopleBySurname, isOvertime
+  isFilesRole, dutyAwayNote, rolesInListOrder, borrowedPeople, activePeopleBySurname, overtimeDaysOf
 } from "./model.js";
 import { LOGO_DATA_URI } from "../assets/logo.js";
 import { getSessionUser, logAudit } from "./audit.js";
@@ -62,7 +62,7 @@ export function buildSnapshot() {
       employeeNo: p.employeeNo || "",
       shoulderNo: p.shoulderNo || "",
       ...(p.borrowed ? { borrowed: true } : {}),
-      ...(isOvertime(p) ? { overtime: true } : {})
+      ...overtimeOf(p)
     })),
     cells,
     unfilled,
@@ -253,6 +253,21 @@ export function deleteSavedRoster(id, today) {
   return true;
 }
 
+/** H80: snap `overtime` for a person: `true` (borrowed, or a team member on every day) or the weekday names they are on overtime. */
+function overtimeOf(p) {
+  if (p.borrowed) return p.overtime ? { overtime: true } : {};
+  const days = overtimeDaysOf(p.id);
+  if (!days.length) return {};
+  if (days.length >= block().shifts.length) return { overtime: true };
+  return { overtime: days.map((d) => new Date(d + "T12:00:00").toLocaleDateString("en-IE", { weekday: "long" })) };
+}
+
+/** H80: the printed words beside a name — "Overtime", or "Overtime Sunday" when only some days. */
+export function overtimeLabel(p) {
+  if (!p || !p.overtime) return "";
+  return Array.isArray(p.overtime) ? "Overtime " + p.overtime.join(", ") : "Overtime";
+}
+
 /** Printed date/time, shown in the bottom-right corner of every printed page (filled in by stampPrintTime). */
 export function printStampHTML() {
   return `<div class="print-stamp"></div>`;
@@ -339,7 +354,7 @@ function rotaHTMLPersonDay(snap, editable) {
     const nums = withNums
       ? `<td class="numcol numcol-e">${esc(p.employeeNo || "")}</td><td class="numcol numcol-s">${esc(p.shoulderNo || "")}</td>`
       : "";
-    const ot = p.overtime ? ' <span class="overtime-tag">Overtime</span>' : "";
+    const ot = p.overtime ? ` <span class="overtime-tag">${esc(overtimeLabel(p))}</span>` : "";
     return `<tr><td class="p-2 font-semibold whitespace-nowrap stickycol">${esc(p.name)}${ot}</td>${nums}${cells}</tr>`;
   }).join("");
   const unfBits = snap.days.map((d, i) => (snap.unfilled && snap.unfilled[i] && snap.unfilled[i].length) ? `${d.label}: ${snap.unfilled[i].join(", ")}` : "").filter(Boolean);
