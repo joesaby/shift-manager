@@ -64,7 +64,7 @@ export function emptyData() {
         spareNotes: [],
         borrowed: [],
         holidays: [],
-        overtime: []
+        overtime: {}
       },
       history: []
     },
@@ -224,9 +224,9 @@ function normalizeV2(d) {
   if (!c.assignments) c.assignments = [];
   /* H76: people borrowed from another unit for this block (additive; never part of `people`). */
   if (!Array.isArray(c.borrowed)) c.borrowed = [];
-  /* H79 / H80: ticked bank-holiday dates and team members on overtime for this block (additive). */
+  /* H79 / H80: ticked bank-holiday dates, and per team member the dates on overtime for this block (additive). */
   if (!Array.isArray(c.holidays)) c.holidays = [];
-  if (!Array.isArray(c.overtime)) c.overtime = [];
+  c.overtime = overtimeMap(c.overtime, c.startDate, (c.shifts && c.shifts.length) || 4);
   /* H37: spare notes / HVB deprecated — always clear on open. */
   c.spareNotes = [];
   if (c.generatedAt === undefined) c.generatedAt = c.assignments.length ? new Date().toISOString() : null;
@@ -452,17 +452,39 @@ export function addBorrowed(name, employeeNo, shoulderNo) {
   return p;
 }
 
-/** H76 / H80: is this person (borrowed or team) ticked Overtime for the current block? */
-export const isOvertime = (p) => !!(p && (p.overtime || (block().overtime || []).includes(p.id)));
+/** H80: overtime is stored as `{ personId: [ISO dates] }`. v1.0.47 stored a plain list of ids (= every day of the block). */
+export function overtimeMap(raw, start, len) {
+  if (Array.isArray(raw)) {
+    const all = start ? Array.from({ length: len }, (_, i) => addDays(start, i)) : [];
+    return Object.fromEntries(raw.filter((id) => typeof id === "string").map((id) => [id, all.slice()]));
+  }
+  return raw && typeof raw === "object" ? Object.fromEntries(Object.entries(raw).map(([id, ds]) => [id, Array.isArray(ds) ? ds.slice() : []])) : {};
+}
 
-/** Tick / untick Overtime (printed beside the name): on the borrowed person, or for a team member on the block (H80). */
+/** H80: the dates in the current block on which a team member is ticked Overtime, in date order. */
+export const overtimeDaysOf = (pid) => {
+  const ticked = (block().overtime || {})[pid] || [];
+  return block().shifts.map((_, d) => dateOf(d)).filter((date) => ticked.includes(date));
+};
+
+/** H76 / H80: is this person (borrowed, or a team member on at least one day) on overtime in the current block? */
+export const isOvertime = (p) => !!(p && (p.overtime || overtimeDaysOf(p.id).length));
+
+/** H76: tick / untick Overtime on a borrowed person (whole block, printed beside their name). */
 export function setOvertime(pid, on) {
   const p = borrowedPeople().find((x) => x.id === pid);
-  if (p) { if (on) p.overtime = true; else delete p.overtime; return; }
-  if (!D().people.some((x) => x.id === pid)) return;
+  if (!p) return;
+  if (on) p.overtime = true; else delete p.overtime;
+}
+
+/** H80: tick / untick Overtime for a team member on one date of the block. */
+export function setOvertimeDay(pid, date, on) {
+  if (!D().people.some((x) => x.id === pid) || !block().shifts.some((_, d) => dateOf(d) === date)) return;
   const b = block();
-  const rest = (b.overtime || []).filter((x) => x !== pid);
-  b.overtime = on ? rest.concat(pid) : rest;
+  if (!b.overtime || Array.isArray(b.overtime)) b.overtime = overtimeMap(b.overtime, b.startDate, b.shifts.length);
+  const rest = (b.overtime[pid] || []).filter((x) => x !== date);
+  const next = on ? rest.concat(date) : rest;
+  if (next.length) b.overtime[pid] = next; else delete b.overtime[pid];
 }
 
 export function removeBorrowed(pid) {
@@ -710,7 +732,7 @@ export function snapshotBlockForHistory(snap) {
     assignments: b.assignments.map((a) => ({ ...a })),
     borrowed: (b.borrowed || []).map((p) => ({ ...p })),
     holidays: (b.holidays || []).slice(),
-    overtime: (b.overtime || []).slice(),
+    overtime: overtimeMap(b.overtime, b.startDate, b.shifts.length),
     spareNotes: [],
     snap,
     records: snap.records
@@ -759,7 +781,7 @@ export function loadHistoryForEdit(id) {
   c.assignments = h.assignments.map((a) => ({ ...a }));
   c.borrowed = (h.borrowed || []).map((p) => ({ ...p }));
   c.holidays = (h.holidays || []).slice();
-  c.overtime = (h.overtime || []).slice();
+  c.overtime = overtimeMap(h.overtime, historyStart(h), h.shifts.length);
   c.generatedAt = h.savedAt || new Date().toISOString();
   c.stale = false;
   c.spareNotes = [];

@@ -11,9 +11,9 @@ stubLocalStorage();
 
 const { S } = await import("../src/js/state.js");
 const M = await import("../src/js/model.js");
-const { migrateToV2, block, history, rolesForDay, setOvertime, isOvertime, toggleHoliday, isHoliday, loadHistoryForEdit } = M;
+const { migrateToV2, block, history, rolesForDay, setOvertimeDay, overtimeDaysOf, isOvertime, toggleHoliday, isHoliday, loadHistoryForEdit } = M;
 const { generate } = await import("../src/js/generator.js");
-const { buildSnapshot, saveRoster, isRosterUnsaved } = await import("../src/js/snapshot.js");
+const { buildSnapshot, saveRoster, isRosterUnsaved, overtimeLabel } = await import("../src/js/snapshot.js");
 
 const role = (id, name, extra = {}) => ({ id, name, groupId: "g1", usedAtDay: true, usedAtNight: true, hard: false, skillRestricted: false, essential: true, sortOrder: 1, ...extra });
 const person = (id, name) => ({ id, name, active: true, fixedRoleId: null });
@@ -92,35 +92,61 @@ describe("H78 weekday-only roles", () => {
   });
 });
 
-describe("H80 overtime for a team member", () => {
-  it("is a per-block tick that shows on the snapshot and does not touch borrowed people", () => {
+describe("H80 overtime for a team member (per day)", () => {
+  it("is ticked per day, shows the weekday on the snapshot, and is an unsaved change", () => {
     load();
     generate();
     saveRoster();
     assert.equal(isRosterUnsaved(), false);
-    setOvertime("p2", true);
+    setOvertimeDay("p2", "2026-10-25", true); // Sunday
+    assert.deepEqual(overtimeDaysOf("p2"), ["2026-10-25"]);
     assert.equal(isOvertime(M.personById("p2")), true);
     assert.equal(isOvertime(M.personById("p1")), false);
     const snap = buildSnapshot();
-    assert.equal(snap.people.find((p) => p.id === "p2").overtime, true);
+    assert.deepEqual(snap.people.find((p) => p.id === "p2").overtime, ["Sunday"]);
     assert.equal(snap.people.find((p) => p.id === "p1").overtime, undefined);
-    assert.equal(isRosterUnsaved(), true, "a new tick is an unsaved change");
-    setOvertime("p2", false);
+    assert.equal(isRosterUnsaved(), true);
+    setOvertimeDay("p2", "2026-10-24", true);
+    assert.deepEqual(buildSnapshot().people.find((p) => p.id === "p2").overtime, ["Saturday", "Sunday"], "in date order");
+    setOvertimeDay("p2", "2026-10-25", false);
+    setOvertimeDay("p2", "2026-10-24", false);
     assert.equal(isOvertime(M.personById("p2")), false);
   });
 
-  it("survives Save → Edit and Regenerate; old data without the field opens", () => {
+  it("every day of the block prints as plain Overtime; a date outside the block is ignored", () => {
     load();
-    setOvertime("p3", true);
+    ["2026-10-23", "2026-10-24", "2026-10-25", "2026-10-26"].forEach((d) => setOvertimeDay("p1", d, true));
+    assert.equal(buildSnapshot().people.find((p) => p.id === "p1").overtime, true);
+    setOvertimeDay("p3", "2026-12-01", true);
+    assert.equal(isOvertime(M.personById("p3")), false);
+  });
+
+  it("the printed tag names the days", () => {
+    assert.equal(overtimeLabel({ overtime: true }), "Overtime");
+    assert.equal(overtimeLabel({ overtime: ["Sunday"] }), "Overtime Sunday");
+    assert.equal(overtimeLabel({ overtime: ["Saturday", "Sunday"] }), "Overtime Saturday, Sunday");
+    assert.equal(overtimeLabel({}), "");
+  });
+
+  it("survives Save → Edit and Regenerate; v1.0.47 whole-block arrays and old data still open", () => {
+    load();
+    setOvertimeDay("p3", "2026-10-25", true);
     generate();
-    assert.equal(isOvertime(M.personById("p3")), true, "Regenerate keeps who is on overtime");
+    assert.deepEqual(overtimeDaysOf("p3"), ["2026-10-25"], "Regenerate keeps who is on overtime");
     saveRoster();
-    assert.deepEqual(history()[0].overtime, ["p3"]);
-    block().overtime = [];
+    assert.deepEqual(history()[0].overtime, { p3: ["2026-10-25"] });
+    block().overtime = {};
     loadHistoryForEdit(history()[0].id);
-    assert.deepEqual(block().overtime, ["p3"]);
+    assert.deepEqual(overtimeDaysOf("p3"), ["2026-10-25"]);
+    /* v1.0.47 stored a plain list of person ids = the whole block. */
+    S.data.blocks.current.overtime = ["p1"];
+    S.data = migrateToV2(JSON.parse(JSON.stringify(S.data)));
+    assert.equal(overtimeDaysOf("p1").length, 4);
+    history()[0].overtime = ["p2"];
+    loadHistoryForEdit(history()[0].id);
+    assert.equal(overtimeDaysOf("p2").length, 4);
     delete S.data.blocks.current.overtime;
     S.data = migrateToV2(JSON.parse(JSON.stringify(S.data)));
-    assert.deepEqual(block().overtime, []);
+    assert.deepEqual(block().overtime, {});
   });
 });
