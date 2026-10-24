@@ -4,7 +4,7 @@ import {
   D, block, hasRoster, isStale, roleColor,
   personById, isPresent, qual, roleOfPerson, rosterDays, vacatedEssential, openRolesForDay, unassignedReason,
   unitName, activePeople, statusCountsForDay, canRegenerate, isFilesRole, lastFilesDate,
-  addBorrowed, removeBorrowed, setOvertime, setOvertimeDay, overtimeDaysOf, dateOf
+  addBorrowed, removeBorrowed, setOvertime, setOvertimeDay, overtimeDaysOf, overtimeTickDates
 } from "../model.js";
 import { buildSnapshot, overtimeLabel, saveRoster as persistRoster, isRosterUnsaved, printFitStyle, buildDayBrief, dayBriefHTML, headerBlock, shiftLabel } from "../snapshot.js";
 import { generate as generateRoster, swapPeople, assignRoleToPerson, assignParkedRole, unassignPerson, canTakeParkedRole, canDropPersonOnPerson } from "../generator.js";
@@ -30,10 +30,12 @@ const NO_OPTION_HINT = {
   "not-qualified": "Not qualified for the roles still open today"
 };
 
-/** H80: screen-only OT ticks for a team member, one per day; the printed tag then reads "Overtime Sunday". */
+/** H80: screen-only OT ticks for a team member — on Sundays (and any day already ticked); the printed tag then reads "Overtime Sunday". */
 function otTicks(pid, days) {
   const on = overtimeDaysOf(pid);
-  return `<span class="team-ot no-print" title="Tick each day this person is on overtime — prints Overtime and the day beside the name">OT ${days.map((d) => `<label class="borrowed-ot" title="Overtime on ${esc(d.label)}"><input type="checkbox" data-act="toggleOvertimeDay" data-p="${pid}" data-date="${d.iso}"${on.includes(d.iso) ? " checked" : ""} aria-label="Overtime on ${esc(d.label)}">${esc(d.label.slice(0, 3))}</label>`).join("")}</span>`;
+  const show = overtimeTickDates(pid);
+  if (!show.length) return "";
+  return `<span class="team-ot no-print" title="Tick if this person is on overtime — prints Overtime and the day beside the name">OT ${days.filter((d) => show.includes(d.iso)).map((d) => `<label class="borrowed-ot" title="Overtime on ${esc(d.label)}"><input type="checkbox" data-act="toggleOvertimeDay" data-p="${pid}" data-date="${d.iso}"${on.includes(d.iso) ? " checked" : ""} aria-label="Overtime on ${esc(d.label)}">${esc(d.label.slice(0, 3))}</label>`).join("")}</span>`;
 }
 
 function addRoleSelect(d, pid, borrowed) {

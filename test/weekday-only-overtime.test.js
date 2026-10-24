@@ -11,7 +11,7 @@ stubLocalStorage();
 
 const { S } = await import("../src/js/state.js");
 const M = await import("../src/js/model.js");
-const { migrateToV2, block, history, rolesForDay, setOvertimeDay, overtimeDaysOf, isOvertime, toggleHoliday, isHoliday, loadHistoryForEdit } = M;
+const { migrateToV2, block, history, rolesForDay, setOvertimeDay, overtimeDaysOf, overtimeTickDates, isOvertime, toggleHoliday, isHoliday, loadHistoryForEdit } = M;
 const { generate } = await import("../src/js/generator.js");
 const { buildSnapshot, saveRoster, isRosterUnsaved, overtimeLabel } = await import("../src/js/snapshot.js");
 
@@ -119,6 +119,16 @@ describe("H80 overtime for a team member (per day)", () => {
     assert.equal(buildSnapshot().people.find((p) => p.id === "p1").overtime, true);
     setOvertimeDay("p3", "2026-12-01", true);
     assert.equal(isOvertime(M.personById("p3")), false);
+  });
+
+  it("only Sundays offer the tick, plus any day already ticked", () => {
+    load(); // Fri 23, Sat 24, Sun 25, Mon 26
+    assert.deepEqual(overtimeTickDates("p1"), ["2026-10-25"]);
+    setOvertimeDay("p1", "2026-10-26", true);
+    assert.deepEqual(overtimeTickDates("p1"), ["2026-10-25", "2026-10-26"], "an existing tick stays visible so it can be removed");
+    load(["Day", "Day", "Night", "Night"]);
+    block().startDate = "2026-10-26"; // Mon..Thu: no Sunday
+    assert.deepEqual(overtimeTickDates("p1"), []);
   });
 
   it("the printed tag names the days", () => {

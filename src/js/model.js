@@ -467,6 +467,12 @@ export const overtimeDaysOf = (pid) => {
   return block().shifts.map((_, d) => dateOf(d)).filter((date) => ticked.includes(date));
 };
 
+/** H80: the dates that show an OT tick on the Roster — each Sunday in the block, plus any day already ticked (so it can be unticked). */
+export const overtimeTickDates = (pid) => {
+  const on = overtimeDaysOf(pid);
+  return block().shifts.map((_, d) => dateOf(d)).filter((date) => new Date(date + "T12:00:00").getDay() === 0 || on.includes(date));
+};
+
 /** H76 / H80: is this person (borrowed, or a team member on at least one day) on overtime in the current block? */
 export const isOvertime = (p) => !!(p && (p.overtime || overtimeDaysOf(p.id).length));
 
