@@ -62,7 +62,9 @@ export function emptyData() {
         attendance: [],
         assignments: [],
         spareNotes: [],
-        borrowed: []
+        borrowed: [],
+        holidays: [],
+        overtime: []
       },
       history: []
     },
@@ -222,6 +224,9 @@ function normalizeV2(d) {
   if (!c.assignments) c.assignments = [];
   /* H76: people borrowed from another unit for this block (additive; never part of `people`). */
   if (!Array.isArray(c.borrowed)) c.borrowed = [];
+  /* H79 / H80: ticked bank-holiday dates and team members on overtime for this block (additive). */
+  if (!Array.isArray(c.holidays)) c.holidays = [];
+  if (!Array.isArray(c.overtime)) c.overtime = [];
   /* H37: spare notes / HVB deprecated — always clear on open. */
   c.spareNotes = [];
   if (c.generatedAt === undefined) c.generatedAt = c.assignments.length ? new Date().toISOString() : null;
@@ -293,7 +298,23 @@ export const isFilesRole = (rid) => { const r = roleById(rid); return !!(r && r.
 export const blockLen = () => (D().settings && D().settings.blockLengthDays) || block().shifts.length || 4;
 export const dateOf = (d) => addDays(block().startDate, d);
 export const shiftOf = (d) => block().shifts[d];
-export const rolesForDay = (d) => D().roles.filter((r) => (shiftOf(d) === "Day" ? r.usedAtDay !== false : r.usedAtNight));
+/** H79: is this date ticked as a bank holiday on the current block? */
+export const isHoliday = (date) => !!(block().holidays || []).includes(date);
+/** H78: a Saturday, a Sunday, or (when `holidays` lists it) a bank holiday. */
+export const isOffDay = (date, holidays) => {
+  const g = new Date(date + "T12:00:00").getDay();
+  return g === 0 || g === 6 || (holidays || []).includes(date);
+};
+/** H78: is this role offered on a given shift of a given date? Weekday-only roles are not offered on weekend / bank-holiday Day shifts. */
+const roleOffered = (r, shift, date, holidays) =>
+  shift === "Day" ? r.usedAtDay !== false && !(r.weekdayDayOnly && isOffDay(date, holidays)) : !!r.usedAtNight;
+export const rolesForDay = (d) => D().roles.filter((r) => roleOffered(r, shiftOf(d), dateOf(d), block().holidays));
+/** H79: tick / untick a bank holiday; an existing roster is marked stale so it can be regenerated. */
+export function toggleHoliday(date) {
+  const b = block();
+  b.holidays = (b.holidays || []).includes(date) ? b.holidays.filter((x) => x !== date) : (b.holidays || []).concat(date);
+  markStale();
+}
 /** Roles in the order shown on Roles and groups: essential first, then the rest, each by sortOrder. */
 export function rolesInListOrder() {
   return D().roles.slice().sort((a, b) => {
@@ -431,11 +452,17 @@ export function addBorrowed(name, employeeNo, shoulderNo) {
   return p;
 }
 
-/** Tick / untick Overtime on a borrowed person (printed beside their name). Team members are ignored. */
+/** H76 / H80: is this person (borrowed or team) ticked Overtime for the current block? */
+export const isOvertime = (p) => !!(p && (p.overtime || (block().overtime || []).includes(p.id)));
+
+/** Tick / untick Overtime (printed beside the name): on the borrowed person, or for a team member on the block (H80). */
 export function setOvertime(pid, on) {
   const p = borrowedPeople().find((x) => x.id === pid);
-  if (!p) return;
-  if (on) p.overtime = true; else delete p.overtime;
+  if (p) { if (on) p.overtime = true; else delete p.overtime; return; }
+  if (!D().people.some((x) => x.id === pid)) return;
+  const b = block();
+  const rest = (b.overtime || []).filter((x) => x !== pid);
+  b.overtime = on ? rest.concat(pid) : rest;
 }
 
 export function removeBorrowed(pid) {
@@ -682,6 +709,8 @@ export function snapshotBlockForHistory(snap) {
     attendance: b.attendance.map((a) => ({ ...a })),
     assignments: b.assignments.map((a) => ({ ...a })),
     borrowed: (b.borrowed || []).map((p) => ({ ...p })),
+    holidays: (b.holidays || []).slice(),
+    overtime: (b.overtime || []).slice(),
     spareNotes: [],
     snap,
     records: snap.records
@@ -729,6 +758,8 @@ export function loadHistoryForEdit(id) {
   c.attendance = h.attendance.map((a) => ({ ...a }));
   c.assignments = h.assignments.map((a) => ({ ...a }));
   c.borrowed = (h.borrowed || []).map((p) => ({ ...p }));
+  c.holidays = (h.holidays || []).slice();
+  c.overtime = (h.overtime || []).slice();
   c.generatedAt = h.savedAt || new Date().toISOString();
   c.stale = false;
   c.spareNotes = [];
@@ -854,7 +885,7 @@ export function historicRosterModel(entry) {
     return { assign, files };
   });
 
-  const rolesFor = (d) => D().roles.filter((r) => (days[d].shift === "Day" ? r.usedAtDay !== false : r.usedAtNight));
+  const rolesFor = (d) => D().roles.filter((r) => roleOffered(r, days[d].shift, days[d].iso, entry.holidays));
 
   return { start, days, people, roster, statusFor, rolesFor };
 }

@@ -76,6 +76,7 @@ Written from the shift manager's side: **As a shift manager, I …**. Grouped by
 | H19 | Should | As a shift manager, I manage the role list — name, group, day/night use, hard, essential, once per block, Files role — and put roles in order with Up / Down. | S4 |
 | H20 | Should | As a shift manager, I manage role groups, and give each role its own print colour (roles in a group can share one), so the roster is easy to read at a glance. | S4 |
 | H35 | Must | As a shift manager, I say whether a role is used by day, at night or both, so each shift only gets the roles it needs. | S4 |
+| H78 | Should | As a shift manager, I can mark a role "Weekday day only", so it is not used on a Day shift at weekends or bank holidays (it is still used at night). | S4 |
 | H43 | Must | As a shift manager, I mark roles as essential, and essential roles are listed first, so the ones that must be covered are clear. | S4 |
 | H70 | Must | As a shift manager, I can mark roles "once per block", so nobody gets that kind of duty (e.g. Files 1–5) twice in a block. | S5 |
 | H73 | Must | As a shift manager, I can mark one role as the Files role, so everyone still free after the real roles are filled (and ticked for Files) lands on Files instead of being left with nothing. | S5 |
@@ -86,6 +87,7 @@ Written from the shift manager's side: **As a shift manager, I …**. Grouped by
 | --- | --- | --- | --- |
 | H4 | Must | As a shift manager, I set the block start date and Day or Night for each of the four days. | S6 |
 | H5 | Must | As a shift manager, I set each person's status for each day — Present, Annual leave, Sick leave, Paternity leave, Duty away, Rest day — and tick AL beside a name to put them on Annual leave for the whole block. For Duty away I can type the exact reason, which shows on the roster, print and briefing sheet while still counting as Duty away. | S6 |
+| H79 | Should | As a shift manager, I can tick a day as a Bank holiday on Attendance, so roles marked Weekday day only are dropped for that day as they are at weekends. | S6 |
 | H33 | Must | As a shift manager, I can mark a Rest day, which isn't allocated and shows as a status on the Roster and print. | S6 |
 | H41 | Must | As a shift manager, I see the same status colours on Attendance and Roster (Present green; all the unavailable statuses one shared blue). | S6 |
 | H40 | Must | As a shift manager, I see each day's date prominently with how many are present and how many essential roles there are to fill. | S6 |
@@ -121,6 +123,7 @@ Written from the shift manager's side: **As a shift manager, I …**. Grouped by
 | H45 | Must | As a shift manager, when someone goes sick the roles they vacate appear in a parking lot (essential roles only), and return to them if they come back. | S9 |
 | H47 | Must | As a shift manager, I can drag a parked role onto a person, or drag people between cells, to make same-day swaps — impossible moves are refused and every move is confirmed. | S9 |
 | H74 | Must | As a shift manager, I see on each Files cell when that person last did Files (or "first time"), to help me choose who to pull into an essential role at short notice; it is not printed. | S9 |
+| H80 | Should | As a shift manager, I can tick OT beside a member of my own unit on the Roster to show they are in on overtime (Present, from my unit, not borrowed), so the word Overtime prints beside their name. | S9 |
 | H76 | Should | As a shift manager, when I am short and borrow someone from another unit, I can type their name (and, if I have them, their employee and shoulder numbers) to get an extra row at the bottom of the Roster and drop an unfilled role onto them, so they appear on the duty detail without joining my team or changing how Generate works, and can tick **Overtime** on them so that word prints beside their name. | S9 |
 | H54 | Must | As a shift manager, I see the whole roster at once on a laptop, without sideways scrolling. | S8 |
 | H55 | Must | As a shift manager, I get a compact one-row toolbar on the Roster, so the table gets the room. | S8 |
@@ -394,6 +397,7 @@ Notes:
 - `blocks.current.spareNotes[]` — deprecated; see [`PRD_Deprecated.md`](PRD_Deprecated.md). On migrate-on-open always cleared to `[]`. New snapshots omit `spareNotes`. Present people with no role use an Unassigned cell (H37).
 - `roles[].essential` — `true` = must be filled preferentially; `false` = non-essential (spare work). **Additive on schema v2:** if the field is missing on open, `normalizeV2` sets `essential: true` (existing catalogues unchanged in behaviour). After save, the field is written. No `schemaVersion` bump. **Older builds that do not know the field ignore it** when reading JSON written by newer builds.
 - `people[].employeeNo` / `people[].shoulderNo` — optional strings (not numbers) so leading zeros survive. **Additive on schema v2:** if missing on open, `normalizeV2` sets each to `""`. No `schemaVersion` bump. Sample/mock data may use obviously fake values only.
+- `blocks.current.holidays[]` / `blocks.history[].holidays[]` — H79 ISO dates (`YYYY-MM-DD`) ticked as bank holidays for that block; `roles[].weekdayDayOnly` — H78 optional boolean (missing = off). `blocks.current.overtime[]` / `blocks.history[].overtime[]` — H80 `personId`s of team members on overtime for that block. **Additive on schema v2:** missing arrays are set to `[]` on open (`normalizeV2`); no `schemaVersion` bump; older builds ignore the fields.
 - `blocks.current.borrowed[]` / `blocks.history[].borrowed[]` — H76 people borrowed from another unit for that block (`id` `bw_…`, `name`, `borrowed: true`, optional `employeeNo` / `shoulderNo` strings, optional `overtime: true`); assignments reference them by `personId`. **Additive on schema v2:** if missing on open, `normalizeV2` sets `[]`. No `schemaVersion` bump. They are never in `people[]`. **Older builds ignore the field**, so their assignment rows show as an unfilled role.
 - Vacated roles are **not** a stored collection: they are derived from `assignments` + `attendance` (non-Present holder ⇒ role unfilled for warnings / Unallocated strip; Present again ⇒ same assignment row is live again).
 - **Unsaved** roster state is **not** stored: it is derived by comparing live `buildSnapshot()` to the history entry for the current block start (see H51), including employee/shoulder numbers when present on the snap.

@@ -4,7 +4,7 @@ import {
   roleOfPersonOnDay, rosterDays, rolesForDay, unitName, stationName, vacatedEssential,
   findHistoryIndexForStart, history, upsertHistoryEntry, snapshotBlockForHistory,
   historicRosterModel, personById, canEditHistory, canDeleteHistory, historyStart, loadHistoryForEdit,
-  isFilesRole, dutyAwayNote, rolesInListOrder, borrowedPeople, activePeopleBySurname
+  isFilesRole, dutyAwayNote, rolesInListOrder, borrowedPeople, activePeopleBySurname, isOvertime
 } from "./model.js";
 import { LOGO_DATA_URI } from "../assets/logo.js";
 import { getSessionUser, logAudit } from "./audit.js";
@@ -62,7 +62,7 @@ export function buildSnapshot() {
       employeeNo: p.employeeNo || "",
       shoulderNo: p.shoulderNo || "",
       ...(p.borrowed ? { borrowed: true } : {}),
-      ...(p.overtime ? { overtime: true } : {})
+      ...(isOvertime(p) ? { overtime: true } : {})
     })),
     cells,
     unfilled,
