@@ -1,5 +1,5 @@
 import { esc, STAT, SBG } from "../util.js";
-import { D, block, dayLabels, activePeopleBySurname, essentialRolesForDay, isPresent, getStatus, statusCountsForDay, canRegenerate, setStatus, roleById, personById, markStale, dutyAwayNote, setDutyAwayNote } from "../model.js";
+import { D, block, dayLabels, isHoliday, toggleHoliday, activePeopleBySurname, essentialRolesForDay, isPresent, getStatus, statusCountsForDay, canRegenerate, setStatus, roleById, personById, markStale, dutyAwayNote, setDutyAwayNote } from "../model.js";
 import { ph, noPeople, unitBanner } from "../ui-kit.js";
 import { logAudit } from "../audit.js";
 
@@ -9,7 +9,7 @@ export function vAtt() {
   const info = days.map((d, i) => ({ d: d, need: essentialRolesForDay(i).length, pc: ppl.filter((p) => isPresent(p, i)).length, away: statusCountsForDay(i).filter((c) => c.label !== "Present" && c.n > 0) }));
   /* Summary lives in each day's column header so it lines up with the status column below. */
   const summary = (x) => `<div class="att-sum font-normal"><div class="text-xs font-semibold ${x.pc < x.need ? "text-error" : "text-success"}">${x.pc} present, ${x.need} roles to fill</div><div class="att-away">${x.away.length ? x.away.map((c) => `<span class="att-away-chip" style="background:${SBG[c.label]}">${esc(c.label)} <b>${c.n}</b></span>`).join("") : '<span class="opacity-60 text-xs">Everyone present</span>'}</div></div>`;
-  const heads = days.map((d, i) => `<th class="align-bottom min-w-40"><div class="font-semibold">${esc(d.label)}</div><select class="select select-bordered select-xs mt-1" data-ch="shift" data-d="${i}" aria-label="Shift for ${esc(d.label)}"><option${d.shift === "Day" ? " selected" : ""}>Day</option><option${d.shift === "Night" ? " selected" : ""}>Night</option></select>${summary(info[i])}</th>`).join("");
+  const heads = days.map((d, i) => `<th class="align-bottom min-w-40"><div class="font-semibold">${esc(d.label)}</div><select class="select select-bordered select-xs mt-1" data-ch="shift" data-d="${i}" aria-label="Shift for ${esc(d.label)}"><option${d.shift === "Day" ? " selected" : ""}>Day</option><option${d.shift === "Night" ? " selected" : ""}>Night</option></select><label class="att-bh" title="Bank holiday: roles set to Weekday day only are not used on this day"><input type="checkbox" data-ch="holiday" data-iso="${d.iso}"${isHoliday(d.iso) ? " checked" : ""}> Bank holiday</label>${summary(info[i])}</th>`).join("");
   const rows = ppl.map((p) => {
     const allAL = days.every((d, i) => getStatus(p.id, i) === "Annual leave");
     return `<tr class="hover"><td class="stickycol font-medium whitespace-nowrap"><div class="att-name"><span>${esc(p.name)}${p.fixedRoleId ? `<div class="text-xs text-base-content/60 font-normal">Only ${esc((roleById(p.fixedRoleId) || { name: "" }).name)}</div>` : ""}</span><label class="att-al" title="Annual leave for all days of this block. Unticking sets every day back to Present."><input type="checkbox" class="checkbox checkbox-sm" data-ch="allAL" data-p="${p.id}" ${allAL ? "checked" : ""}> AL</label></div></td>` + days.map((d, i) => {
@@ -36,6 +36,7 @@ export const changes = {
   },
   awayNote: (v, ds) => { setDutyAwayNote(ds.p, +ds.d, v); },
   shift: (v, ds) => { block().shifts[+ds.d] = v; markStale(); },
+  holiday: (v, ds) => { if (isHoliday(ds.iso) !== v) toggleHoliday(ds.iso); },
   start: (v) => { if (v) block().startDate = v; },
   allAL: (v, ds) => {
     const days = dayLabels();
