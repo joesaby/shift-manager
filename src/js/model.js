@@ -294,6 +294,8 @@ export const activePeopleBySurname = () => activePeople().sort((a, b) =>
 export const filesRole = () => D().roles.find((r) => r.files) || null;
 /** H73: check if a roleId is the Files role. */
 export const isFilesRole = (rid) => { const r = roleById(rid); return !!(r && r.files); };
+/** H81: a role ticked "Many people" can be held by any number of people on a day (manual only; Generate leaves it). */
+export const isMultiRole = (rid) => { const r = roleById(rid); return !!(r && r.multi && !r.files); };
 
 export const blockLen = () => (D().settings && D().settings.blockLengthDays) || block().shifts.length || 4;
 export const dateOf = (d) => addDays(block().startDate, d);
@@ -521,11 +523,14 @@ export function rosterDays() {
     const former = {};
     const files = [];
     const formerFiles = [];
-    rolesForDay(d).forEach((r) => { if (!isFilesRole(r.id)) assign[r.id] = null; });
+    const multi = {};
+    rolesForDay(d).forEach((r) => { if (!isFilesRole(r.id) && !isMultiRole(r.id)) assign[r.id] = null; });
     block().assignments.filter((a) => a.date === date).forEach((a) => {
       const p = personById(a.personId);
       const isFiles = isFilesRole(a.roleId);
-      if (isFiles) {
+      if (isMultiRole(a.roleId)) {
+        if (p && isPresent(p, d)) (multi[a.roleId] = multi[a.roleId] || []).push(a.personId);
+      } else if (isFiles) {
         if (p && isPresent(p, d)) files.push(a.personId);
         else formerFiles.push(a.personId);
       } else {
@@ -536,7 +541,7 @@ export function rosterDays() {
         }
       }
     });
-    out.push({ assign, former, files, formerFiles });
+    out.push({ assign, former, files, formerFiles, multi });
   }
   return out;
 }
@@ -550,6 +555,7 @@ export function openRolesForDay(d) {
   const roles = rolesForDay(d).filter((r) => !assign[r.id]);
   const fr = filesRole();
   if (fr && rolesForDay(d).some((r) => r.id === fr.id) && !roles.includes(fr)) roles.push(fr);
+  rolesForDay(d).forEach((r) => { if (isMultiRole(r.id) && !roles.includes(r)) roles.push(r); }); // H81
   return roles;
 }
 
@@ -592,10 +598,9 @@ export function vacatedEssential(d) {
 export function writeDayAssign(d, assign, clearedRoleIds) {
   const date = dateOf(d);
   const cleared = clearedRoleIds instanceof Set ? clearedRoleIds : new Set(clearedRoleIds || []);
-  const fr = filesRole();
   const keptVacated = block().assignments.filter((a) => {
     if (a.date !== date) return false;
-    if (isFilesRole(a.roleId)) return false; // H73: Files rows handled separately
+    if (isFilesRole(a.roleId) || isMultiRole(a.roleId)) return false; // H73 / H81: open rows handled separately
     if (assign[a.roleId]) return false;
     if (cleared.has(a.roleId)) return false;
     const p = personById(a.personId);
@@ -604,11 +609,9 @@ export function writeDayAssign(d, assign, clearedRoleIds) {
 
   // H73: keep Files rows unless person now holds a role in assign or was explicitly cleared
   const keptFiles = [];
-  if (fr) {
-    block().assignments.filter((a) => a.date === date && isFilesRole(a.roleId)).forEach((a) => {
-      if (!Object.values(assign).includes(a.personId)) keptFiles.push(a);
-    });
-  }
+  block().assignments.filter((a) => a.date === date && (isFilesRole(a.roleId) || isMultiRole(a.roleId))).forEach((a) => {
+    if (!Object.values(assign).includes(a.personId)) keptFiles.push(a);
+  });
 
   block().assignments = block().assignments.filter((a) => a.date !== date);
 
@@ -626,7 +629,7 @@ export function writeDayAssign(d, assign, clearedRoleIds) {
 
   // H73: restore Files rows for people not now holding a role
   keptFiles.forEach((a) => {
-    if (!block().assignments.some((x) => x.date === date && x.personId === a.personId && isFilesRole(x.roleId))) {
+    if (!block().assignments.some((x) => x.date === date && x.personId === a.personId && x.roleId === a.roleId)) {
       block().assignments.push(a);
     }
   });
@@ -638,7 +641,8 @@ export function roleOfPerson(dayAssign, pid) {
   // H73: check if person is in Files
   const fr = filesRole();
   if (fr && (dayAssign.files || []).includes(pid)) return fr.id;
-  return null;
+  const mk = Object.keys(dayAssign.multi || {}).find((rid) => dayAssign.multi[rid].includes(pid)); // H81
+  return mk || null;
 }
 
 export function roleOfPersonOnDay(d, pid) {
@@ -663,6 +667,19 @@ export function setFiles(d, pid, on) {
     block().assignments.push({ date, roleId: fr.id, personId: pid, source: "manual" });
   } else if (!on && existing) {
     block().assignments = block().assignments.filter((a) => !(a.date === date && a.personId === pid && a.roleId === fr.id));
+  }
+}
+
+/** H81: add or remove a person from a Many-people role on a day (taking it drops their other role that day). */
+export function setMulti(d, pid, rid, on) {
+  if (!isMultiRole(rid)) return;
+  const date = dateOf(d);
+  const existing = block().assignments.find((a) => a.date === date && a.personId === pid && a.roleId === rid);
+  if (on && !existing) {
+    block().assignments = block().assignments.filter((a) => !(a.date === date && a.personId === pid));
+    block().assignments.push({ date, roleId: rid, personId: pid, source: "manual" });
+  } else if (!on && existing) {
+    block().assignments = block().assignments.filter((a) => !(a.date === date && a.personId === pid && a.roleId === rid));
   }
 }
 
@@ -712,7 +729,7 @@ export function swapOrAssign(d, rid, pid) {
   const holder = day.assign[rid] || null;
   let old = pid ? roleOfPerson(day, pid) : null;
   // H73: Files holder is treated as having no role
-  if (old && isFilesRole(old)) old = null;
+  if (old && (isFilesRole(old) || isMultiRole(old))) old = null;
   const next = { ...day.assign };
   next[rid] = pid || null;
   if (pid && old) next[old] = holder || null;
@@ -898,9 +915,11 @@ export function historicRosterModel(entry) {
   };
 
   const roster = days.map((day) => {
-    const assign = {}; const files = [];
+    const assign = {}; const files = []; const multi = {};
     (entry.assignments || []).filter((a) => a.date === day.iso).forEach((a) => {
-      if (isFilesRole(a.roleId)) files.push(a.personId); else assign[a.roleId] = a.personId;
+      if (isFilesRole(a.roleId)) files.push(a.personId);
+      else if (isMultiRole(a.roleId)) (multi[a.roleId] = multi[a.roleId] || []).push(a.personId);
+      else assign[a.roleId] = a.personId;
     });
     /* Fallback from records when no structured assignments. */
     if (!Object.keys(assign).length && entry.records) {
@@ -910,7 +929,7 @@ export function historicRosterModel(entry) {
         if (role && person) assign[role.id] = person.id;
       });
     }
-    return { assign, files };
+    return { assign, files, multi };
   });
 
   const rolesFor = (d) => D().roles.filter((r) => roleOffered(r, days[d].shift, days[d].iso, entry.holidays));
