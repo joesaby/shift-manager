@@ -4,7 +4,7 @@ import {
   roleOfPersonOnDay, rosterDays, rolesForDay, unitName, stationName, vacatedEssential,
   findHistoryIndexForStart, history, upsertHistoryEntry, snapshotBlockForHistory,
   historicRosterModel, personById, canEditHistory, canDeleteHistory, historyStart, loadHistoryForEdit,
-  isFilesRole, dutyAwayNote, rolesInListOrder, borrowedPeople, activePeopleBySurname, overtimeDaysOf
+  isFilesRole, isMultiRole, dutyAwayNote, rolesInListOrder, borrowedPeople, activePeopleBySurname, overtimeDaysOf
 } from "./model.js";
 import { LOGO_DATA_URI } from "../assets/logo.js";
 import { getSessionUser, logAudit } from "./audit.js";
@@ -36,7 +36,7 @@ export function buildSnapshot() {
 
   const unfilled = days.map((day, d) => rolesForDay(d)
     .filter((r) => r.essential !== false)
-    .filter((r) => !isFilesRole(r.id))  // H73: Files role is never unfilled
+    .filter((r) => !isFilesRole(r.id) && !isMultiRole(r.id))  // H73 / H81: open roles are never unfilled
     .filter((r) => !(ros && ros[d].assign[r.id]))
     .map((r) => r.name));
 
@@ -157,7 +157,7 @@ export function personDaySnapFromHistory(entry) {
   }));
 
   const unfilled = model.days.map((day, d) => model.rolesFor(d)
-    .filter((r) => r.essential !== false)
+    .filter((r) => r.essential !== false && !r.multi)
     .filter((r) => !model.roster[d].assign[r.id])
     .map((r) => r.name));
 

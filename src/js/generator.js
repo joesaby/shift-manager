@@ -3,7 +3,7 @@ import { RULES, hardRules, softRules } from "./rules.js";
 import {
   D, activePeople, rolesForDay, isPresent, qual, canDo, personById, roleById, shiftOf,
   roleOfPerson, writeRoster, rosterDays, writeDayAssign, dayLabels, historicRoleCounts,
-  filesRole, isFilesRole, setFiles, canDoOn, lastFilesShiftByPerson
+  filesRole, isFilesRole, isMultiRole, setFiles, setMulti, canDoOn, lastFilesShiftByPerson
 } from "./model.js";
 
 /** H64: id of the visible row above (-1) / below (+1) this person, or null. Selection only — never reorders. */
@@ -163,11 +163,11 @@ export function generate() {
   const n = D().blocks.current.shifts.length;
   for (let d = 0; d < n; d++) {
     const dayRoles = rolesForDay(d);
-    const essentialIds = dayRoles.filter((r) => r.essential !== false && !isFilesRole(r.id))
+    const essentialIds = dayRoles.filter((r) => r.essential !== false && !isFilesRole(r.id) && !isMultiRole(r.id))
       .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
       .map((r) => r.id);
     const nonEssentialIds = dayRoles
-      .filter((r) => r.essential === false && !isFilesRole(r.id))
+      .filter((r) => r.essential === false && !isFilesRole(r.id) && !isMultiRole(r.id))
       .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
       .map((r) => r.id);
     const assign = {}; const free = [];
@@ -243,7 +243,7 @@ function isEssentialId(rid) {
 /** H73: get the real role for a person, treating Files as no role (null). */
 function realRole(day, pid) {
   const role = roleOfPerson(day, pid);
-  return isFilesRole(role) ? null : role;
+  return isFilesRole(role) || isMultiRole(role) ? null : role;
 }
 
 export function assignTo(d, rid, pid) {
@@ -362,12 +362,22 @@ export function swapPeople(d, aPid, bPid) {
  * H73: for Files role, use setFiles instead. */
 export function assignRoleToPerson(d, rid, pid) {
   if (!pid) {
-    if (isFilesRole(rid)) {
+    if (isFilesRole(rid) || isMultiRole(rid)) {
       toast("Files unassigned");
       return true;  // No-op: people can't be unassigned by this path for Files
     }
     assignTo(d, rid, null);
     toast(roleName(rid) + " left unfilled");
+    return true;
+  }
+  // H81: Many-people role
+  if (isMultiRole(rid)) {
+    const p = personById(pid);
+    if (!p || !isPresent(p, d)) { toast("Only Present people can take a role."); return false; }
+    if (!canDoOn(p, rid, d)) { toast("Cannot assign — not qualified for that role."); return false; }
+    setMulti(d, pid, rid, true);
+    S.ui.sel = null; touch();
+    toast(roleName(rid) + " → " + (p.name || pid));
     return true;
   }
   // H73: Files role assignment
@@ -398,6 +408,13 @@ export function unassignPerson(d, pid) {
   if (!days) return false;
   const rid = roleOfPerson(days[d], pid);
   if (!rid) return false;
+  // H81: Many-people unassignment
+  if (isMultiRole(rid)) {
+    setMulti(d, pid, rid, false);
+    S.ui.sel = null; touch();
+    toast(roleName(rid) + " unassigned");
+    return true;
+  }
   // H73: Files unassignment
   if (isFilesRole(rid)) {
     setFiles(d, pid, false);

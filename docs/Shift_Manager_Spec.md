@@ -51,6 +51,8 @@ How the requirements in [`Shift_Manager_PRD.md`](Shift_Manager_PRD.md) are built
 
 **H78** — **Weekday day only** (`roles[].weekdayDayOnly`, default off): Roles-screen checkbox column after *Used at night*, header "Weekday day only" (tooltip explains). `rolesForDay(d)` and the Historic roster's `rolesFor` use `roleOffered`: on a **Day** shift a flagged role is dropped when the date is a Saturday or Sunday or is in the block's `holidays`; at **night** the flag is ignored. Because it narrows `rolesForDay`, Generate, Roster, unfilled warnings and manual assign all follow it. Changing the flag marks an existing roster stale like other role flags. Roles with the flag off behave exactly as before
 
+**H81** — **Many people** (`roles[].multi`, default off, additive; no migration): Roles-screen checkbox after *Files role*. Ticking it makes the role non-essential and unticks Files (and vice versa). Like Files (H73) many assignment rows may share its `roleId` on one date; unlike Files, Generate never fills it and it is never listed as unfilled. By hand: Roster's Add-role selector always offers it (even when someone already holds it); taking it drops that person's other role for the day; × removes only that person. `rosterDays()` returns the holders as `multi: { roleId: [personId] }`; `writeDayAssign` keeps them like Files rows. Older builds ignore the flag and read the role as single-holder
+
 **H43** — Roles have an **Essential** flag (`essential: boolean`). Roles screen: Essential checkbox column; list groups essential roles first, then non-essential. Default `true` on migrate when the field is missing
 
 
